@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSelect } from '../Select/contexts/SelectContext';
 import { useNodeContext } from '../Node/store/useNodeContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
 import { getNodeConfig, getVariantFields } from './nodeConfigs';
 import { PanelFooter } from './components/PanelFooter';
 import { PropertiesTab } from './components/PropertiesTab';
@@ -15,6 +14,10 @@ import { PanelToggleDragHandle } from './components/PanelToggleDragHandle';
 import { PanelContainer } from './components/PanelContainer';
 import { useResizePanel } from './hooks/useResizePanel';
 import { PreviewTab } from './components/PreviewTab';
+import { AnalyzeTab } from './components/AnalyzeTab';
+import { DataFlowTab } from './components/DataFlowTab';
+import { ContentPreviewTab } from './components/ContentPreviewTab';
+import { ScrollableTabs } from './components/ScrollableTabs';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -127,17 +130,29 @@ export const NodeConfigPanel: React.FC = () => {
 
               {/* Tabs */}
               <Tabs defaultValue="properties" className="flex flex-col flex-1 overflow-hidden">
-                <TabsList className={cn(
-                  "grid mb-4",
-                  activeNode.type === "restnode" ? "grid-cols-4" : "grid-cols-3"
-                )}>
+                <ScrollableTabs className="mb-4">
                   <TabsTrigger value="properties">Properties</TabsTrigger>
                   <TabsTrigger value="appearance">Appearance</TabsTrigger>
                   <TabsTrigger value="advanced">Advanced</TabsTrigger>
                   {activeNode.type === "restnode" && (
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
+                    <>
+                      <TabsTrigger value="preview">Preview</TabsTrigger>
+                      <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
+                    </>
                   )}
-                </TabsList>
+                  {activeNode.type === "logicalnode" && (
+                    <>
+                      <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
+                      <TabsTrigger value="debug">Debug</TabsTrigger>
+                    </>
+                  )}
+                  {activeNode.type === "contentnode" && (
+                    <>
+                      <TabsTrigger value="preview">Preview</TabsTrigger>
+                      <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
+                    </>
+                  )}
+                </ScrollableTabs>
                 
                 <div className="flex-1 overflow-y-auto">
                   <TabsContent value="properties" className="m-0">
@@ -145,6 +160,8 @@ export const NodeConfigPanel: React.FC = () => {
                       fields={allFields}
                       formData={formData}
                       onFieldChange={handleFieldChange}
+                      nodeId={activeNode.id}
+                      nodeType={activeNode.type}
                     />
                   </TabsContent>
                   <TabsContent value="appearance" className="m-0">
@@ -162,9 +179,34 @@ export const NodeConfigPanel: React.FC = () => {
                     />
                   </TabsContent>
                   {activeNode.type === "restnode" && (
-                    <TabsContent value="preview" className="m-0">
-                      <PreviewTab formData={formData} />
-                    </TabsContent>
+                    <>
+                      <TabsContent value="preview" className="m-0">
+                        <PreviewTab formData={formData} />
+                      </TabsContent>
+                      <TabsContent value="dataschema" className="m-0">
+                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
+                      </TabsContent>
+                    </>
+                  )}
+                  {activeNode.type === "logicalnode" && (
+                    <>
+                      <TabsContent value="dataschema" className="m-0">
+                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
+                      </TabsContent>
+                      <TabsContent value="debug" className="m-0">
+                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
+                      </TabsContent>
+                    </>
+                  )}
+                  {activeNode.type === "contentnode" && (
+                    <>
+                      <TabsContent value="preview" className="m-0">
+                        <ContentPreviewTab nodeId={activeNode.id} formData={formData} />
+                      </TabsContent>
+                      <TabsContent value="dataschema" className="m-0">
+                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
+                      </TabsContent>
+                    </>
                   )}
                 </div>
               </Tabs>

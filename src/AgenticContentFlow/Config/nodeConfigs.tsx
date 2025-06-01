@@ -85,6 +85,84 @@ export const mockConfigurations: Record<string, NodeConfig> = {
       }
     }
   },
+  logicalnode: {
+    nodeType: 'logicalnode',
+    metadata: {
+      title: 'Logical Node',
+      description: 'Process data with logical operations like filtering, transforming, and conditional routing',
+      icon: 'settings',
+      category: 'logic'
+    },
+    configFields: {
+      label: {
+        fieldType: 'text',
+        label: 'Node Label',
+        defaultValue: 'Logic Processor',
+        required: true
+      },
+      operation: {
+        fieldType: 'select',
+        label: 'Operation Type',
+        defaultValue: 'filter',
+        required: true,
+        options: [
+          { value: 'filter', label: 'Filter Data' },
+          { value: 'transform', label: 'Transform Data' },
+          { value: 'aggregate', label: 'Aggregate Data' },
+          { value: 'conditional', label: 'Conditional Routing' },
+          { value: 'validate', label: 'Validate Data' }
+        ]
+      },
+      condition: {
+        fieldType: 'textarea',
+        label: 'Logic Expression',
+        placeholder: 'Enter your logic expression or condition...',
+        description: 'Define the logic to apply to incoming data'
+      },
+      inputSchema: {
+        fieldType: 'textarea',
+        label: 'Input Schema',
+        placeholder: '{\n  "type": "object",\n  "properties": {\n    "data": {"type": "array"}\n  }\n}',
+        description: 'JSON schema for expected input data'
+      },
+      outputSchema: {
+        fieldType: 'textarea',
+        label: 'Output Schema',
+        placeholder: '{\n  "type": "object",\n  "properties": {\n    "filtered": {"type": "array"}\n  }\n}',
+        description: 'JSON schema for output data structure'
+      }
+    },
+    variants: {
+      filter: {
+        filterExpression: {
+          fieldType: 'text',
+          label: 'Filter Expression',
+          placeholder: 'e.g., item.status === "active"',
+          description: 'JavaScript expression for filtering'
+        }
+      },
+      transform: {
+        transformMapping: {
+          fieldType: 'textarea',
+          label: 'Transform Mapping',
+          placeholder: '{\n  "newField": "oldField",\n  "computed": "field1 + field2"\n}',
+          description: 'Define how to transform data fields'
+        }
+      },
+      conditional: {
+        truePath: {
+          fieldType: 'text',
+          label: 'True Path Action',
+          placeholder: 'Action when condition is true'
+        },
+        falsePath: {
+          fieldType: 'text',
+          label: 'False Path Action',
+          placeholder: 'Action when condition is false'
+        }
+      }
+    }
+  },
   datanode: {
     nodeType: 'datanode',
     metadata: {
@@ -146,6 +224,62 @@ export const mockConfigurations: Record<string, NodeConfig> = {
           { value: 'draft', label: 'Draft' },
           { value: 'published', label: 'Published' },
           { value: 'archived', label: 'Archived' }
+        ]
+      }
+    }
+  },
+  contentnode: {
+    nodeType: 'contentnode',
+    metadata: {
+      title: 'Content Display Node',
+      description: 'Display and render data in various formats like lists, tables, cards',
+      icon: 'eye',
+      category: 'view'
+    },
+    configFields: {
+      label: { 
+        fieldType: 'text', 
+        label: 'Node Label', 
+        defaultValue: 'Content Display', 
+        required: true 
+      },
+      displayType: {
+        fieldType: 'select',
+        label: 'Display Type',
+        defaultValue: 'list',
+        options: [
+          { value: 'list', label: 'List' },
+          { value: 'table', label: 'Table' },
+          { value: 'cards', label: 'Cards' },
+          { value: 'custom', label: 'Custom' }
+        ]
+      },
+      listConfig: {
+        fieldType: 'textarea',
+        label: 'List Configuration',
+        placeholder: '{\n  "itemTemplate": {\n    "title": "{{title}}",\n    "subtitle": "{{body}}"\n  }\n}',
+        description: 'JSON configuration for list display'
+      },
+      maxItems: {
+        fieldType: 'number',
+        label: 'Max Items to Display',
+        defaultValue: 10,
+        validation: { min: 1, max: 100 }
+      },
+      showSearch: {
+        fieldType: 'boolean',
+        label: 'Show Search',
+        defaultValue: true
+      },
+      sortBy: {
+        fieldType: 'select',
+        label: 'Sort By',
+        defaultValue: 'title',
+        options: [
+          { value: 'title', label: 'Title' },
+          { value: 'date', label: 'Date' },
+          { value: 'id', label: 'ID' },
+          { value: 'userId', label: 'User ID' }
         ]
       }
     }
