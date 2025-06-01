@@ -9,14 +9,16 @@ export const restNodeConfig: NodeHandleConfiguration = {
             type: 'target',
             dataFlow: 'data',
             acceptsFrom: ['data'],
-            edgeType: 'default'
+            edgeType: 'default',
+            icon: 'arrow-right',
         },
         {
             position: 'right',
             type: 'source',
             dataFlow: 'data',
-            connectsTo: ['view', 'data', 'integration'],
-            edgeType: 'default'
+            connectsTo: ['view', 'data', 'logic'],
+            icon: 'arrow-right',
+            edgeType: "package"
         }
     ]
 };

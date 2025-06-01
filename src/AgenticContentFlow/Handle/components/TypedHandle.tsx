@@ -8,7 +8,7 @@ import { Position, HandleType } from "@xyflow/react";
 // Import icon components
 import { PackageIcon } from "@/components/icons/package";
 import ChartIcon from "@/components/icons/chart";
-import { ChevronDownIcon, LinkIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, LinkIcon } from "lucide-react";
 import HandleSpeedDial from "./HandleSpeedDial";
 
 export interface TypedHandleProps extends Omit<BaseHandleProps, 'position' | 'id' | 'type'> {
@@ -27,8 +27,11 @@ export interface TypedHandleProps extends Omit<BaseHandleProps, 'position' | 'id
 const iconMap = {
   'package': PackageIcon,
   'arrow-down': ChevronDownIcon,
+  "arrow-up": ChevronUpIcon, // Reusing ChevronDownIcon for up arrow
   'link': LinkIcon,
   'chart': ChartIcon,
+  'arrow-right': ChevronRightIcon, // Reusing LinkIcon for right arrow
+  'arrow-left': ChevronLeftIcon, // Reusing LinkIcon for left arrow
 };
 
 // Position mapping for react flow

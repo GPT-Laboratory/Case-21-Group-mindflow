@@ -12,6 +12,7 @@ import {
   statisticsNodeConfig
 } from './configs';
 import { restNodeConfig } from './configs/restnode-handles';
+import { logicalNodeConfig } from './configs/logicalnode-handles';
 
 // Track initialization state
 let registered = false;
@@ -37,6 +38,7 @@ export function ensureHandleTypesRegistered(): void {
   handleRegistry.registerNodeHandles(invisibleNodeConfig);
   handleRegistry.registerNodeHandles(statisticsNodeConfig);
   handleRegistry.registerNodeHandles(restNodeConfig);
+  handleRegistry.registerNodeHandles(logicalNodeConfig);
   
   console.log('✅ Handle types registered. Total configurations:', handleRegistry.getRegisteredNodeTypes().length);
   console.log('📋 Registered node types:', handleRegistry.getRegisteredNodeTypes());
