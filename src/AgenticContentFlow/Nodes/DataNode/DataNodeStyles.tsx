@@ -7,6 +7,10 @@ interface DataNodeProps {
   color?: string;
   selected?: boolean;
   isCollapsed?: boolean;
+  /** Whether the node is currently processing */
+  processing?: boolean;
+  /** Processing state for visual feedback */
+  processState?: 'idle' | 'processing' | 'completed' | 'error';
   className?: string;
   children?: ReactNode;
   style?: React.CSSProperties;
@@ -18,6 +22,8 @@ export function DataNodeContainer({
   color,
   selected,
   isCollapsed = true,
+  processing,
+  processState,
   className,
   children,
   style,
@@ -27,6 +33,8 @@ export function DataNodeContainer({
     <BaseNodeContainer
       color={color}
       selected={selected}
+      processing={processing}
+      processState={processState}
       className={cn(
         "relative p-0 overflow-visible z-0 rounded-md border-2 border-solid border-black shadow-[5px_-2px_black] mt-5",
         className
