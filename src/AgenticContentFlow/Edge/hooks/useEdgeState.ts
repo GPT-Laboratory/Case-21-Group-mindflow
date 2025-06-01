@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Edge, EdgeChange, applyEdgeChanges, Connection } from "@xyflow/react";
 import { withErrorHandler } from "../../utils/withErrorHandler";
+import { dataSchemaManager } from "../../Process/DataSchemaManager";
 
 // Import useTrackableState directly only in this file
 // In the future, this will be used only internally by EdgeProvider
@@ -103,6 +104,14 @@ export const useEdgeStateImpl = (
       if (!Array.isArray(edgesToRemove)) {
         throw new Error("Edges to remove is not an array:" + edgesToRemove);
       }
+      
+      // PHASE 1: Handle schema propagation for removed edges
+      edgesToRemove.forEach(edge => {
+        if (edge.source && edge.target) {
+          dataSchemaManager.updateConnections(edge.source, edge.target, false);
+        }
+      });
+      
       if (!isClick) {
         removeEdges(edgesToRemove);
         return;

@@ -6,6 +6,7 @@ import { useNodeContext } from "../../store/useNodeContext";
 import { createConnectionWithTargetHandle, validateConnection, createEdge } from "../../../Edge/hooks/utils/edgeUtils";
 import { useTransaction } from "@jalez/react-state-history";
 import { handleContainerization } from "../utils/nodeUtils";
+import { dataSchemaManager } from "../../../Process/DataSchemaManager";
 
 export const useDirectConnectionOperations = () => {
   const {
@@ -73,6 +74,17 @@ export const useDirectConnectionOperations = () => {
         updatedToNodeSiblings && updatedNodes.push(...updatedToNodeSiblings);
         containerToAdd && addNode(containerToAdd);
         updateNodes(updatedNodes);
+
+        // PHASE 1: Trigger schema propagation when edge is created
+        if (newEdge) {
+          dataSchemaManager.updateConnections(connection.source!, connection.target!, true);
+          
+          // If source node has a schema, propagate it to target
+          const sourceSchema = dataSchemaManager.getSchema(connection.source!);
+          if (sourceSchema?.outputSchema) {
+            dataSchemaManager.updateSchema(connection.target!, sourceSchema.outputSchema);
+          }
+        }
 
       }, "Direct connection with invisible node management");
     }),
