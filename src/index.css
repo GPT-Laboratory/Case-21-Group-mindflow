@@ -118,3 +118,48 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide scrollbars for scrollable tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* CSS custom property for rotating angle */
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Processing animations for nodes */
+@keyframes processingRotate {
+  to {
+    --angle: 360deg;
+  }
+}
+
+@keyframes completedPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes errorPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  25%, 75% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
