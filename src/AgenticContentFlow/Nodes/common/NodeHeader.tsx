@@ -8,22 +8,74 @@ import { useNodeId, useReactFlow } from "@xyflow/react";
 import { cn } from "@/lib/utils";
 import { MoreVertical, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 /* NODE HEADER -------------------------------------------------------------- */
 
-export type NodeHeaderProps = HTMLAttributes<HTMLElement>;
+export interface NodeHeaderProps extends HTMLAttributes<HTMLElement> {
+  icon?: ReactNode;
+  label?: string;
+  isProcessing?: boolean;
+  isCompleted?: boolean;
+  hasError?: boolean;
+  menuItems?: ReactNode[];
+  iconClassName?: string;
+  labelClassName?: string;
+}
 
 export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, icon, label, isProcessing, isCompleted, hasError, menuItems, iconClassName, labelClassName, ...props }, ref) => {
     return (
       <header 
         ref={ref} 
         className={cn(
-          "flex items-center justify-between gap-2 p-1 text-slate",
+          "flex items-center justify-between gap-2 p-1 text-slate-700 border-b border-slate-200 dark:text-slate-300 dark:border-slate-700",
+          "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-md",
           className
         )}
         {...props} 
-      />
+      >
+        {icon && (
+          <div className={cn("flex items-center justify-center", iconClassName)}>
+            {icon}
+          </div>
+        )}
+        
+        {label && (
+          <div className={cn(
+            "flex-1 font-semibold relative text-ellipsis overflow-hidden whitespace-nowrap",
+            labelClassName
+          )}>
+            {label}
+          </div>
+        )}
+        
+        {/* Status badges */}
+        {isProcessing && (
+          <Badge variant="outline" className="text-xs px-2 py-1 bg-blue-50 text-blue-700">
+            Processing...
+          </Badge>
+        )}
+        {isCompleted && (
+          <Badge variant="outline" className="text-xs px-2 py-1 bg-green-50 text-green-700">
+            Complete
+          </Badge>
+        )}
+        {hasError && (
+          <Badge variant="outline" className="text-xs px-2 py-1 bg-red-50 text-red-700">
+            Error
+          </Badge>
+        )}
+
+        {menuItems && (
+          <NodeHeaderMenuAction label="Options">
+            {menuItems}
+            <NodeHeaderDeleteAction />
+          </NodeHeaderMenuAction>
+        )}
+        
+        {props.children}
+      </header>
     );
   }
 );

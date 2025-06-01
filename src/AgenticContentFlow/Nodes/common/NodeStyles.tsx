@@ -7,6 +7,10 @@ export interface BaseNodeProps {
   color?: string;
   selected?: boolean;
   isExpanded?: boolean;
+  /** Whether the node is currently processing */
+  processing?: boolean;
+  /** Processing state for visual feedback */
+  processState?: 'idle' | 'processing' | 'completed' | 'error';
   className?: string;
   children?: ReactNode;
   style?: React.CSSProperties;
@@ -20,26 +24,95 @@ interface SelectableProps {
 
 // Base component for all node containers using Tailwind CSS
 export function BaseNodeContainer({
-
   color,
   selected,
+  processing,
+  processState = 'idle',
   className,
   children,
   style,
   ref,
   ...props
 }: BaseNodeProps) {
+  const [borderColorAfterProcess, setBorderColorAfterProcess] = React.useState<string | undefined>('#000000'); // Start with black
+  
+  // Update border color when process state changes, not during render
+  React.useEffect(() => {
+    if (processState === 'processing' || processing) {
+      setBorderColorAfterProcess('#2a8af6');
+    } else if (processState === 'completed') {
+      setBorderColorAfterProcess('#04a46e');
+    } else if (processState === 'error') {
+      setBorderColorAfterProcess('#ef4444');
+    }
+    // Don't reset to black when going back to idle - persist the last process color
+  }, [processState, processing]);
+
+  // Generate gradient border styles based on processing state
+  const getProcessingStyles = () => {
+    const baseStyle = style || {};
+    
+    if (processState === 'processing' || processing) {
+      return {
+        ...baseStyle,
+        border: '3px solid transparent',
+        background: `
+          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
+          linear-gradient(var(--angle, 0deg), #ae53ba, #2a8af6, #ae53ba) border-box
+        `,
+        animation: 'processingRotate 2s linear infinite',
+      };
+    }
+    
+    if (processState === 'completed') {
+      return {
+        ...baseStyle,
+        border: '3px solid transparent',
+        background: `
+          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
+          linear-gradient(var(--angle, 0deg), #04a46e, rgb(212, 223, 87),rgb(56, 161, 177)) border-box
+        `,
+        animation: 'processingRotate 2s linear infinite',
+      };
+    }
+    
+    if (processState === 'error') {
+      return {
+        ...baseStyle,
+        border: '3px solid transparent',
+        background: `
+          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
+          linear-gradient(45deg, #ef4444, #f87171) border-box
+        `,
+        animation: 'errorPulse 1s ease-out',
+      };
+    }
+    
+    // Default state - use persisted border color (starts as black, then persists last process color)
+    return {
+      ...baseStyle,
+      border: `3px solid ${borderColorAfterProcess}`,
+      backgroundColor: baseStyle.backgroundColor || 'var(--color-background)',
+      // Add glow effect when selected
+      ...(selected && {
+        boxShadow: `0 0 15px 3px ${borderColorAfterProcess}40, 0 0 25px 6px ${borderColorAfterProcess}20`
+      })
+    };
+  };
+
+  const finalStyle = getProcessingStyles();
+  const hasProcessingEffect = processState !== 'idle' || processing;
+
   return (
     <div 
       className={cn(
-        "relative rounded-lg w-full h-full min-w-[300px] min-h-[150px] transition-all",
-        selected ? `border-[${color}]` : "border-divider", 
-        "text-foreground",
+        "relative rounded-lg w-full h-full transition-all",
+        // Only apply min dimensions if not processing (to avoid size conflicts)
+    
         className
       )}
       style={{
-        ...style,
-        borderColor: selected ? color : undefined
+        ...finalStyle
       }}
       ref={ref as React.Ref<HTMLDivElement>}
       {...props}
