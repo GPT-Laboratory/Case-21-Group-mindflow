@@ -30,5 +30,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "plans/engine", "plans/ui"]
+  "include": ["src", "plans/trashcan/engine", "plans/trashcan/ui"]
 }
