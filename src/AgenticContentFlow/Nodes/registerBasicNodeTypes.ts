@@ -25,6 +25,8 @@ import { StatisticsNode } from './StatisticsNode/StatisticsNode';
 import { createStatisticsNodeTemplate } from "./StatisticsNode/createStatisticsNodeTemplate";
 import RestNode from "./RestNode/RestNode";
 import { createRestNodeTemplate } from "./RestNode/createRestNodeTemplate";
+import { LogicalNode } from "./LogicalNode/LogicalNode";
+import { createLogicalNodeTemplate } from "./LogicalNode/createLogicalNodeTemplate";
 
 // Import handle type registration
 import { ensureHandleTypesRegistered } from "../Handles/registerBasicHandleTypes";
@@ -49,11 +51,12 @@ export function ensureNodeTypesRegistered(): void {
   // Register new node types
   registerNodeType("datanode", DataNode, createDataNodeTemplate, true);
   registerNodeType("pagenode", PageNode, createPageNodeTemplate, true);
-  registerNodeType("contentnode", ContentNode, createContentNodeTemplate, true);
   registerNodeType("conditionalnode", ConditionalNode, createConditionalNodeTemplate);
   registerNodeType("invisiblenode", InvisibleNode, createInvisibleNodeTemplate, true);
   registerNodeType("statisticsnode", StatisticsNode, createStatisticsNodeTemplate, true);
+  registerNodeType("contentnode", ContentNode, createContentNodeTemplate, false);
   registerNodeType("restnode", RestNode, createRestNodeTemplate, false);
+  registerNodeType("logicalnode", LogicalNode, createLogicalNodeTemplate, false);
 
   // Register handle type configurations
   ensureHandleTypesRegistered();
@@ -75,7 +78,8 @@ export function ensureNodeTypesRegistered(): void {
         "conditionalnode",
         "invisiblenode",
         "statisticsnode",
-        "restnode"
+        "restnode",
+        "logicalnode"
       ] 
     }
   );
