@@ -15,13 +15,40 @@ interface FormFieldProps {
 }
 
 export const FormField: React.FC<FormFieldProps> = ({ fieldKey, config, value, onChange }) => {
+  // Helper function to format object values for textarea display
+  const formatValueForDisplay = (val: any, fieldType: string): string => {
+    if (fieldType === 'textarea' && val && typeof val === 'object') {
+      try {
+        return JSON.stringify(val, null, 2);
+      } catch (error) {
+        console.warn('Error stringifying object value:', error);
+        return '';
+      }
+    }
+    return val || config.defaultValue || '';
+  };
+
+  // Helper function to parse textarea values back to objects when needed
+  const parseTextareaValue = (textValue: string): any => {
+    // If the placeholder suggests JSON format, try to parse it
+    if (config.placeholder && config.placeholder.includes('{')) {
+      try {
+        return JSON.parse(textValue);
+      } catch (error) {
+        // If parsing fails, return as string
+        return textValue;
+      }
+    }
+    return textValue;
+  };
+
   const renderField = () => {
     switch (config.fieldType) {
       case 'text':
         return (
           <Input
             type="text"
-            value={value || config.defaultValue || ''}
+            value={formatValueForDisplay(value, 'text')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={config.placeholder}
             required={config.required}
@@ -31,8 +58,8 @@ export const FormField: React.FC<FormFieldProps> = ({ fieldKey, config, value, o
       case 'textarea':
         return (
           <Textarea
-            value={value || config.defaultValue || ''}
-            onChange={(e) => onChange(e.target.value)}
+            value={formatValueForDisplay(value, 'textarea')}
+            onChange={(e) => onChange(parseTextareaValue(e.target.value))}
             placeholder={config.placeholder}
             rows={4}
           />
@@ -80,7 +107,7 @@ export const FormField: React.FC<FormFieldProps> = ({ fieldKey, config, value, o
         return (
           <Input
             type="text"
-            value={value || config.defaultValue || ''}
+            value={formatValueForDisplay(value, 'text')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={config.placeholder}
           />
