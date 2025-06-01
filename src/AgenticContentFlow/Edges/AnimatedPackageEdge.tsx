@@ -1,5 +1,8 @@
 /** @format */
 import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
+import { useProcessContext } from '../Process/ProcessContext';
+import { useEffect, useRef, useState } from 'react';
+import { Package, PackageOpen } from 'lucide-react';
 
 export function AnimatedPackageEdge({
   id,
@@ -9,8 +12,97 @@ export function AnimatedPackageEdge({
   targetY,
   sourcePosition,
   targetPosition,
-  markerEnd,
+  data,
+  source,
 }: EdgeProps) {
+  const processContext = useProcessContext();
+  const dataFlow = processContext.getEdgeDataFlow(id);
+  const sourceProcessState = processContext.getNodeProcessState(source!);
+  
+  const animationRef = useRef<SVGAnimateMotionElement>(null);
+  const [animationKey, setAnimationKey] = useState(0);
+  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+  const [isAnimationStarted, setIsAnimationStarted] = useState(false);
+  const [lifecyclePhase, setLifecyclePhase] = useState<'black' | 'blue' | 'green'>('black');
+  const [hasCompletedOnce, setHasCompletedOnce] = useState(false);
+
+  // Determine the lifecycle phase based on source node process state
+  useEffect(() => {
+    if (sourceProcessState.status === 'idle') {
+      // Only reset to beginning if we're starting fresh (not coming from a completed state)
+      if (!hasCompletedOnce) {
+        setLifecyclePhase('black');
+        setIsAnimationComplete(false);
+        setIsAnimationStarted(false);
+      } else {
+        // Stay in completed state if we've finished before
+        setLifecyclePhase('green');
+      }
+    } else if (sourceProcessState.status === 'processing') {
+      setLifecyclePhase('blue');
+      setIsAnimationComplete(false);
+      setIsAnimationStarted(false);
+      // Reset the completion flag when starting a new process
+      setHasCompletedOnce(false);
+    } else if (sourceProcessState.status === 'completed') {
+      setLifecyclePhase('green');
+      setHasCompletedOnce(true);
+    } else if (sourceProcessState.status === 'error') {
+      // Reset everything on error
+      setLifecyclePhase('black');
+      setIsAnimationComplete(false);
+      setIsAnimationStarted(false);
+      setHasCompletedOnce(false);
+      setAnimationKey(prev => prev + 1);
+    }
+  }, [sourceProcessState.status, hasCompletedOnce]);
+
+  // Start animation only during green phase and only if not already completed
+  const shouldAnimate = lifecyclePhase === 'green' && !isAnimationComplete;
+
+  // Reset animation when process starts again (goes from any state back to processing)
+  useEffect(() => {
+    if (sourceProcessState.status === 'processing' && lifecyclePhase === 'blue') {
+      setAnimationKey(prev => prev + 1);
+      setIsAnimationComplete(false);
+      setIsAnimationStarted(false);
+    }
+  }, [sourceProcessState.status, lifecyclePhase]);
+
+  // Start animation when entering green phase immediately
+  useEffect(() => {
+    if (shouldAnimate && !isAnimationStarted) {
+      setIsAnimationStarted(true);
+      // Use requestAnimationFrame to ensure DOM is ready before starting animation
+      requestAnimationFrame(() => {
+        if (animationRef.current) {
+          try {
+            animationRef.current.beginElement();
+          } catch (error) {
+            // Fallback if beginElement fails
+            console.warn('Animation restart failed:', error);
+          }
+        }
+      });
+    }
+  }, [shouldAnimate, isAnimationStarted, animationKey]);
+
+  // Handle animation end event
+  useEffect(() => {
+    const animationElement = animationRef.current;
+    if (!animationElement) return;
+
+    const handleAnimationEnd = () => {
+      setIsAnimationComplete(true);
+      setIsAnimationStarted(false);
+    };
+
+    animationElement.addEventListener('endEvent', handleAnimationEnd);
+    return () => {
+      animationElement.removeEventListener('endEvent', handleAnimationEnd);
+    };
+  }, [animationKey]);
+
   const [edgePath] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -20,13 +112,42 @@ export function AnimatedPackageEdge({
     targetPosition,
   });
 
-  // Define a solid edge style
+  // Define colors based on lifecycle phase
+  const getColors = () => {
+    switch (lifecyclePhase) {
+      case 'black':
+        return {
+          edgeColor: '#000000',
+          packageColor: '#000000',
+          strokeWidth: 2,
+        };
+      case 'blue':
+        return {
+          edgeColor: '#3b82f6',
+          packageColor: '#3b82f6',
+          strokeWidth: 3,
+        };
+      case 'green':
+        return {
+          edgeColor: '#10b981',
+          packageColor: '#10b981',
+          strokeWidth: 3,
+        };
+      default:
+        return {
+          edgeColor: '#000000',
+          packageColor: '#000000',
+          strokeWidth: 2,
+        };
+    }
+  };
+
+  const colors = getColors();
+
   const edgeStyle = {
-    stroke: 'black',
-    strokeWidth: 2,
+    stroke: colors.edgeColor,
+    strokeWidth: colors.strokeWidth,
     fill: 'none',
-    animation: 'none',
-    border: 'none',
   };
 
   return (
@@ -35,7 +156,6 @@ export function AnimatedPackageEdge({
         id={id} 
         path={edgePath} 
         style={edgeStyle}
-        markerEnd={markerEnd}
       />
       <svg
         style={{
@@ -47,22 +167,57 @@ export function AnimatedPackageEdge({
         }}
       >
         <path id={`path-${id}`} d={edgePath} style={{ visibility: 'hidden' }} />
-        <g transform="translate(-10, -10)">
-          <path
-            d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z M3.29 7 12 12l8.71-5M12 22V12"
-            fill="white"
-            stroke="black"
-            strokeWidth="2"
-            strokeLinecap="butt"
-            strokeLinejoin="miter"
-          >
-            <animateMotion
-              dur="2s"
-              repeatCount="indefinite"
-              path={edgePath}
-            />
-          </path>
-        </g>
+        
+        {/* Static package at source - visible in blue/green phases, hidden during/after animation */}
+        {lifecyclePhase !== 'black' && !isAnimationStarted && !(hasCompletedOnce && isAnimationComplete) && (
+          <g transform={`translate(${sourceX - 12}, ${sourceY - 12})`}>
+            {lifecyclePhase === 'blue' ? (
+              <g>
+                {/* White background circle for the open package */}
+                <circle 
+                  cx="12" 
+                  cy="12" 
+                  r="10" 
+                  fill="white" 
+                  stroke="none"
+                />
+                <PackageOpen 
+                  size={24} 
+                  stroke={colors.packageColor} 
+                  strokeWidth="2"
+                />
+              </g>
+            ) : (
+              <Package 
+                size={24} 
+                stroke={colors.packageColor} 
+                fill="white"
+                strokeWidth="2"
+              />
+            )}
+          </g>
+        )}
+        
+        {/* Animated package - only during animation */}
+        {isAnimationStarted && !isAnimationComplete && (
+          <g transform="translate(-12, -12)">
+            <Package 
+              size={24} 
+              stroke={colors.packageColor} 
+              fill="white"
+              strokeWidth="2"
+            >
+              <animateMotion
+                ref={animationRef}
+                dur="2s"
+                repeatCount="1"
+                path={edgePath}
+                begin="indefinite"
+                fill="freeze"
+              />
+            </Package>
+          </g>
+        )}
       </svg>
     </>
   );
