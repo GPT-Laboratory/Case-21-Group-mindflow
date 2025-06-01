@@ -2,23 +2,25 @@ import { Node, Edge } from '@xyflow/react';
 
 export const apiFlowNodesData: Node[] = [
   {
-    id: 'config-data',
-    type: 'datanode',
-    position: { x: 100, y: 100 },
+    id: 'container-course-lr-lms', // ID for the container
+    type: 'invisiblenode',
+    position: { x: 0, y: 0 }, // Initial position doesn't matter, layout will set it
     data: {
-      label: 'API Configuration',
-      details: 'Contains API configuration and parameters',
-      subject: 'data',
-      nodeLevel: 'basic',
-      expanded: true,
-      depth: 0,
-      isParent: false
+      label: 'LR Container',
+      // *** Set data property to tell getContainerLayoutDirection this should be LR ***
+      layoutDirection: 'LR', // Your getContainerLayoutDirection helper should look for this
+      isContainer: true, // Or use a type check in isContainer
+      expanded: true
+
     },
+    style: { width: 250, height: 100 }, // Container needs initial dimensions for rendering
   },
   {
     id: 'api-request',
     type: 'restnode',
-    position: { x: 400, y: 100 },
+    parentId: 'container-course-lr-lms', // Set the parentId to the container
+    extent: 'parent',
+    position: { x: 100, y: 100 },
     data: {
       label: 'Get Posts',
       details: 'Fetch posts from JSONPlaceholder API',
@@ -38,59 +40,112 @@ export const apiFlowNodesData: Node[] = [
     },
   },
   {
-    id: 'display-posts',
-    type: 'contentnode',
-    position: { x: 700, y: 100 },
+    id: 'logic-processor',
+    type: 'logicalnode',
+    position: { x: 400, y: 100 },
+    parentId: 'container-course-lr-lms', // Set the parentId to the container
+    extent: 'parent',
     data: {
-      label: 'Posts Display',
-      details: 'Display fetched posts in a formatted view',
-      subject: 'view',
-      nodeLevel: 'basic',
-      expanded: true,
-      depth: 0,
-      isParent: false
-    },
-  },
-  {
-    id: 'stats-node',
-    type: 'statisticsnode',
-    position: { x: 400, y: 300 },
-    data: {
-      label: 'API Analytics',
-      details: 'Track API response times and success rates',
-      subject: 'analytics',
-      nodeLevel: 'advanced',
+      label: 'Filter Active Posts',
+      details: 'Filter posts based on criteria and transform data',
+      subject: 'logic',
+      nodeLevel: 'intermediate',
       expanded: true,
       depth: 0,
       isParent: false,
-      metrics: 'Response Time: 150ms\nSuccess Rate: 99%\nTotal Requests: 1250'
+      operation: 'filter',
+      condition: 'post.userId <= 5 && post.title.length > 10',
+      inputSchema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            userId: { type: 'number' },
+            title: { type: 'string' },
+            body: { type: 'string' }
+          }
+        }
+      },
+      outputSchema: {
+        type: 'object',
+        properties: {
+          filteredPosts: { type: 'array' },
+          totalCount: { type: 'number' }
+        }
+      },
+      rules: [
+        {
+          name: 'userFilter',
+          expression: 'post.userId <= 5',
+          description: 'Only include posts from users 1-5'
+        },
+        {
+          name: 'titleLength',
+          expression: 'post.title.length > 10',
+          description: 'Only include posts with meaningful titles'
+        }
+      ]
     },
+  },
+  {
+    id: 'content-display',
+    type: 'contentnode',
+    parentId: 'container-course-lr-lms',
+    extent: 'parent',
+    position: { x: 700, y: 100 },
+    data: {
+      label: 'Post List',
+      details: 'Display filtered posts as a list component',
+      subject: 'visualization',
+      nodeLevel: 'basic',
+      expanded: true,
+      depth: 0,
+      isParent: false,
+      displayType: 'list',
+      listConfig: {
+        itemTemplate: {
+          title: '{{title}}',
+          subtitle: '{{body}}',
+          metadata: 'User: {{userId}} | ID: {{id}}'
+        },
+        maxItems: 10,
+        showSearch: true,
+        sortBy: 'title'
+      },
+      // Expected input schema for UI component
+      expectedSchema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', required: true },
+            title: { type: 'string', required: true },
+            body: { type: 'string', required: true },
+            userId: { type: 'number', required: true }
+          }
+        }
+      }
+    }
   }
 ];
 
 export const apiFlowEdgesData: Edge[] = [
   {
-    id: 'edge-config-api',
-    source: 'config-data',
-    target: 'api-request',
-    type: 'default',
+    id: 'edge-api-logic',
+    source: 'api-request',
+    target: 'logic-processor',
+    type: 'package',
     sourceHandle: 'right',
     targetHandle: 'left'
   },
+  // Add edge connecting logic to content
   {
-    id: 'edge-api-display',
-    source: 'api-request',
-    target: 'display-posts',
-    type: 'default',
+    id: 'edge-logic-content',
+    source: 'logic-processor',
+    target: 'content-display',
+    type: 'package',
     sourceHandle: 'right',
-    targetHandle: 'left'
-  },
-  {
-    id: 'edge-api-stats',
-    source: 'api-request',
-    target: 'stats-node',
-    type: 'default',
-    sourceHandle: 'bottom',
     targetHandle: 'left'
   }
 ];
