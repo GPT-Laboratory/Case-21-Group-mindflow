@@ -12,11 +12,9 @@ export function AnimatedPackageEdge({
   targetY,
   sourcePosition,
   targetPosition,
-  data,
   source,
 }: EdgeProps) {
   const processContext = useProcessContext();
-  const dataFlow = processContext.getEdgeDataFlow(id);
   const sourceProcessState = processContext.getNodeProcessState(source!);
   
   const animationRef = useRef<SVGAnimateMotionElement>(null);
@@ -58,7 +56,7 @@ export function AnimatedPackageEdge({
   }, [sourceProcessState.status, hasCompletedOnce]);
 
   // Start animation only during green phase and only if not already completed
-  const shouldAnimate = lifecyclePhase === 'green' && !isAnimationComplete;
+  const shouldAnimate = lifecyclePhase === 'green' && !isAnimationComplete && hasCompletedOnce;
 
   // Reset animation when process starts again (goes from any state back to processing)
   useEffect(() => {
@@ -69,21 +67,30 @@ export function AnimatedPackageEdge({
     }
   }, [sourceProcessState.status, lifecyclePhase]);
 
-  // Start animation when entering green phase immediately
+  // Start animation when entering green phase with proper timing
   useEffect(() => {
     if (shouldAnimate && !isAnimationStarted) {
-      setIsAnimationStarted(true);
-      // Use requestAnimationFrame to ensure DOM is ready before starting animation
-      requestAnimationFrame(() => {
-        if (animationRef.current) {
-          try {
-            animationRef.current.beginElement();
-          } catch (error) {
-            // Fallback if beginElement fails
-            console.warn('Animation restart failed:', error);
-          }
-        }
-      });
+      // Add a small delay to ensure DOM is fully updated and edge path is stable
+      const timeoutId = setTimeout(() => {
+        setIsAnimationStarted(true);
+        // Use requestAnimationFrame twice to ensure all DOM updates are complete
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (animationRef.current) {
+              try {
+                animationRef.current.beginElement();
+              } catch (error) {
+                // Fallback if beginElement fails
+                console.warn('Animation restart failed:', error);
+                // Reset animation state on failure
+                setIsAnimationStarted(false);
+              }
+            }
+          });
+        });
+      }, 50); // Small delay to ensure stability
+
+      return () => clearTimeout(timeoutId);
     }
   }, [shouldAnimate, isAnimationStarted, animationKey]);
 
@@ -97,9 +104,17 @@ export function AnimatedPackageEdge({
       setIsAnimationStarted(false);
     };
 
+    const handleAnimationBegin = () => {
+      // Ensure animation started flag is set
+      setIsAnimationStarted(true);
+    };
+
     animationElement.addEventListener('endEvent', handleAnimationEnd);
+    animationElement.addEventListener('beginEvent', handleAnimationBegin);
+    
     return () => {
       animationElement.removeEventListener('endEvent', handleAnimationEnd);
+      animationElement.removeEventListener('beginEvent', handleAnimationBegin);
     };
   }, [animationKey]);
 
@@ -198,23 +213,28 @@ export function AnimatedPackageEdge({
           </g>
         )}
         
-        {/* Animated package - only during animation */}
+        {/* Animated package - only during animation, positioned relative to the path start */}
         {isAnimationStarted && !isAnimationComplete && (
-          <g transform="translate(-12, -12)">
+          <g>
             <Package 
               size={24} 
               stroke={colors.packageColor} 
               fill="white"
               strokeWidth="2"
+              transform="translate(-12, -12)"
             >
               <animateMotion
                 ref={animationRef}
                 dur="2s"
                 repeatCount="1"
-                path={edgePath}
                 begin="indefinite"
                 fill="freeze"
-              />
+                rotate="0"
+                keyTimes="0;1"
+                keyPoints="0;1"
+              >
+                <mpath href={`#path-${id}`} />
+              </animateMotion>
             </Package>
           </g>
         )}
