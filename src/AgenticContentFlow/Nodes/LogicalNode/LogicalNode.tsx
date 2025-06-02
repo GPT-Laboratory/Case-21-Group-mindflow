@@ -1,14 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { NodeProps, useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
+import { NodeProps } from '@xyflow/react';
 import { Settings } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import ConnectionHandles from '../common/ConnectionHandles';
-import { NodeHeader } from '../common/NodeHeader';
-import CornerResizer from '../common/CornerResizer';
-import { BaseNodeContainer } from '../common/NodeStyles';
-import NodePlayControls from '../common/NodePlayControls';
 import { useNodeProcess } from '../../Process/useNodeProcess';
 
 // DataSchemaManager integration
@@ -17,17 +10,17 @@ import { dataSchemaManager } from '../../Process/DataSchemaManager';
 // Local utilities
 import { getConditionParts } from './utils/conditionUtils';
 
+// Shared CellNode component
+import { CellNode, CellNodeConfig } from '../common/CellNode';
+
 /**
  * LogicalNode Component
  * 
  * A node for processing data with logical operations like filtering, transforming, 
  * aggregating, or conditional routing. It's a more general version of conditional nodes.
  */
-export const LogicalNode: React.FC<NodeProps> = ({ id, data, selected }) => {
-    const { getNode } = useReactFlow();
-    const updateNodeInternals = useUpdateNodeInternals();
-    const nodeInFlow = getNode(id);
-
+export const LogicalNode: React.FC<NodeProps> = (props) => {
+    const { id, data } = props;
     // Use the process system
     const { 
         processState, 
@@ -50,40 +43,10 @@ export const LogicalNode: React.FC<NodeProps> = ({ id, data, selected }) => {
     const [loopInterval, setLoopInterval] = useState(5);
     const loopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Subscribe to schema updates from upstream nodes
-    useEffect(() => {
-        const handleSchemaUpdate = (nodeId: string) => {
-            if (nodeId === id) {
-                // Force re-render when schema updates
-                updateNodeInternals(id);
-            }
-        };
-
-        // Subscribe to schema changes
-        dataSchemaManager.addListener(handleSchemaUpdate);
-
-        return () => {
-            dataSchemaManager.removeListener(handleSchemaUpdate);
-        };
-    }, [id, updateNodeInternals]);
-
-    const color = "white";
-
     // Type-safe data extraction
     const nodeLabel = typeof data?.label === 'string' ? data.label : 'Logic';
     const operation = typeof data?.operation === 'string' ? data.operation : 'filter';
     const condition = typeof data?.condition === 'string' ? data.condition : '';
-
-    if (!nodeInFlow) {
-        console.error(`Node with id ${id} not found in store.`);
-        return null;
-    }
-
-    // Square dimensions similar to REST node
-    const nodeDimensions = {
-        width: 200,
-        height: 200,
-    };
 
     // Enhanced processing with schema propagation
     const handleTestLogic = async () => {
@@ -222,88 +185,39 @@ export const LogicalNode: React.FC<NodeProps> = ({ id, data, selected }) => {
 
     const operationColor = getOperationColor(operation);
 
+    // Configuration for the CellNode
+    const cellNodeConfig: CellNodeConfig = {
+        nodeType: "logicalnode",
+        icon: <Settings />,
+        headerIcon: <Settings className="w-4 h-4 stroke-purple-700" />,
+        headerGradient: "bg-gradient-to-r from-purple-50 to-purple-100",
+        selectedColor: "purple",
+        badge: {
+            text: operation.toUpperCase(),
+            colorClasses: operationColor
+        },
+        additionalContent: (() => {
+            const { simplified } = getConditionParts(condition);
+            return simplified || 'No logic configured';
+        })(),
+        menuItems: logicalNodeMenuItems
+    };
+
     return (
-        <>
-            <CornerResizer
-                minHeight={nodeDimensions.height}
-                minWidth={nodeDimensions.width}
-                nodeToResize={nodeInFlow}
-                canResize={selected}
-                color={color}
-            />
-
-            <BaseNodeContainer
-                onTransitionEnd={() => updateNodeInternals(id)}
-                selected={selected}
-                color={selected ? "purple" : color}
-                processing={isProcessing}
-                processState={processState.status}
-                className={cn(
-                    "w-full h-full flex flex-col select-none transition-all duration-200 ease-in-out",
-                    "rounded-lg shadow-lg bg-white",
-                    "!min-w-0 !min-h-0"
-                )}
-                style={{
-                    width: nodeInFlow?.width || nodeDimensions.width,
-                    height: nodeInFlow?.height || nodeDimensions.height,
-                }}
-            >
-                <ConnectionHandles 
-                    nodeType="logicalnode"
-                    color={color}
-                />
-
-                <NodeHeader 
-                    className={cn("dragHandle", "bg-gradient-to-r from-purple-50 to-purple-100")}
-                    icon={<Settings className="w-4 h-4 stroke-purple-700" />}
-                    label={nodeLabel}
-                    isProcessing={isProcessing}
-                    isCompleted={isCompleted}
-                    hasError={hasError}
-                    menuItems={logicalNodeMenuItems}
-                />
-
-                <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
-                    <div className="flex items-center justify-center">
-                        <div className={cn(
-                            "w-12 h-12 rounded-lg flex items-center justify-center transition-all",
-                            isProcessing ? "bg-blue-100 animate-pulse" : "bg-purple-100",
-                            hasError ? "bg-red-100" : "",
-                            isCompleted ? "bg-green-100" : ""
-                        )}>
-                            <Settings className={cn(
-                                "w-6 h-6 transition-all",
-                                isProcessing ? "text-blue-600 animate-spin" : "text-purple-600",
-                                hasError ? "text-red-600" : "",
-                                isCompleted ? "text-green-600" : ""
-                            )} />
-                        </div>
-                    </div>
-                    
-                    <div className="text-center text-sm text-slate-700 leading-relaxed px-1">
-                        <Badge variant="outline" className={cn("text-xs px-2 py-1 m-1 font-mono", operationColor)}>
-                            {operation.toUpperCase()}
-                        </Badge>
-                        {(() => {
-                            const { simplified } = getConditionParts(condition);
-                            return simplified || 'No logic configured';
-                        })()}
-                    </div>
-                    
-                    {/* Play Controls replacing the status display */}
-                    <NodePlayControls
-                        isProcessing={isProcessing}
-                        isLooping={isLooping}
-                        loopInterval={loopInterval}
-                        onPlay={handleTestLogic}
-                        onStop={handleStop}
-                        onLoopToggle={handleLoopToggle}
-                        onLoopIntervalChange={handleLoopIntervalChange}
-                        className="mt-1"
-                    />
-                </div>
-            </BaseNodeContainer>
-        </>
+        <CellNode
+            {...props}
+            config={cellNodeConfig}
+            label={nodeLabel}
+            isProcessing={isProcessing}
+            isCompleted={isCompleted}
+            hasError={hasError}
+            onPlay={handleTestLogic}
+            onStop={handleStop}
+            isLooping={isLooping}
+            loopInterval={loopInterval}
+            onLoopToggle={handleLoopToggle}
+            onLoopIntervalChange={handleLoopIntervalChange}
+        />
     );
 };
 
