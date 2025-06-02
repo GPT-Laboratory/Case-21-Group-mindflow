@@ -1,16 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NodeProps } from '@xyflow/react';
-import { useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
-import ConnectionHandles from '../common/ConnectionHandles';
-import { NodeHeader } from '../common/NodeHeader';
-import CornerResizer from '../common/CornerResizer';
-import { BaseNodeContainer } from '../common/NodeStyles';
-import NodePlayControls from '../common/NodePlayControls';
 import { useNodeProcess } from '../../Process/useNodeProcess';
 import { Globe2 } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 // DataSchemaManager integration
 import { dataSchemaManager, JSONSchema } from '../../Process/DataSchemaManager';
@@ -21,20 +13,20 @@ import { getMethodColor } from './utils/methodUtils';
 import { useFavicon } from './hooks/useFavicon';
 import { DomainIcon } from './components/DomainIcon';
 
+// Shared CellNode component
+import { CellNode, CellNodeConfig } from '../common/CellNode';
+
 /**
  * REST Node Component
  * 
  * Represents a REST API endpoint configuration and execution.
  * Non-collapsible node that shows HTTP method prominently.
  */
-export const RestNode: React.FC<NodeProps> = ({ id, data, selected }) => {
-    const { getNode } = useReactFlow();
-    const updateNodeInternals = useUpdateNodeInternals();
-    const nodeInFlow = getNode(id);
-
+export const RestNode: React.FC<NodeProps> = (props) => {
+    const { id, data } = props;
+    
     // Use the process system
     const { 
-        processState, 
         isProcessing, 
         isCompleted, 
         hasError,
@@ -52,28 +44,14 @@ export const RestNode: React.FC<NodeProps> = ({ id, data, selected }) => {
     const [loopInterval, setLoopInterval] = useState(5);
     const loopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const color = "white";
-
     // Type-safe data extraction
     const nodeLabel = typeof data?.label === 'string' ? data.label : 'REST API';
     const method = typeof data?.method === 'string' ? data.method : 'GET';
     const url = typeof data?.url === 'string' ? data.url : '';
-    const lastResponse = data?.lastResponse as { status?: number } | undefined;
 
     // Extract URL parts and load favicon
     const { domain, pathWithQuery } = getUrlParts(url);
     const favicon = useFavicon(domain);
-
-    if (!nodeInFlow) {
-        console.error(`Node with id ${id} not found in store.`);
-        return null;
-    }
-
-    // Square dimensions
-    const nodeDimensions = {
-        width: 200,
-        height: 200,
-    };
 
     // Enhanced API analysis with schema propagation
     const handleAnalyzeEndpoint = async () => {
@@ -181,79 +159,36 @@ export const RestNode: React.FC<NodeProps> = ({ id, data, selected }) => {
 
     const methodColor = getMethodColor(method);
 
+    // Configuration for the CellNode
+    const cellNodeConfig: CellNodeConfig = {
+        nodeType: "restnode",
+        icon: <DomainIcon domain={domain} favicon={favicon} />,
+        headerIcon: <Globe2 className="w-6 h-6" />,
+        headerGradient: "bg-gradient-to-r from-blue-50 to-blue-200",
+        selectedColor: "blue",
+        badge: {
+            text: method,
+            colorClasses: methodColor
+        },
+        additionalContent: pathWithQuery || 'No endpoint configured',
+        menuItems: restNodeMenuItems
+    };
+
     return (
-        <>
-            <CornerResizer
-                minHeight={nodeDimensions.height}
-                minWidth={nodeDimensions.width}
-                nodeToResize={nodeInFlow}
-                canResize={selected}
-                color={color}
-            />
-
-            <BaseNodeContainer
-                onTransitionEnd={() => updateNodeInternals(id)}
-                selected={selected}
-                color={selected ? "blue" : color}
-                processing={isProcessing}
-                processState={processState.status}
-                className={cn(
-                    "w-full h-full flex flex-col select-none transition-all duration-200 ease-in-out",
-                    "rounded-lg shadow-lg bg-white",
-                    "!min-w-0 !min-h-0"
-                )}
-                style={{
-                    width: nodeInFlow?.width || nodeDimensions.width,
-                    height: nodeInFlow?.height || nodeDimensions.height,
-                }}
-            >
-                <ConnectionHandles 
-                    nodeType="restnode"
-                    color={color}
-                />
-
-                <NodeHeader 
-                    className={cn("dragHandle", "bg-gradient-to-r from-blue-50 to-blue-200")}
-                    icon={
-                        <Globe2
-                            className="w-6 h-6"
-                        />
-                    }
-                    label={nodeLabel}
-                    isProcessing={isProcessing}
-                    isCompleted={isCompleted}
-                    hasError={hasError}
-                    menuItems={restNodeMenuItems}
-                >
-                </NodeHeader>
-
-                <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
-                    {/* Large Domain Icon */}
-                    <div className="flex items-center justify-center">
-                        <DomainIcon domain={domain} favicon={favicon} />
-                    </div>
-                    {/* Path with Query */}
-                    <div className="text-center text-sm font-mono text-slate-700 leading-relaxed px-2 ">
-                    <Badge variant="outline" className={cn("text-xs px-2 py-1 m-1 font-mono", methodColor)}>
-                        {method} 
-                    </Badge>
-                        { pathWithQuery || 'No endpoint configured'}
-                    </div>
-                    
-                    {/* Play Controls replacing the status display */}
-                    <NodePlayControls
-                        isProcessing={isProcessing}
-                        isLooping={isLooping}
-                        loopInterval={loopInterval}
-                        onPlay={handleTestConnection}
-                        onStop={handleStop}
-                        onLoopToggle={handleLoopToggle}
-                        onLoopIntervalChange={handleLoopIntervalChange}
-                        className="mt-1"
-                    />
-                </div>
-            </BaseNodeContainer>
-        </>
+        <CellNode
+            {...props}
+            config={cellNodeConfig}
+            label={nodeLabel}
+            isProcessing={isProcessing}
+            isCompleted={isCompleted}
+            hasError={hasError}
+            onPlay={handleTestConnection}
+            onStop={handleStop}
+            isLooping={isLooping}
+            loopInterval={loopInterval}
+            onLoopToggle={handleLoopToggle}
+            onLoopIntervalChange={handleLoopIntervalChange}
+        />
     );
 };
 
