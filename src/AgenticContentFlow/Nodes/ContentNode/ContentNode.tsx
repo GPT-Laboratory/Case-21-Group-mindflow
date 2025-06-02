@@ -1,15 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { NodeProps, useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
+import { NodeProps } from '@xyflow/react';
 import { Eye } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import ConnectionHandles from '../common/ConnectionHandles';
-import { NodeHeader } from '../common/NodeHeader';
-import CornerResizer from '../common/CornerResizer';
-import { BaseNodeContainer } from '../common/NodeStyles';
-import NodePlayControls from '../common/NodePlayControls';
 import { useNodeProcess } from '../../Process/useNodeProcess';
+
+// Shared CellNode component
+import { CellNode, CellNodeConfig } from '../common/CellNode';
 
 /**
  * Content Node Component
@@ -18,11 +14,9 @@ import { useNodeProcess } from '../../Process/useNodeProcess';
  * like lists, tables, cards. Features reactive data schema and bidirectional 
  * schema communication with upstream nodes.
  */
-export const ContentNode: React.FC<NodeProps> = ({ id, data, selected }) => {
-    const { getNode } = useReactFlow();
-    const updateNodeInternals = useUpdateNodeInternals();
-    const nodeInFlow = getNode(id);
-
+export const ContentNode: React.FC<NodeProps> = (props) => {
+    const { id, data } = props;
+    
     // Use the process system for data handling
     const { 
         processState, 
@@ -45,23 +39,10 @@ export const ContentNode: React.FC<NodeProps> = ({ id, data, selected }) => {
     const [loopInterval, setLoopInterval] = useState(5);
     const loopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    const color = "white";
-
     // Type-safe data extraction
     const nodeLabel = typeof data?.label === 'string' ? data.label : 'Content Display';
     const displayType = typeof data?.displayType === 'string' ? data.displayType : 'list';
     const maxItems = typeof data?.maxItems === 'number' ? data.maxItems : 10;
-
-    if (!nodeInFlow) {
-        console.error(`Node with id ${id} not found in store.`);
-        return null;
-    }
-
-    // Fixed square dimensions like LogicalNode
-    const nodeDimensions = {
-        width: 200,
-        height: 200,
-    };
 
     // Generate test data based on expected schema
     const generateTestData = () => {
@@ -189,86 +170,35 @@ export const ContentNode: React.FC<NodeProps> = ({ id, data, selected }) => {
 
     const displayTypeColor = getDisplayTypeColor(displayType);
 
+    // Configuration for the CellNode
+    const cellNodeConfig: CellNodeConfig = {
+        nodeType: "contentnode",
+        icon: <Eye />,
+        headerIcon: <Eye className="w-4 h-4 stroke-blue-700" />,
+        headerGradient: "bg-gradient-to-r from-blue-50 to-blue-100",
+        selectedColor: "blue",
+        badge: {
+            text: displayType.toUpperCase(),
+            colorClasses: displayTypeColor
+        },
+        menuItems: contentNodeMenuItems
+    };
+
     return (
-        <>
-            <CornerResizer
-                minHeight={nodeDimensions.height}
-                minWidth={nodeDimensions.width}
-                nodeToResize={nodeInFlow}
-                canResize={selected}
-                color={color}
-            />
-
-            <BaseNodeContainer
-                onTransitionEnd={() => updateNodeInternals(id)}
-                selected={selected}
-                color={selected ? "blue" : color}
-                processing={isProcessing}
-                processState={processState.status}
-                className={cn(
-                    "w-full h-full flex flex-col select-none transition-all duration-200 ease-in-out",
-                    "rounded-lg shadow-lg bg-white",
-                    // Override min dimensions to prevent size conflicts
-                    "!min-w-0 !min-h-0"
-                )}
-                style={{
-                    width: nodeInFlow?.width || nodeDimensions.width,
-                    height: nodeInFlow?.height || nodeDimensions.height,
-                }}
-            >
-                <ConnectionHandles 
-                    nodeType="contentnode"
-                    color={color}
-                />
-
-                <NodeHeader 
-                    className={cn("dragHandle", "bg-gradient-to-r from-blue-50 to-blue-100")}
-                    icon={<Eye className="w-4 h-4 stroke-blue-700" />}
-                    label={nodeLabel}
-                    isProcessing={isProcessing}
-                    isCompleted={isCompleted}
-                    hasError={hasError}
-                    menuItems={contentNodeMenuItems}
-                />
-
-                <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
-                    <div className="flex items-center justify-center">
-                        <div className={cn(
-                            "w-12 h-12 rounded-lg flex items-center justify-center transition-all",
-                            isProcessing ? "bg-blue-100 animate-pulse" : "bg-blue-100",
-                            hasError ? "bg-red-100" : "",
-                            isCompleted ? "bg-green-100" : ""
-                        )}>
-                            <Eye className={cn(
-                                "w-6 h-6 transition-all",
-                                isProcessing ? "text-blue-600 animate-pulse" : "text-blue-600",
-                                hasError ? "text-red-600" : "",
-                                isCompleted ? "text-green-600" : ""
-                            )} />
-                        </div>
-                    </div>
-                    
-                    <div className="text-center text-sm text-slate-700 leading-relaxed px-1">
-                        <Badge variant="outline" className={cn("text-xs px-2 py-1 m-1 font-mono", displayTypeColor)}>
-                            {displayType.toUpperCase()}
-                        </Badge>
-                    
-                    </div>
-                    
-                    {/* Play Controls replacing the status display */}
-                    <NodePlayControls
-                        isProcessing={isProcessing}
-                        isLooping={isLooping}
-                        loopInterval={loopInterval}
-                        onPlay={handleProcessContent}
-                        onStop={handleStop}
-                        onLoopToggle={handleLoopToggle}
-                        onLoopIntervalChange={handleLoopIntervalChange}
-                        className="mt-1"
-                    />
-                </div>
-            </BaseNodeContainer>
-        </>
+        <CellNode
+            {...props}
+            config={cellNodeConfig}
+            label={nodeLabel}
+            isProcessing={isProcessing}
+            isCompleted={isCompleted}
+            hasError={hasError}
+            onPlay={handleProcessContent}
+            onStop={handleStop}
+            isLooping={isLooping}
+            loopInterval={loopInterval}
+            onLoopToggle={handleLoopToggle}
+            onLoopIntervalChange={handleLoopIntervalChange}
+        />
     );
 };
 
