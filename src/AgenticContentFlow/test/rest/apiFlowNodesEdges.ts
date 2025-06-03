@@ -13,7 +13,7 @@ export const apiFlowNodesData: Node[] = [
       expanded: true
 
     },
-    style: { width: 250, height: 100 }, // Container needs initial dimensions for rendering
+    style: { width: 300, height: 100 }, // Container needs initial dimensions for rendering
   },
   {
     id: 'api-request',
@@ -68,10 +68,15 @@ export const apiFlowNodesData: Node[] = [
         }
       },
       outputSchema: {
-        type: 'object',
-        properties: {
-          filteredPosts: { type: 'array' },
-          totalCount: { type: 'number' }
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            userId: { type: 'number' },
+            title: { type: 'string' },
+            body: { type: 'string' }
+          }
         }
       },
       rules: [
@@ -125,8 +130,40 @@ export const apiFlowNodesData: Node[] = [
             userId: { type: 'number', required: true }
           }
         }
-      }
+      },
+      // Enable manual approval mode
+      requiresUserApproval: true,
+      autoApprove: false
     }
+  },
+  {
+    id: 'post-submission',
+    type: 'restnode',
+    parentId: 'container-course-lr-lms',
+    extent: 'parent',
+    position: { x: 1000, y: 100 },
+    data: {
+      label: 'Submit New Post',
+      details: 'Create a new post via JSONPlaceholder API',
+      subject: 'integration',
+      nodeLevel: 'intermediate',
+      expanded: true,
+      depth: 0,
+      isParent: false,
+      method: 'POST',
+      url: 'https://jsonplaceholder.typicode.com/posts',
+      authentication: 'none',
+      timeout: 30,
+      retryAttempts: 3,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: {
+        title: 'New Post Title',
+        body: 'New post content',
+        userId: 1
+      }
+    },
   }
 ];
 
@@ -144,6 +181,15 @@ export const apiFlowEdgesData: Edge[] = [
     id: 'edge-logic-content',
     source: 'logic-processor',
     target: 'content-display',
+    type: 'package',
+    sourceHandle: 'right',
+    targetHandle: 'left'
+  },
+  // Add edge connecting content to post submission
+  {
+    id: 'edge-content-post',
+    source: 'content-display',
+    target: 'post-submission',
     type: 'package',
     sourceHandle: 'right',
     targetHandle: 'left'
