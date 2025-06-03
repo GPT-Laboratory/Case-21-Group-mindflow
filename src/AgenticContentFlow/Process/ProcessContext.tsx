@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useRef, useState } from 'react';
+import React, { createContext, useContext, useCallback, useRef, useState, useMemo } from 'react';
 
 export interface ProcessConfig {
   /** Minimum duration (ms) for animations to remain visible */
@@ -20,28 +20,13 @@ export interface ProcessState {
   error?: string;
 }
 
-export interface EdgeDataFlow {
-  /** Edge ID */
-  edgeId: string;
-  /** Source node ID */
-  sourceNodeId: string;
-  /** Target node ID */
-  targetNodeId: string;
-  /** Data being transmitted */
-  data: any;
-  /** Transmission start time */
-  startTime: number;
-  /** Whether the target has acknowledged receipt */
-  acknowledged: boolean;
-}
-
 interface ProcessContextValue {
   /** Configuration settings */
   config: ProcessConfig;
   /** Update configuration */
   updateConfig: (config: Partial<ProcessConfig>) => void;
   
-  /** Node process states */
+  /** Node process states - reactive */
   nodeProcesses: Map<string, ProcessState>;
   /** Start processing for a node */
   startNodeProcess: (nodeId: string, data?: any) => void;
@@ -52,29 +37,22 @@ interface ProcessContextValue {
   /** Get process state for a node */
   getNodeProcessState: (nodeId: string) => ProcessState;
   
-  /** Active edge data flows */
-  edgeDataFlows: Map<string, EdgeDataFlow>;
-  /** Publish data to an edge (source node releases data) */
-  publishToEdge: (edgeId: string, sourceNodeId: string, targetNodeId: string, data: any) => void;
-  /** Subscribe to edge data (target node acknowledges receipt) */
-  acknowledgeEdgeData: (edgeId: string, targetNodeId: string) => void;
-  /** Get edge data flow state */
-  getEdgeDataFlow: (edgeId: string) => EdgeDataFlow | undefined;
-  /** Check if edge should show animation */
-  shouldAnimateEdge: (edgeId: string) => boolean;
+  /** FlowData - map of node/edge IDs to their data */
+  flowData: Map<string, any>;
+  /** Set data for a node or edge */
+  setFlowData: (id: string, data: any) => void;
+  /** Get data for a node or edge */
+  getFlowData: (id: string) => any;
+  /** Clear data for a node or edge */
+  clearFlowData: (id: string) => void;
   
-  /** Event listeners */
-  addEventListener: (event: ProcessEvent, callback: ProcessEventCallback) => () => void;
+  /** Persistent node data - keeps last processed data for Preview */
+  nodeLastData: Map<string, any>;
+  /** Get last processed data for a node */
+  getNodeLastData: (nodeId: string) => any;
+  /** Set last processed data for a node */
+  setNodeLastData: (nodeId: string, data: any) => void;
 }
-
-export type ProcessEvent = 
-  | 'nodeProcessStart'
-  | 'nodeProcessComplete' 
-  | 'nodeProcessError'
-  | 'edgeDataPublish'
-  | 'edgeDataAcknowledge';
-
-export type ProcessEventCallback = (data: any) => void;
 
 const ProcessContext = createContext<ProcessContextValue | null>(null);
 
@@ -103,27 +81,36 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
   });
 
   const nodeProcesses = useRef(new Map<string, ProcessState>());
-  const edgeDataFlows = useRef(new Map<string, EdgeDataFlow>());
-  const eventListeners = useRef(new Map<ProcessEvent, Set<ProcessEventCallback>>());
-  const [, forceUpdate] = useState(0);
+  const flowData = useRef(new Map<string, any>());
+  const nodeLastData = useRef(new Map<string, any>());
+  const [updateCounter, setUpdateCounter] = useState(0);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Batched update function to prevent excessive re-renders
   const triggerUpdate = useCallback(() => {
-    forceUpdate(prev => prev + 1);
+    if (updateTimeoutRef.current) return; // Already scheduled
+    
+    updateTimeoutRef.current = setTimeout(() => {
+      setUpdateCounter(prev => prev + 1);
+      updateTimeoutRef.current = null;
+    }, 0); // Batch updates in next tick
   }, []);
-
-  const emitEvent = useCallback((event: ProcessEvent, data: any) => {
-    const listeners = eventListeners.current.get(event);
-    if (listeners) {
-      listeners.forEach(callback => callback(data));
-    }
-    if (config.debug) {
-      console.log(`[ProcessContext] Event: ${event}`, data);
-    }
-  }, [config.debug]);
 
   const updateConfig = useCallback((newConfig: Partial<ProcessConfig>) => {
     setConfig(prev => ({ ...prev, ...newConfig }));
   }, []);
+
+  // Create reactive Maps that trigger re-renders when accessed
+  const reactiveNodeProcesses = useMemo(() => {
+    // Access updateCounter to ensure re-render when data changes
+    updateCounter;
+    return new Map(nodeProcesses.current);
+  }, [updateCounter]);
+
+  const reactiveFlowData = useMemo(() => {
+    updateCounter; // Ensure re-render when data changes
+    return new Map(flowData.current);
+  }, [updateCounter]);
 
   const startNodeProcess = useCallback((nodeId: string, data?: any) => {
     const processState: ProcessState = {
@@ -133,9 +120,11 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
     };
     
     nodeProcesses.current.set(nodeId, processState);
-    emitEvent('nodeProcessStart', { nodeId, data });
+    if (config.debug) {
+      console.log(`[ProcessContext] Node process started: ${nodeId}`, data);
+    }
     triggerUpdate();
-  }, [emitEvent, triggerUpdate]);
+  }, [config.debug, triggerUpdate]);
 
   const completeNodeProcess = useCallback((nodeId: string, result?: any) => {
     const currentState = nodeProcesses.current.get(nodeId);
@@ -153,7 +142,10 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
       };
       
       nodeProcesses.current.set(nodeId, completedState);
-      emitEvent('nodeProcessComplete', { nodeId, result });
+      nodeLastData.current.set(nodeId, result);
+      if (config.debug) {
+        console.log(`[ProcessContext] Node process completed: ${nodeId}`, result);
+      }
       triggerUpdate();
 
       // Auto-clear completed state after a delay
@@ -168,7 +160,7 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
     } else {
       doComplete();
     }
-  }, [config.minAnimationDuration, emitEvent, triggerUpdate]);
+  }, [config.minAnimationDuration, config.debug, triggerUpdate]);
 
   const setNodeError = useCallback((nodeId: string, error: string) => {
     const currentState = nodeProcesses.current.get(nodeId);
@@ -179,97 +171,64 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
     };
     
     nodeProcesses.current.set(nodeId, errorState);
-    emitEvent('nodeProcessError', { nodeId, error });
+    if (config.debug) {
+      console.log(`[ProcessContext] Node process error: ${nodeId}`, error);
+    }
     triggerUpdate();
-  }, [emitEvent, triggerUpdate]);
+  }, [config.debug, triggerUpdate]);
 
   const getNodeProcessState = useCallback((nodeId: string): ProcessState => {
     return nodeProcesses.current.get(nodeId) || { status: 'idle' };
   }, []);
 
-  const publishToEdge = useCallback((
-    edgeId: string, 
-    sourceNodeId: string, 
-    targetNodeId: string, 
-    data: any
-  ) => {
-    const dataFlow: EdgeDataFlow = {
-      edgeId,
-      sourceNodeId,
-      targetNodeId,
-      data,
-      startTime: Date.now(),
-      acknowledged: false
-    };
-    
-    edgeDataFlows.current.set(edgeId, dataFlow);
-    emitEvent('edgeDataPublish', { edgeId, sourceNodeId, targetNodeId, data });
+  // FlowData methods - simplified data flow
+  const setFlowData = useCallback((id: string, data: any) => {
+    flowData.current.set(id, data);
+    if (config.debug) {
+      console.log(`[ProcessContext] FlowData set for ${id}:`, data);
+    }
     triggerUpdate();
-  }, [emitEvent, triggerUpdate]);
+  }, [config.debug, triggerUpdate]);
 
-  const acknowledgeEdgeData = useCallback((edgeId: string, targetNodeId: string) => {
-    const dataFlow = edgeDataFlows.current.get(edgeId);
-    if (!dataFlow || dataFlow.targetNodeId !== targetNodeId) return;
+  const getFlowData = useCallback((id: string) => {
+    return flowData.current.get(id);
+  }, []);
 
-    const minDuration = config.minAnimationDuration;
-    const elapsed = Date.now() - dataFlow.startTime;
-    const remainingDelay = Math.max(0, minDuration - elapsed);
-
-    const doAcknowledge = () => {
-      dataFlow.acknowledged = true;
-      edgeDataFlows.current.set(edgeId, dataFlow);
-      emitEvent('edgeDataAcknowledge', { edgeId, targetNodeId });
-      triggerUpdate();
-
-      // Auto-clear acknowledged data flow after a delay
-      setTimeout(() => {
-        edgeDataFlows.current.delete(edgeId);
-        triggerUpdate();
-      }, 1000);
-    };
-
-    if (remainingDelay > 0) {
-      setTimeout(doAcknowledge, remainingDelay);
-    } else {
-      doAcknowledge();
+  const clearFlowData = useCallback((id: string) => {
+    flowData.current.delete(id);
+    if (config.debug) {
+      console.log(`[ProcessContext] FlowData cleared for ${id}`);
     }
-  }, [config.minAnimationDuration, emitEvent, triggerUpdate]);
+    triggerUpdate();
+  }, [config.debug, triggerUpdate]);
 
-  const getEdgeDataFlow = useCallback((edgeId: string) => {
-    return edgeDataFlows.current.get(edgeId);
+  const getNodeLastData = useCallback((nodeId: string) => {
+    return nodeLastData.current.get(nodeId);
   }, []);
 
-  const shouldAnimateEdge = useCallback((edgeId: string) => {
-    const dataFlow = edgeDataFlows.current.get(edgeId);
-    return dataFlow ? !dataFlow.acknowledged : false;
-  }, []);
-
-  const addEventListener = useCallback((event: ProcessEvent, callback: ProcessEventCallback) => {
-    if (!eventListeners.current.has(event)) {
-      eventListeners.current.set(event, new Set());
+  const setNodeLastData = useCallback((nodeId: string, data: any) => {
+    nodeLastData.current.set(nodeId, data);
+    if (config.debug) {
+      console.log(`[ProcessContext] Node last data set for ${nodeId}:`, data);
     }
-    eventListeners.current.get(event)!.add(callback);
-
-    // Return cleanup function
-    return () => {
-      eventListeners.current.get(event)?.delete(callback);
-    };
-  }, []);
+    triggerUpdate();
+  }, [config.debug, triggerUpdate]);
 
   const contextValue: ProcessContextValue = {
     config,
     updateConfig,
-    nodeProcesses: nodeProcesses.current,
+    nodeProcesses: reactiveNodeProcesses,
     startNodeProcess,
     completeNodeProcess,
     setNodeError,
     getNodeProcessState,
-    edgeDataFlows: edgeDataFlows.current,
-    publishToEdge,
-    acknowledgeEdgeData,
-    getEdgeDataFlow,
-    shouldAnimateEdge,
-    addEventListener
+    flowData: reactiveFlowData,
+    setFlowData,
+    getFlowData,
+    clearFlowData,
+    nodeLastData: nodeLastData.current,
+    getNodeLastData,
+    setNodeLastData
   };
 
   return (
