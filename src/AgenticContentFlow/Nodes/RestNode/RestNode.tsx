@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NodeProps } from '@xyflow/react';
 import { useNodeProcess } from '../../Process/useNodeProcess';
+import { useProcessContext } from '../../Process/ProcessContext';
 import { Globe2 } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 // DataSchemaManager integration
-import { dataSchemaManager, JSONSchema } from '../../Process/DataSchemaManager';
+import { dataSchemaManager } from '../../Process/DataSchemaManager';
 
 // Local utilities and components
 import { getUrlParts } from './utils/urlUtils';
@@ -35,8 +36,7 @@ export const RestNode: React.FC<NodeProps> = (props) => {
         setError 
     } = useNodeProcess({ 
         nodeId: id,
-        autoAcknowledge: true,
-        acknowledgeDelay: 300 
+        autoStartOnData: true,
     });
 
     // Loop state management
@@ -44,39 +44,128 @@ export const RestNode: React.FC<NodeProps> = (props) => {
     const [loopInterval, setLoopInterval] = useState(5);
     const loopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Approval state management
+    const [waitingForApproval, setWaitingForApproval] = useState(false);
+    const [autoApprove, setAutoApprove] = useState(
+        typeof data?.autoApprove === 'boolean' ? data.autoApprove : false
+    );
+    const [pendingData, setPendingData] = useState<any>(null);
+
     // Type-safe data extraction
     const nodeLabel = typeof data?.label === 'string' ? data.label : 'REST API';
     const method = typeof data?.method === 'string' ? data.method : 'GET';
     const url = typeof data?.url === 'string' ? data.url : '';
+    const requiresUserApproval = typeof data?.requiresUserApproval === 'boolean' ? data.requiresUserApproval : false;
 
     // Extract URL parts and load favicon
     const { domain, pathWithQuery } = getUrlParts(url);
     const favicon = useFavicon(domain);
+
+    // Get process context for FlowData access
+    const processContext = useProcessContext();
+
+    // Function to handle incoming data processing
+    const processIncomingData = async (inputData: any) => {
+        try {
+            startProcess({ method, url, action: 'api_call', data: inputData });
+            
+            // Make actual API call with the input data
+            const apiResult = await makeApiCall(inputData);
+            
+            // Generate schema using DataSchemaManager for consistency
+            const outputSchema = await dataSchemaManager.analyzeRestEndpoint(url, method);
+            
+            // Update the node's output schema in DataSchemaManager
+            dataSchemaManager.updateNodeSchema(id, {
+                nodeId: id,
+                outputSchema: outputSchema,
+                lastUpdated: Date.now()
+            });
+            
+            // Propagate schema to connected downstream nodes
+            dataSchemaManager.propagateSchemaToDownstream(id);
+            
+            // Complete with just the response data, not the full metadata object
+            completeProcess(apiResult.response);
+        } catch (error) {
+            console.error('❌ Failed to process incoming data:', error);
+            setError(`Failed to process incoming data: ${error}`);
+        }
+    };
+
+    // Make actual API call
+    const makeApiCall = async (requestData?: any) => {
+        if (!url) {
+            throw new Error('No URL configured');
+        }
+
+        const requestOptions: RequestInit = {
+            method: method.toUpperCase(),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'User-Agent': 'AgenticContentFlow/1.0'
+            }
+        };
+
+        // Add body for POST, PUT, PATCH requests
+        if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) && requestData) {
+            requestOptions.body = JSON.stringify(requestData);
+        }
+
+
+        try {
+            const startTime = Date.now();
+            const response = await fetch(url, requestOptions);
+            const duration = Date.now() - startTime;
+            
+            let responseData;
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('application/json')) {
+                responseData = await response.json();
+            } else {
+                responseData = await response.text();
+            }
+
+
+            return {
+                status: response.status,
+                statusText: response.statusText,
+                response: responseData,
+                duration,
+                headers: Object.fromEntries(response.headers.entries())
+            };
+        } catch (error) {
+            console.error('❌ API call failed:', error);
+            console.groupEnd();
+            throw error;
+        }
+    };
 
     // Enhanced API analysis with schema propagation
     const handleAnalyzeEndpoint = async () => {
         try {
             startProcess({ method, url, action: 'analyzing' });
             
-            // Simulate API analysis
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Make actual API call for analysis
+            const apiResult = await makeApiCall();
             
-            // Generate schema based on the endpoint
-            const outputSchema = generateSchemaFromEndpoint(url, method);
+            // Generate schema using DataSchemaManager for consistency
+            const outputSchema = await dataSchemaManager.analyzeRestEndpoint(url, method);
             
             const result = {
                 method,
                 url,
-                status: 200,
-                response: outputSchema.example,
-                duration: Math.floor(Math.random() * 500) + 100,
-                schema: outputSchema
+                ...apiResult,
+                schema: { schema: outputSchema },
+                action: 'analyzing'
             };
             
             // Update the node's output schema in DataSchemaManager
             dataSchemaManager.updateNodeSchema(id, {
                 nodeId: id,
-                outputSchema: outputSchema.schema,
+                outputSchema: outputSchema,
                 lastUpdated: Date.now()
             });
             
@@ -85,28 +174,33 @@ export const RestNode: React.FC<NodeProps> = (props) => {
             
             completeProcess(result);
         } catch (error) {
+            console.error('❌ API analysis failed:', error);
             setError(`Failed to analyze endpoint: ${error}`);
         }
     };
 
-    // Simulate API call
+    // Make actual API call
     const handleTestConnection = async () => {
         try {
             startProcess({ method, url, action: 'testing' });
             
-            // Simulate API call time
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Make actual API call
+            const apiResult = await makeApiCall({ 
+                test: true, 
+                timestamp: new Date().toISOString(),
+                source: 'RestNode-Test'
+            });
             
             const result = {
                 method,
                 url,
-                status: 200,
-                response: { success: true, timestamp: new Date().toISOString() },
-                duration: Math.floor(Math.random() * 500) + 100
+                ...apiResult,
+                action: 'testing'
             };
             
             completeProcess(result);
         } catch (error) {
+            console.error('❌ API call failed:', error);
             setError(`API call failed: ${error}`);
         }
     };
@@ -140,6 +234,44 @@ export const RestNode: React.FC<NodeProps> = (props) => {
             }
         };
     }, []);
+
+    // Handle user approval
+    const handleApprove = async () => {
+        if (pendingData) {
+            await processIncomingData(pendingData);
+            setPendingData(null);
+            setWaitingForApproval(false);
+        }
+    };
+
+    // Handle auto-approve toggle
+    const handleAutoApproveToggle = () => {
+        setAutoApprove(!autoApprove);
+    };
+
+    // Automatic processing logic - handles incoming data from upstream nodes
+    useEffect(() => {
+        const checkForFlowData = () => {
+            const flowData = processContext.getFlowData(id);
+            if (flowData && !isProcessing) {
+                console.log(`🔄 RestNode ${id} received flow data:`, flowData);
+                
+                // Process the incoming flow data
+                if (requiresUserApproval && !autoApprove) {
+                    setPendingData(flowData);
+                    setWaitingForApproval(true);
+                } else {
+                    // Auto-execute with flow data
+                    processIncomingData(flowData);
+                }
+                
+                // Clear the data after consuming it
+                processContext.clearFlowData(id);
+            }
+        };
+
+        checkForFlowData();
+    }, [processContext.flowData, id, isProcessing, requiresUserApproval, autoApprove, processContext]);
 
     // Custom menu items for REST operations
     const restNodeMenuItems = [
@@ -188,81 +320,13 @@ export const RestNode: React.FC<NodeProps> = (props) => {
             loopInterval={loopInterval}
             onLoopToggle={handleLoopToggle}
             onLoopIntervalChange={handleLoopIntervalChange}
+            requiresUserApproval={requiresUserApproval}
+            autoApprove={autoApprove}
+            waitingForApproval={waitingForApproval}
+            onApprove={handleApprove}
+            onAutoApproveToggle={handleAutoApproveToggle}
         />
     );
-};
-
-// Helper function to generate schema from endpoint URL
-const generateSchemaFromEndpoint = (url: string, _method: string) => {
-    // Simple schema generation based on common API patterns
-    if (url.includes('/posts')) {
-        return {
-            schema: {
-                type: "array",
-                items: {
-                    type: "object",
-                    properties: {
-                        id: { type: "number" },
-                        userId: { type: "number" },
-                        title: { type: "string" },
-                        body: { type: "string" }
-                    }
-                }
-            } as JSONSchema,
-            example: [
-                { id: 1, userId: 1, title: "Sample Post", body: "This is a sample post body" },
-                { id: 2, userId: 1, title: "Another Post", body: "Another post body" }
-            ]
-        };
-    } else if (url.includes('/users')) {
-        return {
-            schema: {
-                type: "array",
-                items: {
-                    type: "object",
-                    properties: {
-                        id: { type: "number" },
-                        name: { type: "string" },
-                        email: { type: "string" },
-                        username: { type: "string" }
-                    }
-                }
-            } as JSONSchema,
-            example: [
-                { id: 1, name: "John Doe", email: "john@example.com", username: "johndoe" }
-            ]
-        };
-    } else if (url.includes('/comments')) {
-        return {
-            schema: {
-                type: "array",
-                items: {
-                    type: "object",
-                    properties: {
-                        id: { type: "number" },
-                        postId: { type: "number" },
-                        name: { type: "string" },
-                        email: { type: "string" },
-                        body: { type: "string" }
-                    }
-                }
-            } as JSONSchema,
-            example: [
-                { id: 1, postId: 1, name: "Comment Author", email: "author@example.com", body: "Sample comment" }
-            ]
-        };
-    }
-    
-    // Default generic schema
-    return {
-        schema: {
-            type: "object",
-            properties: {
-                data: { type: "string" }
-            }
-        } as JSONSchema,
-        example: { data: "Sample response data" }
-    };
 };
 
 export default RestNode;

@@ -3,6 +3,8 @@ import { NodeProps } from '@xyflow/react';
 import { Eye } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useNodeProcess } from '../../Process/useNodeProcess';
+import { useProcessContext } from '../../Process/ProcessContext';
+import { dataSchemaManager } from '../../Process/DataSchemaManager';
 
 // Shared CellNode component
 import { CellNode, CellNodeConfig } from '../common/CellNode';
@@ -17,7 +19,10 @@ import { CellNode, CellNodeConfig } from '../common/CellNode';
 export const ContentNode: React.FC<NodeProps> = (props) => {
     const { id, data } = props;
     
-    // Use the process system for data handling
+    // Get the process context for persistent data storage
+    const processContext = useProcessContext();
+    
+    // Use the process system for FlowData handling
     const { 
         processState, 
         isProcessing, 
@@ -28,8 +33,6 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
         setError 
     } = useNodeProcess({ 
         nodeId: id,
-        autoAcknowledge: true,
-        acknowledgeDelay: 200,
         autoStartOnData: true,
         autoStartDelay: 2200  // Wait for edge animation to complete
     });
@@ -39,10 +42,18 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
     const [loopInterval, setLoopInterval] = useState(5);
     const loopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Approval state management
+    const [waitingForApproval, setWaitingForApproval] = useState(false);
+    const [autoApprove, setAutoApprove] = useState(
+        typeof data?.autoApprove === 'boolean' ? data.autoApprove : false
+    );
+    const [pendingData, setPendingData] = useState<any>(null);
+
     // Type-safe data extraction
     const nodeLabel = typeof data?.label === 'string' ? data.label : 'Content Display';
     const displayType = typeof data?.displayType === 'string' ? data.displayType : 'list';
     const maxItems = typeof data?.maxItems === 'number' ? data.maxItems : 10;
+    const requiresUserApproval = typeof data?.requiresUserApproval === 'boolean' ? data.requiresUserApproval : false;
 
     // Generate test data based on expected schema
     const generateTestData = () => {
@@ -109,6 +120,45 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
         setLoopInterval(interval);
     };
 
+    // Handle user approval
+    const handleApprove = () => {
+        if (pendingData) {
+            // Process the pending data
+            processPendingData(pendingData);
+            setPendingData(null);
+        }
+        setWaitingForApproval(false);
+    };
+
+    // Handle auto-approve toggle
+    const handleAutoApproveToggle = () => {
+        setAutoApprove(!autoApprove);
+    };
+
+    // Process data that was waiting for approval
+    const processPendingData = async (inputData: any) => {
+        try {
+            startProcess({ action: 'rendering', displayType, maxItems, data: inputData });
+            
+            // Simulate content rendering time
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            
+            const result = {
+                displayType,
+                itemsRendered: Array.isArray(inputData) ? inputData.length : 1,
+                maxItems,
+                processed: true,
+                timestamp: new Date().toISOString(),
+                inputData,
+                userApproved: true
+            };
+            
+            completeProcess(result);
+        } catch (error) {
+            setError(`Failed to process approved data: ${error}`);
+        }
+    };
+
     // Clean up on unmount
     useEffect(() => {
         return () => {
@@ -118,20 +168,41 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
         };
     }, []);
 
-    // Automatic processing logic - triggered when auto-start begins processing
+    // Automatic processing logic - modified to handle approval
     useEffect(() => {
         if (isProcessing && processState.startTime) {
             // Check if this was triggered by automatic processing (has received data)
             const hasReceivedData = processState.data !== undefined;
             
             if (hasReceivedData) {
+                const inputData = processState.data;
+                
+                // 🔍 CONSOLE LOGGING: Show what data the ContentNode received
+                console.group(`📦 ContentNode (${id}) received data:`);
+                console.log('Raw data:', inputData);
+                console.log('Data type:', typeof inputData);
+                console.log('Is array:', Array.isArray(inputData));
+                console.log('Data length/size:', Array.isArray(inputData) ? inputData.length : Object.keys(inputData || {}).length);
+                console.log('Data structure:', JSON.stringify(inputData, null, 2));
+                console.log('Expected schema:', data?.expectedSchema);
+                console.groupEnd();
+                
+                // If requires approval and auto-approve is disabled, wait for approval
+                if (requiresUserApproval && !autoApprove) {
+                    console.log(`⏳ ContentNode (${id}) waiting for user approval`);
+                    setPendingData(inputData);
+                    setWaitingForApproval(true);
+                    return;
+                }
+                
                 // Auto-execute the processing logic when triggered by incoming data
                 const executeAutoProcessing = async () => {
                     try {
-                        // Get input data from the process state
+                        // Get input schema and data from the process state
                         const inputData = processState.data;
+                        const inputSchema = dataSchemaManager.getInputSchema(id);
                         
-                        // Simulate content rendering time
+                        // Simulate the actual processing logic
                         await new Promise(resolve => setTimeout(resolve, 1200));
                         
                         const result = {
@@ -141,11 +212,18 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
                             processed: true,
                             timestamp: new Date().toISOString(),
                             inputData,
-                            autoTriggered: true
+                            autoTriggered: true,
+                            autoApproved: autoApprove
                         };
+                        
+                        console.log(`✅ ContentNode (${id}) processing completed:`, result);
+                        
+                        // Store the actual input data for Preview tab access
+                        processContext.setNodeLastData(id, inputData);
                         
                         completeProcess(result);
                     } catch (error) {
+                        console.error(`❌ ContentNode (${id}) processing failed:`, error);
                         setError(`Failed to auto-render content: ${error}`);
                     }
                 };
@@ -153,7 +231,7 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
                 executeAutoProcessing();
             }
         }
-    }, [isProcessing, processState.startTime, processState.data, displayType, maxItems, completeProcess, setError]);
+    }, [isProcessing, processState.startTime, processState.data, displayType, maxItems, requiresUserApproval, autoApprove, completeProcess, setError, id, data?.expectedSchema]);
 
     // Custom menu items for content operations
     const contentNodeMenuItems = [
@@ -198,6 +276,11 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
             loopInterval={loopInterval}
             onLoopToggle={handleLoopToggle}
             onLoopIntervalChange={handleLoopIntervalChange}
+            requiresUserApproval={requiresUserApproval}
+            autoApprove={autoApprove}
+            waitingForApproval={waitingForApproval}
+            onApprove={handleApprove}
+            onAutoApproveToggle={handleAutoApproveToggle}
         />
     );
 };

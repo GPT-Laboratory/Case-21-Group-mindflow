@@ -12,6 +12,8 @@ import { getConditionParts } from './utils/conditionUtils';
 
 // Shared CellNode component
 import { CellNode, CellNodeConfig } from '../common/CellNode';
+import { generateOutputSchema } from './utils/generateOutputSchema';
+import { createProcessedData } from './utils/createProcessedData';
 
 /**
  * LogicalNode Component
@@ -21,7 +23,7 @@ import { CellNode, CellNodeConfig } from '../common/CellNode';
  */
 export const LogicalNode: React.FC<NodeProps> = (props) => {
     const { id, data } = props;
-    // Use the process system
+    // Use the process system with FlowData approach
     const { 
         processState, 
         isProcessing, 
@@ -32,10 +34,7 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
         setError 
     } = useNodeProcess({ 
         nodeId: id,
-        autoAcknowledge: true,
-        acknowledgeDelay: 200,
         autoStartOnData: true,
-        autoStartDelay: 2200  // Wait for edge animation to complete (2s) + small buffer
     });
 
     // Loop state management
@@ -60,17 +59,10 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
             await new Promise(resolve => setTimeout(resolve, 1500));
             
             // Generate output schema based on operation
-            const outputSchema = generateOutputSchema(operation, inputSchema);
+            const outputSchema = generateOutputSchema(operation, inputSchema, data);
             
-            const result = {
-                operation,
-                condition,
-                processed: true,
-                timestamp: new Date().toISOString(),
-                result: `Processed ${operation} with condition: ${condition}`,
-                inputSchema,
-                outputSchema
-            };
+            // Create actual processed data based on the operation and output schema
+            const result = createProcessedData(operation, condition, outputSchema, null, data);
             
             // Update this node's output schema
             dataSchemaManager.updateNodeSchema(id, {
@@ -117,58 +109,45 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
         };
     }, []);
 
-    // Automatic processing logic - triggered when auto-start begins processing
+    // Simplified automatic processing - only when data is actually received
     useEffect(() => {
-        if (isProcessing && processState.startTime) {
-            // Check if this was triggered by automatic processing (has received data)
-            const hasReceivedData = processState.data !== undefined;
+        // Only process if we have a processing state with data and we're currently processing
+        if (isProcessing && processState.data && processState.startTime) {
+            const executeAutoProcessing = async () => {
+                try {
+                    // Get input schema and data from the process state
+                    const inputData = processState.data;
+                    const inputSchema = dataSchemaManager.getInputSchema(id);
+                    
+                    // Simulate the actual processing logic
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    
+                    // Generate output schema based on operation
+                    const outputSchema = generateOutputSchema(operation, inputSchema, data);
+                    
+                    // Create actual processed data based on the operation and output schema
+                    const result = createProcessedData(operation, condition, outputSchema, inputData, data);
+                    
+                    // Update this node's output schema
+                    dataSchemaManager.updateNodeSchema(id, {
+                        nodeId: id,
+                        outputSchema,
+                        lastUpdated: Date.now()
+                    });
+                    
+                    // Propagate schema to downstream nodes
+                    dataSchemaManager.propagateSchemaToDownstream(id);
+                    
+                    completeProcess(result);
+                } catch (error) {
+                    setError(`Failed to auto-process logic: ${error}`);
+                }
+            };
             
-            if (hasReceivedData) {
-                // Auto-execute the processing logic when triggered by incoming data
-                const executeAutoProcessing = async () => {
-                    try {
-                        // Get input schema and data from the process state
-                        const inputData = processState.data;
-                        const inputSchema = dataSchemaManager.getInputSchema(id);
-                        
-                        // Simulate the actual processing logic
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        
-                        // Generate output schema based on operation
-                        const outputSchema = generateOutputSchema(operation, inputSchema);
-                        
-                        const result = {
-                            operation,
-                            condition,
-                            processed: true,
-                            timestamp: new Date().toISOString(),
-                            result: `Auto-processed ${operation} with condition: ${condition}`,
-                            inputData,
-                            inputSchema,
-                            outputSchema,
-                            autoTriggered: true
-                        };
-                        
-                        // Update this node's output schema
-                        dataSchemaManager.updateNodeSchema(id, {
-                            nodeId: id,
-                            outputSchema,
-                            lastUpdated: Date.now()
-                        });
-                        
-                        // Propagate schema to downstream nodes
-                        dataSchemaManager.propagateSchemaToDownstream(id);
-                        
-                        completeProcess(result);
-                    } catch (error) {
-                        setError(`Failed to auto-process logic: ${error}`);
-                    }
-                };
-                
-                executeAutoProcessing();
-            }
+            // Only execute if we haven't already started processing this data
+            executeAutoProcessing();
         }
-    }, [isProcessing, processState.startTime, processState.data, operation, condition, id, completeProcess, setError]);
+    }, [isProcessing, processState.startTime]); // Removed processState.data dependency to prevent loops
 
     // Custom menu items for logical operations
     const logicalNodeMenuItems = [
@@ -221,61 +200,9 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
     );
 };
 
-// Helper function to generate output schema based on operation and input schema
-const generateOutputSchema = (operation: string, inputSchema: any) => {
-    if (!inputSchema) {
-        return {
-            type: "object",
-            properties: {
-                processed: { type: "boolean" },
-                result: { type: "any" }
-            }
-        };
-    }
 
-    switch (operation.toLowerCase()) {
-        case 'filter':
-            // Filter maintains the same structure but potentially fewer items
-            return inputSchema;
-        
-        case 'transform':
-            // Transform might change the structure - for now, keep the same
-            // In a real implementation, this would be based on transformation rules
-            return inputSchema;
-        
-        case 'aggregate':
-            // Aggregate typically produces a single object with summary data
-            if (inputSchema.type === 'array') {
-                return {
-                    type: "object",
-                    properties: {
-                        count: { type: "number" },
-                        summary: { type: "object" },
-                        aggregated: { type: "boolean" }
-                    }
-                };
-            }
-            return inputSchema;
-        
-        case 'conditional':
-            // Conditional routing might split data but maintain structure
-            return inputSchema;
-        
-        case 'validate':
-            // Validation adds validation metadata
-            return {
-                type: "object",
-                properties: {
-                    valid: { type: "boolean" },
-                    errors: { type: "array", items: { type: "string" } },
-                    data: inputSchema
-                }
-            };
-        
-        default:
-            return inputSchema;
-    }
-};
+
+
 
 // Helper function to get operation color
 const getOperationColor = (operation: string): string => {
