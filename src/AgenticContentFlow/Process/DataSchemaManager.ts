@@ -157,13 +157,56 @@ export class DataSchemaManager {
   /**
    * Validate schema compatibility between source and target nodes
    */
-  validateCompatibility(sourceSchema: JSONSchema, targetSchema: JSONSchema): SchemaValidationResult {
+  validateCompatibility(sourceSchema: JSONSchema, targetSchema: JSONSchema, options?: { hasRealTimeData?: boolean }): SchemaValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Basic type compatibility check
-    if (sourceSchema.type !== targetSchema.type) {
-      errors.push(`Type mismatch: source produces ${sourceSchema.type}, target expects ${targetSchema.type}`);
+    // Array to array compatibility - check item structure
+    if (sourceSchema.type === 'array' && targetSchema.type === 'array') {
+      if (sourceSchema.items && targetSchema.items) {
+        const itemCompatibility = this.validateCompatibility(sourceSchema.items, targetSchema.items, options);
+        errors.push(...itemCompatibility.errors.map(err => `Array items: ${err}`));
+        warnings.push(...itemCompatibility.warnings.map(warn => `Array items: ${warn}`));
+      }
+      // Arrays are compatible even if items differ slightly - this is common in data flows
+      return {
+        isValid: errors.length === 0,
+        errors,
+        warnings
+      };
+    }
+
+    // Check if source object contains a property that matches target array
+    if (sourceSchema.type === 'object' && targetSchema.type === 'array') {
+      // If we have real-time data flowing and it's actually an array, don't show the warning
+      if (options?.hasRealTimeData) {
+        // In this case, the schema might be stale but data is flowing correctly
+        warnings.push(`Schema may be outdated - real-time data appears to be flowing correctly`);
+      } else {
+        // Look for array properties in source that could match target
+        if (sourceSchema.properties) {
+          const arrayProperties = Object.entries(sourceSchema.properties)
+            .filter(([, prop]) => prop.type === 'array')
+            .map(([key]) => key);
+          
+          if (arrayProperties.length > 0) {
+            warnings.push(`Type mismatch: source produces object, target expects array. Consider extracting property: ${arrayProperties.join(', ')}`);
+          } else {
+            errors.push(`Type mismatch: source produces object, target expects array`);
+          }
+        } else {
+          errors.push(`Type mismatch: source produces object, target expects array`);
+        }
+      }
+    }
+    // Basic type compatibility check for other cases
+    else if (sourceSchema.type !== targetSchema.type) {
+      // If we have real-time data, be more lenient about schema mismatches
+      if (options?.hasRealTimeData) {
+        warnings.push(`Schema type mismatch: source schema shows ${sourceSchema.type}, target expects ${targetSchema.type}, but real-time data is flowing`);
+      } else {
+        errors.push(`Type mismatch: source produces ${sourceSchema.type}, target expects ${targetSchema.type}`);
+      }
     }
 
     // Object property compatibility
@@ -181,15 +224,6 @@ export class DataSchemaManager {
             errors.push(`Property type mismatch for ${key}: source is ${sourceProp.type}, target expects ${targetProp.type}`);
           }
         });
-      }
-    }
-
-    // Array item compatibility
-    if (sourceSchema.type === 'array' && targetSchema.type === 'array') {
-      if (sourceSchema.items && targetSchema.items) {
-        const itemCompatibility = this.validateCompatibility(sourceSchema.items, targetSchema.items);
-        errors.push(...itemCompatibility.errors.map(err => `Array items: ${err}`));
-        warnings.push(...itemCompatibility.warnings.map(warn => `Array items: ${warn}`));
       }
     }
 
