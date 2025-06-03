@@ -13,6 +13,7 @@ export function AnimatedPackageEdge({
   sourcePosition,
   targetPosition,
   source,
+  target,
 }: EdgeProps) {
   const processContext = useProcessContext();
   const sourceProcessState = processContext.getNodeProcessState(source!);
@@ -23,6 +24,7 @@ export function AnimatedPackageEdge({
   const [isAnimationStarted, setIsAnimationStarted] = useState(false);
   const [lifecyclePhase, setLifecyclePhase] = useState<'black' | 'blue' | 'green'>('black');
   const [hasCompletedOnce, setHasCompletedOnce] = useState(false);
+  const [hasDeliveredData, setHasDeliveredData] = useState(false);
 
   // Determine the lifecycle phase based on source node process state
   useEffect(() => {
@@ -32,6 +34,7 @@ export function AnimatedPackageEdge({
         setLifecyclePhase('black');
         setIsAnimationComplete(false);
         setIsAnimationStarted(false);
+        setHasDeliveredData(false);
       } else {
         // Stay in completed state if we've finished before
         setLifecyclePhase('green');
@@ -42,6 +45,7 @@ export function AnimatedPackageEdge({
       setIsAnimationStarted(false);
       // Reset the completion flag when starting a new process
       setHasCompletedOnce(false);
+      setHasDeliveredData(false);
     } else if (sourceProcessState.status === 'completed') {
       setLifecyclePhase('green');
       setHasCompletedOnce(true);
@@ -51,12 +55,13 @@ export function AnimatedPackageEdge({
       setIsAnimationComplete(false);
       setIsAnimationStarted(false);
       setHasCompletedOnce(false);
+      setHasDeliveredData(false);
       setAnimationKey(prev => prev + 1);
     }
   }, [sourceProcessState.status, hasCompletedOnce]);
 
   // Start animation only during green phase and only if not already completed
-  const shouldAnimate = lifecyclePhase === 'green' && !isAnimationComplete && hasCompletedOnce;
+  const shouldAnimate = lifecyclePhase === 'green' && !isAnimationComplete && hasCompletedOnce && !hasDeliveredData;
 
   // Reset animation when process starts again (goes from any state back to processing)
   useEffect(() => {
@@ -64,6 +69,7 @@ export function AnimatedPackageEdge({
       setAnimationKey(prev => prev + 1);
       setIsAnimationComplete(false);
       setIsAnimationStarted(false);
+      setHasDeliveredData(false);
     }
   }, [sourceProcessState.status, lifecyclePhase]);
 
@@ -94,7 +100,7 @@ export function AnimatedPackageEdge({
     }
   }, [shouldAnimate, isAnimationStarted, animationKey]);
 
-  // Handle animation end event
+  // Handle animation end event - THIS IS WHERE WE DRIVE THE PROCESS FLOW
   useEffect(() => {
     const animationElement = animationRef.current;
     if (!animationElement) return;
@@ -102,6 +108,24 @@ export function AnimatedPackageEdge({
     const handleAnimationEnd = () => {
       setIsAnimationComplete(true);
       setIsAnimationStarted(false);
+      
+      // THIS IS THE KEY CHANGE: Move data from edge to target node when animation completes
+      if (!hasDeliveredData && target && source && id) {
+        console.log(`🎯 Edge ${id} animation completed - delivering data from edge to node ${target}`);
+        
+        // Get the data from the edge (put there by source node)
+        const edgeData = processContext.getFlowData(id);
+        
+        if (edgeData) {
+          // Move data from edge to target node
+          processContext.setFlowData(target, edgeData);
+          // Clear the edge data after delivery
+          processContext.clearFlowData(id);
+          setHasDeliveredData(true);
+          
+          console.log(`📦 Data delivered from edge ${id} to node ${target}:`, edgeData);
+        }
+      }
     };
 
     const handleAnimationBegin = () => {
@@ -116,7 +140,7 @@ export function AnimatedPackageEdge({
       animationElement.removeEventListener('endEvent', handleAnimationEnd);
       animationElement.removeEventListener('beginEvent', handleAnimationBegin);
     };
-  }, [animationKey]);
+  }, [animationKey, hasDeliveredData, target, source, id, processContext]);
 
   const [edgePath] = getSmoothStepPath({
     sourceX,
