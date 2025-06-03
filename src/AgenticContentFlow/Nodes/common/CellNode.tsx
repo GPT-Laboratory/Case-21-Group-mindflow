@@ -53,6 +53,16 @@ export interface CellNodeProps extends NodeProps {
   onLoopToggle: () => void;
   /** Loop interval change handler */
   onLoopIntervalChange: (interval: number) => void;
+  /** Whether the node requires user approval */
+  requiresUserApproval?: boolean;
+  /** Whether auto-approve is enabled */
+  autoApprove?: boolean;
+  /** Whether waiting for user approval */
+  waitingForApproval?: boolean;
+  /** Callback when approve button is clicked */
+  onApprove?: () => void;
+  /** Callback when auto-approve toggle is clicked */
+  onAutoApproveToggle?: () => void;
 }
 
 /**
@@ -74,7 +84,12 @@ export const CellNode: React.FC<CellNodeProps> = ({
   isLooping,
   loopInterval,
   onLoopToggle,
-  onLoopIntervalChange
+  onLoopIntervalChange,
+  requiresUserApproval,
+  autoApprove,
+  waitingForApproval,
+  onApprove,
+  onAutoApproveToggle
 }) => {
   const { getNode } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -174,10 +189,15 @@ export const CellNode: React.FC<CellNodeProps> = ({
             isProcessing={isProcessing}
             isLooping={isLooping}
             loopInterval={loopInterval}
+            requiresUserApproval={requiresUserApproval}
+            autoApprove={autoApprove}
+            waitingForApproval={waitingForApproval}
             onPlay={onPlay}
             onStop={onStop}
             onLoopToggle={onLoopToggle}
             onLoopIntervalChange={onLoopIntervalChange}
+            onApprove={onApprove}
+            onAutoApproveToggle={onAutoApproveToggle}
             className="mt-1"
           />
         </div>

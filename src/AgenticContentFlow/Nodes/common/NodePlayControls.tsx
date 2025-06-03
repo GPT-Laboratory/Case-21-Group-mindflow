@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Square, RotateCcw } from 'lucide-react';
+import { Play, Square, RotateCcw, Clock, CheckCircle, Settings } from 'lucide-react';
 import ControlButton from '../../Controls/Components/ControlButton';
 import { Input } from '@/components/ui/input';
 
@@ -10,6 +10,12 @@ interface NodePlayControlsProps {
   isLooping?: boolean;
   /** Current loop interval in seconds */
   loopInterval?: number;
+  /** Whether the node requires user approval */
+  requiresUserApproval?: boolean;
+  /** Whether auto-approve is enabled */
+  autoApprove?: boolean;
+  /** Whether waiting for user approval */
+  waitingForApproval?: boolean;
   /** Callback when play button is clicked */
   onPlay?: () => void;
   /** Callback when stop button is clicked */
@@ -18,6 +24,10 @@ interface NodePlayControlsProps {
   onLoopToggle?: () => void;
   /** Callback when loop interval changes */
   onLoopIntervalChange?: (interval: number) => void;
+  /** Callback when approve button is clicked */
+  onApprove?: () => void;
+  /** Callback when auto-approve toggle is clicked */
+  onAutoApproveToggle?: () => void;
   /** Additional className for the container */
   className?: string;
 }
@@ -26,19 +36,28 @@ export const NodePlayControls: React.FC<NodePlayControlsProps> = ({
   isProcessing = false,
   isLooping = false,
   loopInterval = 5,
+  requiresUserApproval = false,
+  autoApprove = false,
+  waitingForApproval = false,
   onPlay,
   onStop,
   onLoopToggle,
   onLoopIntervalChange,
+  onApprove,
+  onAutoApproveToggle,
   className = "",
 }) => {
   const [intervalValue, setIntervalValue] = useState(loopInterval.toString());
   const [countdown, setCountdown] = useState(0);
   const [showIntervalDropdown, setShowIntervalDropdown] = useState(false);
+  const [showApprovalDropdown, setShowApprovalDropdown] = useState(false);
   const loopButtonRef = useRef<HTMLDivElement>(null);
+  const approvalButtonRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const approvalDropdownRef = useRef<HTMLDivElement>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const approvalHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update interval value when prop changes
   useEffect(() => {
@@ -153,12 +172,47 @@ export const NodePlayControls: React.FC<NodePlayControlsProps> = ({
     }, 200);
   };
 
+  const handleApprovalMouseEnter = () => {
+    if (approvalHoverTimeoutRef.current) {
+      clearTimeout(approvalHoverTimeoutRef.current);
+    }
+    
+    approvalHoverTimeoutRef.current = setTimeout(() => {
+      setShowApprovalDropdown(true);
+    }, 300);
+  };
+
+  const handleApprovalMouseLeave = () => {
+    if (approvalHoverTimeoutRef.current) {
+      clearTimeout(approvalHoverTimeoutRef.current);
+    }
+    
+    approvalHoverTimeoutRef.current = setTimeout(() => {
+      setShowApprovalDropdown(false);
+    }, 200);
+  };
+
+  const handleApprovalDropdownMouseEnter = () => {
+    if (approvalHoverTimeoutRef.current) {
+      clearTimeout(approvalHoverTimeoutRef.current);
+    }
+  };
+
+  const handleApprovalDropdownMouseLeave = () => {
+    approvalHoverTimeoutRef.current = setTimeout(() => {
+      setShowApprovalDropdown(false);
+    }, 200);
+  };
+
   // Clean up intervals and timeouts on unmount
   useEffect(() => {
     return () => {
       stopCountdown();
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
+      }
+      if (approvalHoverTimeoutRef.current) {
+        clearTimeout(approvalHoverTimeoutRef.current);
       }
     };
   }, []);
@@ -178,6 +232,17 @@ export const NodePlayControls: React.FC<NodePlayControlsProps> = ({
     return <RotateCcw className="w-3 h-3" />;
   };
 
+  // Approval icon that changes based on state
+  const ApprovalIcon = () => {
+    if (waitingForApproval) {
+      return <Clock className="w-3 h-3" />;
+    }
+    if (autoApprove) {
+      return <CheckCircle className="w-3 h-3" />;
+    }
+    return <Settings className="w-3 h-3" />;
+  };
+
   return (
     <div className={`flex items-center gap-1 relative ${className}`}>
       {/* Play Button */}
@@ -188,6 +253,57 @@ export const NodePlayControls: React.FC<NodePlayControlsProps> = ({
         disabled={isProcessing}
         active={isProcessing}
       />
+
+      {/* Approval Button - only show if requiresUserApproval */}
+      {requiresUserApproval && (
+        <div 
+          ref={approvalButtonRef}
+          className="relative"
+          onMouseEnter={handleApprovalMouseEnter}
+          onMouseLeave={handleApprovalMouseLeave}
+        >
+          {waitingForApproval ? (
+            <ControlButton
+              tooltip="Approve and Continue"
+              onClick={() => onApprove?.()}
+              icon={<CheckCircle className="w-3 h-3" />}
+              active={true}
+            />
+          ) : (
+            <ControlButton
+              tooltip={autoApprove ? "Auto-approve enabled" : "Manual approval required"}
+              onClick={() => onAutoApproveToggle?.()}
+              icon={<ApprovalIcon />}
+              active={autoApprove}
+            />
+          )}
+
+          {/* Approval Settings Dropdown */}
+          {showApprovalDropdown && !waitingForApproval && (
+            <div
+              ref={approvalDropdownRef}
+              className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 z-50"
+              onMouseEnter={handleApprovalDropdownMouseEnter}
+              onMouseLeave={handleApprovalDropdownMouseLeave}
+            >
+              <div className="bg-white border border-gray-200 rounded-md shadow-lg p-2 min-w-[120px]">
+                <div className="flex items-center gap-2 mb-1">
+                  <input
+                    type="checkbox"
+                    checked={autoApprove}
+                    onChange={onAutoApproveToggle}
+                    className="w-3 h-3"
+                  />
+                  <span className="text-xs">Auto-approve</span>
+                </div>
+                <div className="text-xs text-slate-400 text-center">
+                  {autoApprove ? "Automatic" : "Manual"}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stop Button */}
       <ControlButton
