@@ -38,7 +38,12 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ nodeId, formData }) =>
   // Auto-analyze when URL changes for REST nodes
   useEffect(() => {
     if (nodeType === 'restnode' && formData.url && formData.url !== '') {
-      handleAnalyzeEndpoint();
+      // Add a small delay to ensure form data is fully updated
+      const timeoutId = setTimeout(() => {
+        handleAnalyzeEndpoint();
+      }, 200);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [formData.url, formData.method, nodeType]);
 
