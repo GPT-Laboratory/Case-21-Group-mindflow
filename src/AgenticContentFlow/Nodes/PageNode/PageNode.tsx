@@ -77,7 +77,8 @@ export const PageNode: React.FC<NodeProps> = ({ id, data, selected }) => {
                             color={color} 
 
         />
-        <NodeHeader className="dragHandle">
+        <NodeHeader  
+                        className={`bg-${color} border-none`}>
           <WebIcon
             className={`
               ${isExpanded ? 'relative size-6' : 'absolute size-16'} 

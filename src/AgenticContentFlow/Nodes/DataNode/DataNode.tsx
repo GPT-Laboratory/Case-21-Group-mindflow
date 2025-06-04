@@ -3,8 +3,7 @@ import { NodeProps } from '@xyflow/react';
 import { DataNodeContainer } from './DataNodeStyles';
 import {
     NodeHeader,
-    NodeHeaderMenuAction,
-    NodeHeaderDeleteAction
+
 } from '../common/NodeHeader';
 import { useUpdateNodeInternals, useReactFlow } from '@xyflow/react';
 import { LAYOUT_CONSTANTS } from '../../Layout/utils/layoutUtils';
@@ -16,7 +15,6 @@ import { useNodeProcess } from '../../Process/useNodeProcess';
 
 import { ArrowLeft, ArrowRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 
 // Components that might need conversion but are used as-is for now
 import CircleStackIcon from '@/components/icons/circle-stack';
@@ -46,8 +44,6 @@ export const DataNode: React.FC<NodeProps> = ({ id, data, selected }) => {
         setError 
     } = useNodeProcess({ 
         nodeId: id,
-        autoAcknowledge: true,
-        acknowledgeDelay: 150 
     });
 
     useEffect(() => {
@@ -67,7 +63,7 @@ export const DataNode: React.FC<NodeProps> = ({ id, data, selected }) => {
     // Default dimensions for the container
     const collapsedDimensions = {
         width: 300,
-        height: 60,
+        height: 200,
     };
 
     const expandedDimensions = {
@@ -75,6 +71,9 @@ export const DataNode: React.FC<NodeProps> = ({ id, data, selected }) => {
         height: nodeInFlow?.height || 300,
     };
 
+
+
+    
     // Type checking for data properties
     const nodeLabel = data?.label ? String(data.label) : 'Files';
 
@@ -152,7 +151,8 @@ export const DataNode: React.FC<NodeProps> = ({ id, data, selected }) => {
                 />
 
                 <NodeHeader 
-                    className="dragHandle"
+                className={`bg-${color} border-none`}
+                    color={color}
                     icon={
                         <CircleStackIcon
                             className={`

@@ -102,7 +102,8 @@ export const StatisticsNode: React.FC<NodeProps> = ({ id, data, selected }) => {
                     }}
                 />
 
-                <NodeHeader className="dragHandle">
+                <NodeHeader 
+                className={`bg-${color} border-none`}>
                     <ChartIcon
                         className={`
                             ${isExpanded ? 'relative w-6 h-6' : 'absolute w-12 h-12'} 
