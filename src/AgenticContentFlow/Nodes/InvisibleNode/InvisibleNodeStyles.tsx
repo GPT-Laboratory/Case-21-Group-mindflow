@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 interface InvisibleNodeProps extends BaseNodeProps {
   isExpanded?: boolean;
   isHovered?: boolean;
-  // Remove sx prop as we'll use Tailwind classes instead
   onTransitionEnd?: () => void;
 }
 
@@ -18,20 +17,33 @@ export const InvisibleNodeContainer: React.FC<InvisibleNodeProps> = ({
   style,
   ...props
 }) => {
+  // Create custom style to override BaseNodeContainer's default styling
+  const customStyle = {
+    ...style,
+    // Override BaseNodeContainer's border and background when expanded
+    ...(isExpanded && {
+      border: isHovered ? "4px dashed black" : "none",
+      background: "transparent",
+      backgroundColor: "transparent",
+      boxShadow: "none"
+    }),
+    // When collapsed, use normal styling but with purple color
+    ...(!isExpanded && {
+      backgroundColor: "white",
+      boxShadow: "5px -2px black"
+    })
+  };
+
   return (
     <BaseNodeContainer
       color={color}
       selected={selected}
       className={cn(
-        "relative p-0 overflow-visible z-0 rounded-md",
-        isExpanded ? "border-dashed border-4" : "border-solid border-2",
-        isExpanded ? "shadow-none" : "shadow-[5px_-2px_black]",
-        isExpanded ? "bg-transparent" : "bg-white",
-        "transition-all duration-200 ease-in-out",
-        isHovered ? "border-black" : "border-transparent",
+        "relative p-0 overflow-visible z-0 rounded-md transition-all duration-200 ease-in-out",
+        // Remove the problematic dynamic Tailwind classes and handle styling via style prop instead
         className
       )}
-      style={style}
+      style={customStyle}
       {...props}
     >
       {children}

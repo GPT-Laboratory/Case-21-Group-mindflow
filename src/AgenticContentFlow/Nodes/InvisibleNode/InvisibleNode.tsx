@@ -65,9 +65,6 @@ export const InvisibleNode: React.FC<InvisibleNodeProps> = ({ id, data, selected
   }, []);
 
   const darkerColor = "#9c27b0"; // Purple color for invisible nodes
-  const lighterColor = "transparent";
-
-  const color = isExpanded ? lighterColor : darkerColor;
 
   if (!nodeInFlow) {
     console.error(`Node with id ${id} not found in store.`);
@@ -95,45 +92,43 @@ export const InvisibleNode: React.FC<InvisibleNodeProps> = ({ id, data, selected
         minWidth={LAYOUT_CONSTANTS.NODE_DEFAULT_WIDTH}
         nodeToResize={nodeInFlow}
         canResize={selected}
-        color={color}
+        color={darkerColor}
       />
       <InvisibleNodeContainer
         ref={containerRef}
         onTransitionEnd={() => updateNodeInternals(id)}
         selected={selected}
-        color={"black"}
+        color={darkerColor}
         isExpanded={isExpanded}
         isHovered={isHovered}
       >
         <div className="dragHandle">
           {(!isExpanded || isHovered) && (
             <>
-                    <NodeHeader className="dragHandle">
-
-              
-              <Grid
-                className={`
-                  text-primary 
-                  ${isExpanded ? 'relative size-6' : 'absolute size-16'} 
-                  ${isExpanded ? '' : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'}
+              <NodeHeader className="bg-transparent border-none">
+                <Grid
+                  className={`
+                    text-primary 
+                    ${isExpanded ? 'relative size-6' : 'absolute size-16'} 
+                    ${isExpanded ? '' : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'}
                   `}
-                  />
+                />
 
-              <NodeHeaderTitle>{nodeLabel}</NodeHeaderTitle>
-              <NodeHeaderActions>
-                <ExpandCollapseButton
-                  collapsedDimensions={collapsedDimensions}
-                  expandedDimensions={expandedDimensions}
-                  nodeInFlow={nodeInFlow}
+                <NodeHeaderTitle>{nodeLabel}</NodeHeaderTitle>
+                <NodeHeaderActions>
+                  <ExpandCollapseButton
+                    collapsedDimensions={collapsedDimensions}
+                    expandedDimensions={expandedDimensions}
+                    nodeInFlow={nodeInFlow}
                   />
-                <NodeHeaderMenuAction label="Container Options">
-                  <DropdownMenuItem onClick={() => console.log('Toggle visibility')}>
-                    Toggle Container Visibility
-                  </DropdownMenuItem>
-                  <NodeHeaderDeleteAction />
-                </NodeHeaderMenuAction>
-              </NodeHeaderActions>
-                  </NodeHeader>
+                  <NodeHeaderMenuAction label="Container Options">
+                    <DropdownMenuItem onClick={() => console.log('Toggle visibility')}>
+                      Toggle Container Visibility
+                    </DropdownMenuItem>
+                    <NodeHeaderDeleteAction />
+                  </NodeHeaderMenuAction>
+                </NodeHeaderActions>
+              </NodeHeader>
             </>
           )}
         </div>
