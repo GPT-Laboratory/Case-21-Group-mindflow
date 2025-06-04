@@ -100,7 +100,6 @@ export function BaseNodeContainer({
   };
 
   const finalStyle = getProcessingStyles();
-  const hasProcessingEffect = processState !== 'idle' || processing;
 
   return (
     <div 
