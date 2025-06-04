@@ -59,7 +59,7 @@ export const lmsEdgesData: Edge[] = [
   {
     id: "e-stats-course0",
     type: "package", // Use package edge type for data flow
-    source: "course-stats",
+    source: "course-content",
     target: "course-0-lms",
     sourceHandle: "right", // Right side of data node
     targetHandle: "left",  // Left side of course
