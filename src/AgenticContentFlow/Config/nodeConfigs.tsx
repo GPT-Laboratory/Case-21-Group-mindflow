@@ -113,12 +113,6 @@ export const mockConfigurations: Record<string, NodeConfig> = {
           { value: 'validate', label: 'Validate Data' }
         ]
       },
-      condition: {
-        fieldType: 'textarea',
-        label: 'Logic Expression',
-        placeholder: 'Enter your logic expression or condition...',
-        description: 'Define the logic to apply to incoming data'
-      },
       inputSchema: {
         fieldType: 'textarea',
         label: 'Input Schema',
