@@ -21,32 +21,24 @@ export interface SchemaValidationResult {
 }
 
 /**
- * Data Schema Manager
+ * Simplified Data Schema Manager
  * 
- * Manages data schemas across all nodes in the flow, enabling:
- * - Automatic test data generation based on schemas
- * - Schema compatibility validation between connected nodes
- * - Schema propagation through the flow
- * - Schema mismatch detection and warnings
+ * Manages data schemas across all nodes in the flow with React-friendly patterns:
+ * - Simple Map-based storage with reactive updates
+ * - Straightforward schema propagation
+ * - Easy subscription pattern for React components
  */
 export class DataSchemaManager {
-  private schemas: Map<string, NodeSchema> = new Map();
-  private edgeConnections: Map<string, string[]> = new Map(); // nodeId -> connected nodeIds
-  private listeners: Map<string, Set<(schema: NodeSchema) => void>> = new Map();
-  private globalListeners: Set<(nodeId: string, schema: NodeSchema) => void> = new Set();
+  private schemas = new Map<string, NodeSchema>();
+  private connections = new Map<string, string[]>(); // sourceId -> targetIds
+  private listeners = new Set<(nodeId: string, schema: NodeSchema) => void>();
 
   /**
-   * Register a global schema change listener
+   * Subscribe to schema changes (React-friendly)
    */
-  addListener(listener: (nodeId: string, schema: NodeSchema) => void) {
-    this.globalListeners.add(listener);
-  }
-
-  /**
-   * Remove a global schema change listener
-   */
-  removeListener(listener: (nodeId: string, schema: NodeSchema) => void) {
-    this.globalListeners.delete(listener);
+  subscribe(listener: (nodeId: string, schema: NodeSchema) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   /**
@@ -64,17 +56,10 @@ export class DataSchemaManager {
     this.schemas.set(nodeId, newSchema);
     this.notifyListeners(nodeId, newSchema);
     
-    // Propagate changes to connected nodes
-    this.propagateSchemaChange(nodeId, newSchema);
-  }
-
-  /**
-   * Update node schema (alternative method signature)
-   */
-  updateNodeSchema(nodeId: string, schema: NodeSchema) {
-    this.schemas.set(nodeId, schema);
-    this.notifyListeners(nodeId, schema);
-    this.propagateSchemaChange(nodeId, schema);
+    // Auto-propagate to connected nodes
+    if (outputSchema) {
+      this.propagateToConnected(nodeId, outputSchema);
+    }
   }
 
   /**
@@ -92,43 +77,38 @@ export class DataSchemaManager {
   }
 
   /**
-   * Update edge connections
+   * Update connections between nodes
    */
   updateConnections(sourceId: string, targetId: string, isConnected: boolean) {
     if (isConnected) {
-      // Add connection
-      const targets = this.edgeConnections.get(sourceId) || [];
+      const targets = this.connections.get(sourceId) || [];
       if (!targets.includes(targetId)) {
         targets.push(targetId);
-        this.edgeConnections.set(sourceId, targets);
-      }
-      
-      // Propagate schema from source to target
-      const sourceSchema = this.schemas.get(sourceId);
-      if (sourceSchema?.outputSchema) {
-        this.updateSchema(targetId, sourceSchema.outputSchema);
+        this.connections.set(sourceId, targets);
+        
+        // Immediately propagate schema if available
+        const sourceSchema = this.schemas.get(sourceId);
+        if (sourceSchema?.outputSchema) {
+          this.updateSchema(targetId, sourceSchema.outputSchema);
+        }
       }
     } else {
-      // Remove connection
-      const targets = this.edgeConnections.get(sourceId) || [];
+      const targets = this.connections.get(sourceId) || [];
       const index = targets.indexOf(targetId);
       if (index > -1) {
         targets.splice(index, 1);
-        this.edgeConnections.set(sourceId, targets);
+        this.connections.set(sourceId, targets);
       }
     }
   }
 
   /**
-   * Generate test data based on a JSON schema
+   * Generate simple test data from schema
    */
   generateTestData(schema: JSONSchema): any {
     switch (schema.type) {
       case 'array':
-        if (schema.items) {
-          return Array(3).fill(null).map(() => this.generateTestData(schema.items!));
-        }
-        return [];
+        return schema.items ? Array(3).fill(null).map(() => this.generateTestData(schema.items!)) : [];
       
       case 'object':
         if (schema.properties) {
@@ -142,88 +122,28 @@ export class DataSchemaManager {
       
       case 'string':
         return 'Sample text';
-      
       case 'number':
         return 42;
-      
       case 'boolean':
         return true;
-      
       default:
         return null;
     }
   }
 
   /**
-   * Validate schema compatibility between source and target nodes
+   * Simple compatibility check
    */
-  validateCompatibility(sourceSchema: JSONSchema, targetSchema: JSONSchema, options?: { hasRealTimeData?: boolean }): SchemaValidationResult {
+  validateCompatibility(sourceSchema: JSONSchema, targetSchema: JSONSchema): SchemaValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Array to array compatibility - check item structure
-    if (sourceSchema.type === 'array' && targetSchema.type === 'array') {
-      if (sourceSchema.items && targetSchema.items) {
-        const itemCompatibility = this.validateCompatibility(sourceSchema.items, targetSchema.items, options);
-        errors.push(...itemCompatibility.errors.map(err => `Array items: ${err}`));
-        warnings.push(...itemCompatibility.warnings.map(warn => `Array items: ${warn}`));
-      }
-      // Arrays are compatible even if items differ slightly - this is common in data flows
-      return {
-        isValid: errors.length === 0,
-        errors,
-        warnings
-      };
-    }
-
-    // Check if source object contains a property that matches target array
-    if (sourceSchema.type === 'object' && targetSchema.type === 'array') {
-      // If we have real-time data flowing and it's actually an array, don't show the warning
-      if (options?.hasRealTimeData) {
-        // In this case, the schema might be stale but data is flowing correctly
-        warnings.push(`Schema may be outdated - real-time data appears to be flowing correctly`);
+    // Basic type compatibility
+    if (sourceSchema.type !== targetSchema.type) {
+      if (sourceSchema.type === 'object' && targetSchema.type === 'array') {
+        warnings.push('Type mismatch: source is object, target expects array. Data may need extraction.');
       } else {
-        // Look for array properties in source that could match target
-        if (sourceSchema.properties) {
-          const arrayProperties = Object.entries(sourceSchema.properties)
-            .filter(([, prop]) => prop.type === 'array')
-            .map(([key]) => key);
-          
-          if (arrayProperties.length > 0) {
-            warnings.push(`Type mismatch: source produces object, target expects array. Consider extracting property: ${arrayProperties.join(', ')}`);
-          } else {
-            errors.push(`Type mismatch: source produces object, target expects array`);
-          }
-        } else {
-          errors.push(`Type mismatch: source produces object, target expects array`);
-        }
-      }
-    }
-    // Basic type compatibility check for other cases
-    else if (sourceSchema.type !== targetSchema.type) {
-      // If we have real-time data, be more lenient about schema mismatches
-      if (options?.hasRealTimeData) {
-        warnings.push(`Schema type mismatch: source schema shows ${sourceSchema.type}, target expects ${targetSchema.type}, but real-time data is flowing`);
-      } else {
-        errors.push(`Type mismatch: source produces ${sourceSchema.type}, target expects ${targetSchema.type}`);
-      }
-    }
-
-    // Object property compatibility
-    if (sourceSchema.type === 'object' && targetSchema.type === 'object') {
-      if (targetSchema.properties && sourceSchema.properties) {
-        Object.entries(targetSchema.properties).forEach(([key, targetProp]) => {
-          const sourceProp = sourceSchema.properties![key];
-          if (!sourceProp) {
-            if (targetSchema.required?.includes(key)) {
-              errors.push(`Missing required property: ${key}`);
-            } else {
-              warnings.push(`Missing optional property: ${key}`);
-            }
-          } else if (sourceProp.type !== targetProp.type) {
-            errors.push(`Property type mismatch for ${key}: source is ${sourceProp.type}, target expects ${targetProp.type}`);
-          }
-        });
+        errors.push(`Type mismatch: source is ${sourceSchema.type}, target expects ${targetSchema.type}`);
       }
     }
 
@@ -235,173 +155,71 @@ export class DataSchemaManager {
   }
 
   /**
-   * Propagate schema changes through connected nodes
-   * This would be called when edges are created/modified
+   * Analyze REST endpoint (simplified)
    */
-  propagateSchemaChanges(sourceNodeId: string, targetNodeIds: string[]) {
-    const sourceSchema = this.getSchema(sourceNodeId);
-    if (!sourceSchema?.outputSchema) return;
-
-    targetNodeIds.forEach(targetNodeId => {
-      const targetSchema = this.getSchema(targetNodeId);
-      if (targetSchema?.inputSchema) {
-        const compatibility = this.validateCompatibility(
-          sourceSchema.outputSchema!,
-          targetSchema.inputSchema
-        );
-
-        if (!compatibility.isValid) {
-          console.warn(`Schema compatibility issues between ${sourceNodeId} and ${targetNodeId}:`, compatibility.errors);
-        }
-      }
-
-      // Update target node's input schema to match source output
-      this.updateSchema(targetNodeId, sourceSchema.outputSchema, targetSchema?.outputSchema);
-    });
-  }
-
-  /**
-   * Get all schemas
-   */
-  getAllSchemas(): Map<string, NodeSchema> {
-    return new Map(this.schemas);
-  }
-
-  /**
-   * Clear all schemas
-   */
-  clear() {
-    this.schemas.clear();
-  }
-
-  // Private methods
-  private propagateSchemaChange(nodeId: string, schema: NodeSchema) {
-    const connectedNodes = this.edgeConnections.get(nodeId) || [];
-    connectedNodes.forEach(targetNodeId => {
-      if (schema.outputSchema) {
-        this.updateSchema(targetNodeId, schema.outputSchema);
-      }
-    });
-  }
-
-  private notifyListeners(nodeId: string, schema: NodeSchema) {
-    // Notify node-specific listeners
-    const nodeListeners = this.listeners.get(nodeId);
-    if (nodeListeners) {
-      nodeListeners.forEach(listener => listener(schema));
-    }
-
-    // Notify global listeners
-    this.globalListeners.forEach(listener => listener(nodeId, schema));
-  }
-
-  /**
-   * Propagate schema to downstream nodes
-   */
-  propagateSchemaToDownstream(nodeId: string) {
-    const connectedNodes = this.edgeConnections.get(nodeId) || [];
-    const sourceSchema = this.schemas.get(nodeId);
-    
-    if (sourceSchema?.outputSchema) {
-      connectedNodes.forEach(targetNodeId => {
-        this.updateSchema(targetNodeId, sourceSchema.outputSchema);
-      });
-    }
-  }
-
-  /**
-   * Subscribe method for global listeners
-   */
-  subscribe(listener: (nodeId: string, schema: NodeSchema) => void): () => void;
-  subscribe(nodeId: string, listener: (schema: NodeSchema) => void): () => void;
-  subscribe(nodeIdOrListener: string | ((nodeId: string, schema: NodeSchema) => void), listener?: (schema: NodeSchema) => void): () => void {
-    if (typeof nodeIdOrListener === 'function') {
-      // Global listener
-      this.globalListeners.add(nodeIdOrListener);
-      return () => this.globalListeners.delete(nodeIdOrListener);
-    } else {
-      // Node-specific listener
-      const nodeId = nodeIdOrListener;
-      if (!listener) throw new Error('Listener function is required for node-specific subscription');
-      
-      if (!this.listeners.has(nodeId)) {
-        this.listeners.set(nodeId, new Set());
-      }
-      this.listeners.get(nodeId)!.add(listener);
-
-      return () => {
-        const nodeListeners = this.listeners.get(nodeId);
-        if (nodeListeners) {
-          nodeListeners.delete(listener);
-        }
-      };
-    }
-  }
-
-  // Analyze REST endpoint and generate schema
   async analyzeRestEndpoint(url: string, method: string = 'GET'): Promise<JSONSchema> {
-    try {
-      // For demo purposes, return schema based on common API patterns
-      // Note: method parameter is used for future extensibility
-      console.log(`Analyzing ${method} ${url}`);
-      
-      if (url.includes('posts')) {
-        return {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number' },
-              title: { type: 'string' },
-              body: { type: 'string' },
-              userId: { type: 'number' }
-            }
-          }
-        };
-      } else if (url.includes('users')) {
-        return {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number' },
-              name: { type: 'string' },
-              email: { type: 'string' },
-              username: { type: 'string' }
-            }
-          }
-        };
-      } else if (url.includes('comments')) {
-        return {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'number' },
-              name: { type: 'string' },
-              email: { type: 'string' },
-              body: { type: 'string' },
-              postId: { type: 'number' }
-            }
-          }
-        };
-      }
-      
-      // Default schema
+    // Simplified schema detection based on URL patterns
+    if (url.includes('posts')) {
       return {
         type: 'array',
         items: {
           type: 'object',
           properties: {
             id: { type: 'number' },
-            data: { type: 'string' }
+            title: { type: 'string' },
+            body: { type: 'string' },
+            userId: { type: 'number' }
           }
         }
       };
-    } catch (error) {
-      console.error('Failed to analyze endpoint:', error);
-      throw error;
     }
+    
+    if (url.includes('users')) {
+      return {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            name: { type: 'string' },
+            email: { type: 'string' },
+            username: { type: 'string' }
+          }
+        }
+      };
+    }
+    
+    // Default schema
+    return {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'number' },
+          data: { type: 'string' }
+        }
+      }
+    };
+  }
+
+  /**
+   * Clear all data
+   */
+  clear() {
+    this.schemas.clear();
+    this.connections.clear();
+  }
+
+  // Private methods
+  private notifyListeners(nodeId: string, schema: NodeSchema) {
+    this.listeners.forEach(listener => listener(nodeId, schema));
+  }
+
+  private propagateToConnected(sourceId: string, outputSchema: JSONSchema) {
+    const targets = this.connections.get(sourceId) || [];
+    targets.forEach(targetId => {
+      this.updateSchema(targetId, outputSchema);
+    });
   }
 }
 
