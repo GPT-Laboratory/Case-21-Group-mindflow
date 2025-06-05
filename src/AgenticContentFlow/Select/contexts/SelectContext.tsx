@@ -7,7 +7,9 @@ import {
   useEffect,
 } from "react";
 import { Edge, Node, useOnSelectionChange, useReactFlow } from "@xyflow/react";
-
+import { useInputFocus } from "../../Config/contexts/InputFocusContext";
+import { DeleteConfirmationDialog } from "../../../components/DeleteConfirmationDialog";
+import { useDeletionService } from "../../Config/hooks/useDeletionService";
 
 //Create a context for the selected nodes and edges
 
@@ -26,18 +28,29 @@ export const SelectProvider = ({ children }: { children: ReactNode }) => {
   const reactFlowInstance = useReactFlow();
   const [selectedNodes, setSelectedNodes] = useState<Node[]>([]);
   const [selectedEdges, setSelectedEdges] = useState<Edge[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { isInputFocused } = useInputFocus();
+  const { performDeletion } = useDeletionService();
 
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Prevent deletion when input is focused
+      if (isInputFocused) {
+        return;
+      }
+      
       if (event.key === "Delete" || event.key === "Backspace") {
-        deleteSelected();
+        // Show confirmation dialog instead of directly deleting
+        if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+          setShowDeleteDialog(true);
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodes]);
+  }, [selectedNodes, selectedEdges, isInputFocused]);
 
   const onChange = useCallback(
     ({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
@@ -51,16 +64,25 @@ export const SelectProvider = ({ children }: { children: ReactNode }) => {
     onChange,
   });
 
-  const deleteSelected = useCallback(() => {
+  const handleConfirmedDeletion = useCallback(() => {
+    // Additional check to prevent deletion when input is focused
+    if (isInputFocused) {
+      return;
+    }
+    
     if (selectedNodes.length === 0 && selectedEdges.length === 0) return;
 
-    reactFlowInstance.deleteElements({
-      nodes: selectedNodes,
-      edges: selectedEdges,
-    });
-
+    // Use the deletion service that preserves transaction handling
+    performDeletion(selectedNodes, selectedEdges);
     clearSelection();
-  }, [selectedNodes, selectedEdges, reactFlowInstance]);
+  }, [selectedNodes, selectedEdges, isInputFocused, performDeletion]);
+
+  const deleteSelected = useCallback(() => {
+    // Show confirmation dialog instead of directly deleting
+    if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+      setShowDeleteDialog(true);
+    }
+  }, [selectedNodes, selectedEdges]);
 
   const handleCenterOnSelected = useCallback(() => {
     if (selectedNodes.length === 0 && selectedEdges.length === 0) return;
@@ -89,6 +111,19 @@ export const SelectProvider = ({ children }: { children: ReactNode }) => {
 
   const hasSelection = selectedNodes.length > 0 || selectedEdges.length > 0;
 
+  // Calculate total items and predominant type for dialog
+  const totalItems = selectedNodes.length + selectedEdges.length;
+  const getItemType = () => {
+    if (selectedNodes.length > 0 && selectedEdges.length > 0) {
+      return "item";
+    } else if (selectedNodes.length > 0) {
+      return "node";
+    } else if (selectedEdges.length > 0) {
+      return "connection";
+    }
+    return "item";
+  };
+
   const value = {
     selectedNodes,
     selectedEdges,
@@ -99,7 +134,16 @@ export const SelectProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SelectContext.Provider value={value}>{children}</SelectContext.Provider>
+    <SelectContext.Provider value={value}>
+      {children}
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleConfirmedDeletion}
+        itemType={getItemType()}
+        itemCount={totalItems}
+      />
+    </SelectContext.Provider>
   );
 };
 

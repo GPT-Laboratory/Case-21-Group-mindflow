@@ -26,7 +26,8 @@ const SelectLogic = () => {
     );
   }, []); // Empty dependency array to run only once on mount
 
-  return <SelectionDisplay />;
+  return null; 
+  //return <SelectionDisplay />;
 };
 
 export default SelectLogic;
