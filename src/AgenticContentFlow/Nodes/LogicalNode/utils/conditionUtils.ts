@@ -8,10 +8,16 @@ export interface ConditionParts {
 }
 
 /**
- * Extract subject and simplified condition from a logical expression
+ * Extract subject and simplified condition from a logical expression or structured rules
  */
-export const getConditionParts = (condition: string): ConditionParts => {
+export const getConditionParts = (condition: string, logicRules?: any[]): ConditionParts => {
   try {
+    // 🆕 NEW: Check if we have structured rules (preferred)
+    if (logicRules && Array.isArray(logicRules) && logicRules.length > 0) {
+      return getConditionPartsFromRules(logicRules);
+    }
+    
+    // 📜 LEGACY: Fall back to parsing condition string
     if (!condition) return { subject: '', simplified: '' };
     
     // Clean up the condition by removing extra whitespace
@@ -26,6 +32,70 @@ export const getConditionParts = (condition: string): ConditionParts => {
     // If parsing fails, return the original condition
     return { subject: '', simplified: condition };
   }
+};
+
+/**
+ * 🆕 NEW: Extract condition parts from structured rules
+ */
+const getConditionPartsFromRules = (rules: any[]): ConditionParts => {
+  if (rules.length === 0) {
+    return { subject: '', simplified: 'No rules defined' };
+  }
+  
+  // Get the primary subject from the first rule
+  const primaryField = rules[0].field;
+  const subject = primaryField.includes('.') 
+    ? primaryField.split('.')[0] 
+    : primaryField;
+  
+  if (rules.length === 1) {
+    // Single rule - show more detail
+    const rule = rules[0];
+    const operatorLabel = getOperatorLabel(rule.operator);
+    return {
+      subject,
+      simplified: `${rule.field} ${operatorLabel} ${rule.value}`
+    };
+  } else {
+    // Multiple rules - show count with logic overview
+    const andCount = rules.filter(r => r.logicalOperator === 'AND').length;
+    const orCount = rules.filter(r => r.logicalOperator === 'OR').length;
+    
+    let logicSummary = `${rules.length} Rules`;
+    if (andCount > 0 && orCount > 0) {
+      logicSummary += ' (Mixed)';
+    } else if (andCount > 0) {
+      logicSummary += ' (AND)';
+    } else if (orCount > 0) {
+      logicSummary += ' (OR)';
+    }
+    
+    return {
+      subject,
+      simplified: logicSummary
+    };
+  }
+};
+
+/**
+ * 🆕 NEW: Get human-readable operator label
+ */
+const getOperatorLabel = (operator: string): string => {
+  const operatorMap: Record<string, string> = {
+    '==': '=',
+    '!=': '≠',
+    '>': '>',
+    '>=': '≥',
+    '<': '<',
+    '<=': '≤',
+    'contains': 'contains',
+    'startsWith': 'starts with',
+    'endsWith': 'ends with',
+    'length>': 'length >',
+    'length<': 'length <'
+  };
+  
+  return operatorMap[operator] || operator;
 };
 
 /**
