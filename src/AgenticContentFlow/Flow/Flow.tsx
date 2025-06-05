@@ -8,6 +8,7 @@ import { useNodeTypeRegistry } from "../Node/registry/nodeTypeRegistry";
 import { useSelect } from "../Select/contexts/SelectContext";
 import { useNodeContext } from "../Node/store/useNodeContext";
 import { useEdgeContext } from "../Edge/store/useEdgeContext";
+import { useInputFocus } from "../Config/contexts/InputFocusContext";
 // Import the grid controls registration
 import GridControlsRegistration from "./controls/GridControlsRegistration";
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
@@ -29,6 +30,7 @@ function Flow({ children }: { children?: React.ReactNode }) {
   const { visibleEdges, onEdgesChange, onEdgeRemove } = useEdgeContext();
   const selectedNodesRef = useRef<any[]>([]);
   const selectedEdgesRef = useRef<any[]>([]);
+  const { isInputFocused } = useInputFocus();
 
   const { nodeTypes } = useNodeTypeRegistry();
   const { edgeTypes } = useEdgeTypeRegistry();
@@ -96,37 +98,16 @@ function Flow({ children }: { children?: React.ReactNode }) {
     edges: visibleEdges,
   });
 
-  // Add this to get clearSelection
-  const { clearSelection } = useSelect();
+  // Add this to get clearSelection and deleteSelected
+  const { clearSelection, deleteSelected } = useSelect();
 
-  const handleDelete = (_source: string) => {
-    if (isDeleting.current) {
-      console.warn("Deletion already in progress. Ignoring this request.");
-      return;
-    }
+  // Simplified handleDelete that delegates to SelectContext
+  const handleDelete = useCallback((_source: string) => {
+    // Delegate to SelectContext which will show confirmation dialog
+    // and use the proper deletion service with transaction handling
+    deleteSelected();
+  }, [deleteSelected]);
 
-    const hasSelectedNodes = selectedNodesRef.current.length > 0;
-    const hasSelectedEdges = selectedEdgesRef.current.length > 0;
-
-    if (hasSelectedNodes || hasSelectedEdges) {
-      withTransaction(() => {
-        // The edges connected to the selected nodes should also be deleted
-        const connectedEdges = visibleEdges.filter(edge =>
-          selectedNodesRef.current.some(node => node.id === edge.source || node.id === edge.target)
-        );
-        if (hasSelectedNodes) {
-          removeNodes(selectedNodesRef.current);
-          selectedNodesRef.current = [];  
-        }
-        
-        if (hasSelectedEdges || connectedEdges.length > 0) {
-          const alledgesToDelete = [...selectedEdgesRef.current, ...connectedEdges];
-          onEdgeRemove(alledgesToDelete);
-          selectedEdgesRef.current = [];
-        }
-      }, "Delete selection");
-    }
-  };
   const handleClearSelection = useCallback(() => {
     clearSelection();
   }, [clearSelection]);
