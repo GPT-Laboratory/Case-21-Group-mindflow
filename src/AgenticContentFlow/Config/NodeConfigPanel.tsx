@@ -6,18 +6,19 @@ import { Separator } from '@/components/ui/separator';
 import { getNodeConfig, getVariantFields } from './nodeConfigs';
 import { PanelFooter } from './components/PanelFooter';
 import { PropertiesTab } from './components/PropertiesTab';
-import { AppearanceTab } from './components/AppearanceTab';
-import { AdvancedTab } from './components/AdvancedTab';
+import { AppearanceTab } from './components/tabs/AppearanceTab/AppearanceTab';
 import { PanelHeader } from './components/PanelHeader';
 import { PositionSelector } from './components/PositionSelector';
 import { PanelToggleDragHandle } from './components/PanelToggleDragHandle';
 import { PanelContainer } from './components/PanelContainer';
 import { useResizePanel } from './hooks/useResizePanel';
 import { PreviewTab } from './components/PreviewTab';
-import { AnalyzeTab } from './components/AnalyzeTab';
 import { DataFlowTab } from './components/DataFlowTab';
 import { ContentPreviewTab } from './components/ContentPreviewTab';
+import { DebugTab } from './components/tabs/DebugTab.tsx/DebugTab';
 import { ScrollableTabs } from './components/ScrollableTabs';
+import { LogicTab } from './components/LogicTab';
+import { AdvancedTab } from './components/tabs/AdvancedTab/AdvancedTab';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -142,6 +143,7 @@ export const NodeConfigPanel: React.FC = () => {
                   )}
                   {activeNode.type === "logicalnode" && (
                     <>
+                      <TabsTrigger value="logic">Logic</TabsTrigger>
                       <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
                       <TabsTrigger value="debug">Debug</TabsTrigger>
                     </>
@@ -151,6 +153,9 @@ export const NodeConfigPanel: React.FC = () => {
                       <TabsTrigger value="preview">Preview</TabsTrigger>
                       <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
                     </>
+                  )}
+                  {activeNode.type === "customnode" && (
+                    <TabsTrigger value="logic">Logic</TabsTrigger>
                   )}
                 </ScrollableTabs>
                 
@@ -190,11 +195,18 @@ export const NodeConfigPanel: React.FC = () => {
                   )}
                   {activeNode.type === "logicalnode" && (
                     <>
+                      <TabsContent value="logic" className="m-0">
+                        <LogicTab 
+                          nodeId={activeNode.id} 
+                          formData={formData} 
+                          onFieldChange={handleFieldChange} 
+                        />
+                      </TabsContent>
                       <TabsContent value="dataschema" className="m-0">
                         <DataFlowTab nodeId={activeNode.id} formData={formData} />
                       </TabsContent>
                       <TabsContent value="debug" className="m-0">
-                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
+                        <DebugTab nodeId={activeNode.id} formData={formData} />
                       </TabsContent>
                     </>
                   )}
@@ -207,6 +219,15 @@ export const NodeConfigPanel: React.FC = () => {
                         <DataFlowTab nodeId={activeNode.id} formData={formData} />
                       </TabsContent>
                     </>
+                  )}
+                  {activeNode.type === "customnode" && (
+                    <TabsContent value="logic" className="m-0">
+                      <LogicTab 
+                        nodeId={activeNode.id} 
+                        formData={formData} 
+                        onFieldChange={handleFieldChange} 
+                      />
+                    </TabsContent>
                   )}
                 </div>
               </Tabs>
