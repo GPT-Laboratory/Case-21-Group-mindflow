@@ -34,7 +34,6 @@ export const ContentNode: React.FC<NodeProps> = (props) => {
     } = useNodeProcess({ 
         nodeId: id,
         autoStartOnData: true,
-        autoStartDelay: 2200  // Wait for edge animation to complete
     });
 
     // Loop state management

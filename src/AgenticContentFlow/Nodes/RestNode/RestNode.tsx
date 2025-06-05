@@ -76,14 +76,7 @@ export const RestNode: React.FC<NodeProps> = (props) => {
             const outputSchema = await dataSchemaManager.analyzeRestEndpoint(url, method);
             
             // Update the node's output schema in DataSchemaManager
-            dataSchemaManager.updateNodeSchema(id, {
-                nodeId: id,
-                outputSchema: outputSchema,
-                lastUpdated: Date.now()
-            });
-            
-            // Propagate schema to connected downstream nodes
-            dataSchemaManager.propagateSchemaToDownstream(id);
+            dataSchemaManager.updateSchema(id, undefined, outputSchema);
             
             // Complete with just the response data, not the full metadata object
             completeProcess(apiResult.response);
@@ -163,14 +156,7 @@ export const RestNode: React.FC<NodeProps> = (props) => {
             };
             
             // Update the node's output schema in DataSchemaManager
-            dataSchemaManager.updateNodeSchema(id, {
-                nodeId: id,
-                outputSchema: outputSchema,
-                lastUpdated: Date.now()
-            });
-            
-            // Propagate schema to connected downstream nodes
-            dataSchemaManager.propagateSchemaToDownstream(id);
+            dataSchemaManager.updateSchema(id, undefined, outputSchema);
             
             completeProcess(result);
         } catch (error) {
@@ -191,14 +177,7 @@ export const RestNode: React.FC<NodeProps> = (props) => {
                 source: 'RestNode-Test'
             });
             
-            const result = {
-                method,
-                url,
-                ...apiResult,
-                action: 'testing'
-            };
-            
-            completeProcess(result);
+            completeProcess(apiResult.response);
         } catch (error) {
             console.error('❌ API call failed:', error);
             setError(`API call failed: ${error}`);

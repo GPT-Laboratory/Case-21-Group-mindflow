@@ -14,6 +14,7 @@ import { getConditionParts } from './utils/conditionUtils';
 import { CellNode, CellNodeConfig } from '../common/CellNode';
 import { generateOutputSchema } from './utils/generateOutputSchema';
 import { createProcessedData } from './utils/createProcessedData';
+import { getOperationColor } from './utils/getOperationColor';
 
 /**
  * LogicalNode Component
@@ -56,7 +57,7 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
             const inputSchema = dataSchemaManager.getInputSchema(id);
             
             // Simulate some processing time
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             // Generate output schema based on operation
             const outputSchema = generateOutputSchema(operation, inputSchema, data);
@@ -65,14 +66,7 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
             const result = createProcessedData(operation, condition, outputSchema, null, data);
             
             // Update this node's output schema
-            dataSchemaManager.updateNodeSchema(id, {
-                nodeId: id,
-                outputSchema,
-                lastUpdated: Date.now()
-            });
-            
-            // Propagate schema to downstream nodes
-            dataSchemaManager.propagateSchemaToDownstream(id);
+            dataSchemaManager.updateSchema(id, undefined, outputSchema);
             
             completeProcess(result);
         } catch (error) {
@@ -118,9 +112,7 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
                     // Get input schema and data from the process state
                     const inputData = processState.data;
                     const inputSchema = dataSchemaManager.getInputSchema(id);
-                    
-                    // Simulate the actual processing logic
-                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    console.log("into inputSchema", inputSchema);
                     
                     // Generate output schema based on operation
                     const outputSchema = generateOutputSchema(operation, inputSchema, data);
@@ -129,14 +121,7 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
                     const result = createProcessedData(operation, condition, outputSchema, inputData, data);
                     
                     // Update this node's output schema
-                    dataSchemaManager.updateNodeSchema(id, {
-                        nodeId: id,
-                        outputSchema,
-                        lastUpdated: Date.now()
-                    });
-                    
-                    // Propagate schema to downstream nodes
-                    dataSchemaManager.propagateSchemaToDownstream(id);
+                    dataSchemaManager.updateSchema(id, undefined, outputSchema);
                     
                     completeProcess(result);
                 } catch (error) {
@@ -204,22 +189,6 @@ export const LogicalNode: React.FC<NodeProps> = (props) => {
 
 
 
-// Helper function to get operation color
-const getOperationColor = (operation: string): string => {
-    switch (operation.toLowerCase()) {
-        case 'filter':
-            return 'text-blue-600 bg-blue-50 border-blue-200';
-        case 'transform':
-            return 'text-green-600 bg-green-50 border-green-200';
-        case 'aggregate':
-            return 'text-orange-600 bg-orange-50 border-orange-200';
-        case 'conditional':
-            return 'text-purple-600 bg-purple-50 border-purple-200';
-        case 'validate':
-            return 'text-red-600 bg-red-50 border-red-200';
-        default:
-            return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-};
+
 
 export default LogicalNode;
