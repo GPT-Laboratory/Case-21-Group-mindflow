@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback, useRef, useState, useMemo } from 'react';
+import React, { createContext, useContext, useCallback, useState, useMemo } from 'react';
 
 export interface ProcessConfig {
   /** Minimum duration (ms) for animations to remain visible */
@@ -80,37 +80,14 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
     ...initialConfig
   });
 
-  const nodeProcesses = useRef(new Map<string, ProcessState>());
-  const flowData = useRef(new Map<string, any>());
-  const nodeLastData = useRef(new Map<string, any>());
-  const [updateCounter, setUpdateCounter] = useState(0);
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Batched update function to prevent excessive re-renders
-  const triggerUpdate = useCallback(() => {
-    if (updateTimeoutRef.current) return; // Already scheduled
-    
-    updateTimeoutRef.current = setTimeout(() => {
-      setUpdateCounter(prev => prev + 1);
-      updateTimeoutRef.current = null;
-    }, 0); // Batch updates in next tick
-  }, []);
+  // Use React state instead of useRef for reactive updates
+  const [nodeProcesses, setNodeProcesses] = useState<Map<string, ProcessState>>(new Map());
+  const [flowData, setFlowData] = useState<Map<string, any>>(new Map());
+  const [nodeLastData, setNodeLastData] = useState<Map<string, any>>(new Map());
 
   const updateConfig = useCallback((newConfig: Partial<ProcessConfig>) => {
     setConfig(prev => ({ ...prev, ...newConfig }));
   }, []);
-
-  // Create reactive Maps that trigger re-renders when accessed
-  const reactiveNodeProcesses = useMemo(() => {
-    // Access updateCounter to ensure re-render when data changes
-    updateCounter;
-    return new Map(nodeProcesses.current);
-  }, [updateCounter]);
-
-  const reactiveFlowData = useMemo(() => {
-    updateCounter; // Ensure re-render when data changes
-    return new Map(flowData.current);
-  }, [updateCounter]);
 
   const startNodeProcess = useCallback((nodeId: string, data?: any) => {
     const processState: ProcessState = {
@@ -119,117 +96,149 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
       data
     };
     
-    nodeProcesses.current.set(nodeId, processState);
+    setNodeProcesses(prev => new Map(prev).set(nodeId, processState));
     if (config.debug) {
       console.log(`[ProcessContext] Node process started: ${nodeId}`, data);
     }
-    triggerUpdate();
-  }, [config.debug, triggerUpdate]);
+  }, [config.debug]);
 
   const completeNodeProcess = useCallback((nodeId: string, result?: any) => {
-    const currentState = nodeProcesses.current.get(nodeId);
-    if (!currentState) return;
+    setNodeProcesses(prev => {
+      const current = prev.get(nodeId);
+      if (!current) return prev;
 
-    const minDuration = config.minAnimationDuration;
-    const elapsed = Date.now() - (currentState.startTime || 0);
-    const remainingDelay = Math.max(0, minDuration - elapsed);
+      const minDuration = config.minAnimationDuration;
+      const elapsed = Date.now() - (current.startTime || 0);
+      const remainingDelay = Math.max(0, minDuration - elapsed);
 
-    const doComplete = () => {
-      const completedState: ProcessState = {
-        ...currentState,
-        status: 'completed',
-        data: result
+      const doComplete = () => {
+        const completedState: ProcessState = {
+          ...current,
+          status: 'completed',
+          data: result
+        };
+        
+        setNodeProcesses(prevProcesses => new Map(prevProcesses).set(nodeId, completedState));
+        setNodeLastData(prevLastData => new Map(prevLastData).set(nodeId, result));
+        
+        if (config.debug) {
+          console.log(`[ProcessContext] Node process completed: ${nodeId}`, result);
+        }
+
+        // Auto-clear completed state after a delay
+        setTimeout(() => {
+          setNodeProcesses(prevProcesses => {
+            const newMap = new Map(prevProcesses);
+            newMap.delete(nodeId);
+            return newMap;
+          });
+        }, 2000);
       };
-      
-      nodeProcesses.current.set(nodeId, completedState);
-      nodeLastData.current.set(nodeId, result);
-      if (config.debug) {
-        console.log(`[ProcessContext] Node process completed: ${nodeId}`, result);
+
+      if (remainingDelay > 0) {
+        setTimeout(doComplete, remainingDelay);
+      } else {
+        doComplete();
       }
-      triggerUpdate();
 
-      // Auto-clear completed state after a delay
-      setTimeout(() => {
-        nodeProcesses.current.delete(nodeId);
-        triggerUpdate();
-      }, 2000);
-    };
-
-    if (remainingDelay > 0) {
-      setTimeout(doComplete, remainingDelay);
-    } else {
-      doComplete();
-    }
-  }, [config.minAnimationDuration, config.debug, triggerUpdate]);
+      return prev;
+    });
+  }, [config.minAnimationDuration, config.debug]);
 
   const setNodeError = useCallback((nodeId: string, error: string) => {
-    const currentState = nodeProcesses.current.get(nodeId);
-    const errorState: ProcessState = {
-      ...currentState,
-      status: 'error',
-      error
-    };
-    
-    nodeProcesses.current.set(nodeId, errorState);
-    if (config.debug) {
-      console.log(`[ProcessContext] Node process error: ${nodeId}`, error);
-    }
-    triggerUpdate();
-  }, [config.debug, triggerUpdate]);
+    setNodeProcesses(prev => {
+      const current = prev.get(nodeId);
+      const errorState: ProcessState = {
+        ...current,
+        status: 'error',
+        error
+      };
+      
+      if (config.debug) {
+        console.log(`[ProcessContext] Node process error: ${nodeId}`, error);
+      }
+      
+      return new Map(prev).set(nodeId, errorState);
+    });
+  }, [config.debug]);
 
   const getNodeProcessState = useCallback((nodeId: string): ProcessState => {
-    return nodeProcesses.current.get(nodeId) || { status: 'idle' };
-  }, []);
+    return nodeProcesses.get(nodeId) || { status: 'idle' };
+  }, [nodeProcesses]);
 
-  // FlowData methods - simplified data flow
-  const setFlowData = useCallback((id: string, data: any) => {
-    flowData.current.set(id, data);
-    if (config.debug) {
-      console.log(`[ProcessContext] FlowData set for ${id}:`, data);
-    }
-    triggerUpdate();
-  }, [config.debug, triggerUpdate]);
+  // FlowData methods - simplified and reactive
+  const setFlowDataValue = useCallback((id: string, data: any) => {
+    setFlowData(prev => {
+      const newMap = new Map(prev);
+      newMap.set(id, data);
+      if (config.debug) {
+        console.log(`[ProcessContext] FlowData set for ${id}:`, data);
+      }
+      return newMap;
+    });
+  }, [config.debug]);
 
   const getFlowData = useCallback((id: string) => {
-    return flowData.current.get(id);
-  }, []);
+    return flowData.get(id);
+  }, [flowData]);
 
   const clearFlowData = useCallback((id: string) => {
-    flowData.current.delete(id);
-    if (config.debug) {
-      console.log(`[ProcessContext] FlowData cleared for ${id}`);
-    }
-    triggerUpdate();
-  }, [config.debug, triggerUpdate]);
+    setFlowData(prev => {
+      const newMap = new Map(prev);
+      const existed = newMap.delete(id);
+      if (config.debug && existed) {
+        console.log(`[ProcessContext] FlowData cleared for ${id}`);
+      }
+      return newMap;
+    });
+  }, [config.debug]);
 
   const getNodeLastData = useCallback((nodeId: string) => {
-    return nodeLastData.current.get(nodeId);
-  }, []);
+    return nodeLastData.get(nodeId);
+  }, [nodeLastData]);
 
-  const setNodeLastData = useCallback((nodeId: string, data: any) => {
-    nodeLastData.current.set(nodeId, data);
-    if (config.debug) {
-      console.log(`[ProcessContext] Node last data set for ${nodeId}:`, data);
-    }
-    triggerUpdate();
-  }, [config.debug, triggerUpdate]);
+  const setNodeLastDataValue = useCallback((nodeId: string, data: any) => {
+    setNodeLastData(prev => {
+      const newMap = new Map(prev);
+      newMap.set(nodeId, data);
+      if (config.debug) {
+        console.log(`[ProcessContext] Node last data set for ${nodeId}:`, data);
+      }
+      return newMap;
+    });
+  }, [config.debug]);
 
-  const contextValue: ProcessContextValue = {
+  const contextValue: ProcessContextValue = useMemo(() => ({
     config,
     updateConfig,
-    nodeProcesses: reactiveNodeProcesses,
+    nodeProcesses,
     startNodeProcess,
     completeNodeProcess,
     setNodeError,
     getNodeProcessState,
-    flowData: reactiveFlowData,
-    setFlowData,
+    flowData,
+    setFlowData: setFlowDataValue,
     getFlowData,
     clearFlowData,
-    nodeLastData: nodeLastData.current,
+    nodeLastData,
     getNodeLastData,
-    setNodeLastData
-  };
+    setNodeLastData: setNodeLastDataValue
+  }), [
+    config,
+    updateConfig,
+    nodeProcesses,
+    startNodeProcess,
+    completeNodeProcess,
+    setNodeError,
+    getNodeProcessState,
+    flowData,
+    setFlowDataValue,
+    getFlowData,
+    clearFlowData,
+    nodeLastData,
+    getNodeLastData,
+    setNodeLastDataValue
+  ]);
 
   return (
     <ProcessContext.Provider value={contextValue}>
