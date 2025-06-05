@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useProcessContext } from './ProcessContext';
 import { useReactFlow } from '@xyflow/react';
 
@@ -7,89 +7,42 @@ export interface UseNodeProcessOptions {
   nodeId: string;
   /** Auto-start processing when data is received */
   autoStartOnData?: boolean;
-  /** Delay before auto-starting processing (ms) */
-  autoStartDelay?: number;
 }
 
 export const useNodeProcess = (options: UseNodeProcessOptions) => {
-  const { 
-    nodeId, 
-    autoStartOnData = false,
-    autoStartDelay = 300
-  } = options;
+  const { nodeId, autoStartOnData = false } = options;
   const processContext = useProcessContext();
   const { getEdges } = useReactFlow();
   
-  // Track processed data to prevent duplicate processing
-  const processedDataRef = useRef(new Set<string>());
-  const autoStartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  // Simple state management
+  const [hasProcessedCurrentData, setHasProcessedCurrentData] = useState(false);
+  
   const processState = processContext.getNodeProcessState(nodeId);
+  const availableData = processContext.getFlowData(nodeId);
 
   // Auto-start processing when new data arrives
   useEffect(() => {
-    if (!autoStartOnData || processState.status === 'processing') return;
+    if (!autoStartOnData || !availableData || hasProcessedCurrentData) return;
+    if (processState.status === 'processing') return;
 
-    // Check for data available for this node
-    const nodeData = processContext.getFlowData(nodeId);
-    
-    if (!nodeData) return;
+    console.log(`🚀 Auto-starting processing for node ${nodeId} with data:`, availableData);
+    startProcess(availableData);
+    setHasProcessedCurrentData(true);
+  }, [autoStartOnData, availableData, hasProcessedCurrentData, processState.status, nodeId]);
 
-    // Create a simple deduplication key
-    const dataKey = `${nodeId}-${JSON.stringify(nodeData)}-${Date.now()}`;
-    
-    // Check if we've already processed this exact data
-    if (processedDataRef.current.has(dataKey)) return;
-
-    // Mark this data as being processed
-    processedDataRef.current.add(dataKey);
-
-    // Clear any existing timeout
-    if (autoStartTimeoutRef.current) {
-      clearTimeout(autoStartTimeoutRef.current);
-    }
-
-    // Start processing after delay
-    autoStartTimeoutRef.current = setTimeout(() => {
-      // Verify we're still idle and data is still available
-      const currentState = processContext.getNodeProcessState(nodeId);
-      const currentData = processContext.getFlowData(nodeId);
-      
-      if (currentState.status === 'idle' && currentData) {
-        console.log(`🚀 Auto-starting processing for node ${nodeId} with data:`, currentData);
-        startProcess(currentData);
-        
-        // Clear the data after consuming it
-        processContext.clearFlowData(nodeId);
-      }
-      autoStartTimeoutRef.current = null;
-    }, autoStartDelay);
-
-    // Cleanup old processed data tracking
-    const cutoffTime = Date.now() - (autoStartDelay * 5);
-    const keysToDelete: string[] = [];
-    
-    processedDataRef.current.forEach(key => {
-      const timestamp = parseInt(key.split('-').pop() || '0');
-      if (timestamp < cutoffTime) {
-        keysToDelete.push(key);
-      }
-    });
-    
-    keysToDelete.forEach(key => processedDataRef.current.delete(key));
-
-    return () => {
-      if (autoStartTimeoutRef.current) {
-        clearTimeout(autoStartTimeoutRef.current);
-        autoStartTimeoutRef.current = null;
-      }
-    };
-  }, [processContext.getFlowData(nodeId), autoStartOnData, autoStartDelay, processState.status, processContext, nodeId]);
+  // Reset processed flag when data changes
+  useEffect(() => {
+    setHasProcessedCurrentData(false);
+  }, [availableData]);
 
   // Start processing
   const startProcess = useCallback((data?: any) => {
     processContext.startNodeProcess(nodeId, data);
-  }, [processContext, nodeId]);
+    // Clear the input data since we're now processing it
+    if (data === availableData) {
+      processContext.clearFlowData(nodeId);
+    }
+  }, [processContext, nodeId, availableData]);
 
   // Complete processing and publish data to outgoing edges
   const completeProcess = useCallback((result?: any) => {
@@ -100,7 +53,7 @@ export const useNodeProcess = (options: UseNodeProcessOptions) => {
       const edges = getEdges();
       const outgoingEdges = edges.filter(edge => edge.source === nodeId);
       
-      // Set data for each outgoing edge
+      // Set data for each outgoing EDGE (not directly to target node)
       outgoingEdges.forEach(edge => {
         console.log(`📤 Node ${nodeId} publishing data to edge ${edge.id}:`, result);
         processContext.setFlowData(edge.id, result);
@@ -118,15 +71,6 @@ export const useNodeProcess = (options: UseNodeProcessOptions) => {
     return processContext.getFlowData(nodeId);
   }, [processContext, nodeId]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (autoStartTimeoutRef.current) {
-        clearTimeout(autoStartTimeoutRef.current);
-      }
-    };
-  }, []);
-
   return {
     processState,
     isProcessing: processState.status === 'processing',
@@ -135,7 +79,8 @@ export const useNodeProcess = (options: UseNodeProcessOptions) => {
     startProcess,
     completeProcess,
     setError,
-    getAvailableData
+    getAvailableData,
+    availableData // Expose available data directly
   };
 };
 
