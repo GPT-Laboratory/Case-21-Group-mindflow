@@ -31,7 +31,7 @@ export const PanelContainer: React.FC<PanelContainerProps> = ({
       case 'top':
         return {
           ...baseStyle,
-          top: 0,
+          top: '100px', // Add offset to avoid overlapping with Controls Panel
           left: 0,
           right: 0,
           height: isExpanded ? `${size.height}px` : '0px',
@@ -49,7 +49,7 @@ export const PanelContainer: React.FC<PanelContainerProps> = ({
       case 'left':
         return {
           ...baseStyle,
-          top: 0,
+          top: 70,
           left: 0,
           bottom: 0,
           width: isExpanded ? `${size.width}px` : '0px',
@@ -59,7 +59,7 @@ export const PanelContainer: React.FC<PanelContainerProps> = ({
       default:
         return {
           ...baseStyle,
-          top: 0,
+          top: 40,
           right: 0,
           bottom: 0,
           width: isExpanded ? `${size.width}px` : '0px',

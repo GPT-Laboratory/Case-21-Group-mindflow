@@ -66,7 +66,7 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
       case 'top':
         return {
           ...baseStyle,
-          top: isExpanded ? `${size.height}px` : '0px',
+          top: isExpanded ? `${50 + size.height}px` : '50px', // Account for Controls Panel offset
           left: '50%',
           transform: 'translateX(-50%)',
           width: '80px',
@@ -112,7 +112,7 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
         return {
           ...baseStyle,
           right: isExpanded ? `${size.width}px` : '0px',
-          top: '16px',
+          top: '50%',
           width: '28px',
           height: '80px',
           borderTopLeftRadius: '8px',
