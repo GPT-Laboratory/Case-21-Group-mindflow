@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Settings, Play, RefreshCw } from 'lucide-react';
-import { FormField } from './FormField';
 import { FieldConfig } from '../types';
 import { dataSchemaManager } from '../../Process/DataSchemaManager';
+import { FormField } from './common/FormField';
 
 interface PropertiesTabProps {
   fields: Record<string, FieldConfig>;
