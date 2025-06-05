@@ -54,7 +54,24 @@ export const apiFlowNodesData: Node[] = [
       depth: 0,
       isParent: false,
       operation: 'filter',
-      condition: 'post.userId <= 5 && post.title.length > 10',
+      // Legacy condition for backward compatibility
+      condition: 'userId <= 5 && title.length > 10',
+      // New structured logic rules
+      logicRules: [
+        {
+          id: 'rule-1',
+          field: 'userId',
+          operator: '<=',
+          value: 5,
+          logicalOperator: 'AND'
+        },
+        {
+          id: 'rule-2',
+          field: 'title',
+          operator: 'length>',
+          value: 10
+        }
+      ],
       inputSchema: {
         type: 'array',
         items: {
