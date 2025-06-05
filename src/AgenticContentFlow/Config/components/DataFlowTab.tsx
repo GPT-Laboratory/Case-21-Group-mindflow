@@ -28,8 +28,10 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ nodeId, formData }) =>
     setNodeSchema(schema);
 
     // Subscribe to schema changes
-    const unsubscribe = dataSchemaManager.subscribe(nodeId, (updatedSchema) => {
-      setNodeSchema(updatedSchema);
+    const unsubscribe = dataSchemaManager.subscribe((updatedNodeId, updatedSchema) => {
+      if (updatedNodeId === nodeId) {
+        setNodeSchema(updatedSchema);
+      }
     });
 
     return unsubscribe;
@@ -68,16 +70,6 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ nodeId, formData }) =>
       });
       
       setConnectionStatus('success');
-
-      // Propagate to connected nodes
-      const edges = getEdges();
-      const connectedTargets = edges
-        .filter(edge => edge.source === nodeId)
-        .map(edge => edge.target);
-      
-      if (connectedTargets.length > 0) {
-        dataSchemaManager.propagateSchemaChanges(nodeId, connectedTargets);
-      }
 
     } catch (error) {
       setAnalysisResult({
