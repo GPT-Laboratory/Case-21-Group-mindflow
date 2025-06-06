@@ -22,7 +22,7 @@ import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
 import { ensureNodeTypesRegistered } from "./Nodes/registerBasicNodeTypes";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
-import { InputFocusProvider } from "./Config/contexts/InputFocusContext";
+import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
 
 import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React Flow
 import ReactStateHistory from "./History/ReactStateHistory";

@@ -7,9 +7,9 @@ import {
   useEffect,
 } from "react";
 import { Edge, Node, useOnSelectionChange, useReactFlow } from "@xyflow/react";
-import { useInputFocus } from "../../Config/contexts/InputFocusContext";
+import { useInputFocus } from "../../Panel/contexts/InputFocusContext";
 import { DeleteConfirmationDialog } from "../../../components/DeleteConfirmationDialog";
-import { useDeletionService } from "../../Config/hooks/useDeletionService";
+import { useDeletionService } from "../../Panel/hooks/useDeletionService";
 
 //Create a context for the selected nodes and edges
 

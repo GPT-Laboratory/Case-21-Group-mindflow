@@ -8,14 +8,14 @@ import { useNodeTypeRegistry } from "../Node/registry/nodeTypeRegistry";
 import { useSelect } from "../Select/contexts/SelectContext";
 import { useNodeContext } from "../Node/store/useNodeContext";
 import { useEdgeContext } from "../Edge/store/useEdgeContext";
-import { useInputFocus } from "../Config/contexts/InputFocusContext";
+import { useInputFocus } from "../Panel/contexts/InputFocusContext";
 // Import the grid controls registration
 import GridControlsRegistration from "./controls/GridControlsRegistration";
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import { useTransaction } from "@jalez/react-state-history";
 import { useEdgeTypeRegistry } from "../Edge/registry/edgeTypeRegistry";
 import { ensureEdgeTypesRegistered } from "../Edges/registerBasicEdgeTypes";
-import NodeConfigPanel from "../Config/NodeConfigPanel";
+import NodeConfigPanel from "../Panel/NodePanel";
 
 
 const defaultEdgeOptions = {
