@@ -8,7 +8,6 @@ export interface ListConfig {
   };
 }
 
-export type ApprovalStatus = 'pending' | 'approved' | 'declined';
 export type DataSource = 'realtime' | 'test' | 'none';
 export type DisplayType = 'list' | 'table' | 'cards' | 'custom';
 

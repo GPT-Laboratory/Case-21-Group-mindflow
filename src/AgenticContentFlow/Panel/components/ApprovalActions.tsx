@@ -1,7 +1,9 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { ApprovalStatus } from './utils/contentPreviewUtils';
+
+// Import the approval status type from ProcessContext
+type ApprovalStatus = 'pending' | 'approved' | 'declined';
 
 interface ApprovalActionsProps {
   approvalStatus: ApprovalStatus;
