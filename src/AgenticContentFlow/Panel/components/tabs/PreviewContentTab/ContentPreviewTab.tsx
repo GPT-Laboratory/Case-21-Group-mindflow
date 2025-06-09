@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -11,10 +11,10 @@ import { DataSourceInfo } from '../../DataSourceInfo';
 import { DebugInfo } from '../../DebugInfo';
 import { 
   parseListConfig, 
-  ApprovalStatus, 
   DisplayType 
 } from '../../utils/contentPreviewUtils';
 import { JSONSchema } from '@/AgenticContentFlow/Process/DataSchemaManager';
+import { useProcessContext } from '@/AgenticContentFlow/Process/ProcessContext';
 
 interface ContentPreviewTabProps {
   nodeId: string;
@@ -22,7 +22,9 @@ interface ContentPreviewTabProps {
 }
 
 export const ContentPreviewTab: React.FC<ContentPreviewTabProps> = ({ nodeId, formData }) => {
-  const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>('pending');
+  // Use the unified approval system from ProcessContext
+  const processContext = useProcessContext();
+  const processState = processContext.getNodeProcessState(nodeId);
 
   // Get the expected schema from form data
   const expectedSchema: JSONSchema | undefined = formData.expectedSchema;
@@ -38,20 +40,25 @@ export const ContentPreviewTab: React.FC<ContentPreviewTabProps> = ({ nodeId, fo
     loadPreviewData
   } = useContentPreview({ nodeId, expectedSchema });
 
-  // Handle approval actions
+  // Handle approval actions using the unified system
   const handleApprove = () => {
-    setApprovalStatus('approved');
+    processContext.setNodeApprovalStatus(nodeId, 'approved');
+    // Instead of starting a new process, just update the approval status
+    // The ContentNode's useEffect will detect this change and continue processing
     console.log('Content approved for node:', nodeId);
   };
 
   const handleDecline = () => {
-    setApprovalStatus('declined');
+    processContext.setNodeApprovalStatus(nodeId, 'declined');
     console.log('Content declined for node:', nodeId);
   };
 
   const resetApproval = () => {
-    setApprovalStatus('pending');
+    processContext.setNodeApprovalStatus(nodeId, 'pending');
   };
+
+  // Get current approval status from unified system
+  const approvalStatus = processState.approvalStatus || 'pending';
 
   return (
     <div className="space-y-4">
@@ -138,7 +145,7 @@ export const ContentPreviewTab: React.FC<ContentPreviewTabProps> = ({ nodeId, fo
 
       <Separator />
 
-      {/* Approval Actions */}
+      {/* Approval Actions - now connected to unified system */}
       <ApprovalActions
         approvalStatus={approvalStatus}
         onApprove={handleApprove}
