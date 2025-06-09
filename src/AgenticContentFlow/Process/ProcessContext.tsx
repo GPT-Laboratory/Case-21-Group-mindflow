@@ -11,13 +11,19 @@ export interface ProcessConfig {
 
 export interface ProcessState {
   /** Current processing status */
-  status: 'idle' | 'processing' | 'completed' | 'error';
+  status: 'idle' | 'processing' | 'completed' | 'error' | 'pending_approval';
   /** Start time of the process */
   startTime?: number;
   /** Data being processed or result */
   data?: any;
   /** Error information if status is 'error' */
   error?: string;
+  /** Approval status for nodes that require user approval */
+  approvalStatus?: 'pending' | 'approved' | 'declined';
+  /** Whether auto-approve is enabled for this process */
+  autoApprove?: boolean;
+  /** Data waiting for approval */
+  pendingData?: any;
 }
 
 interface ProcessContextValue {
@@ -36,6 +42,12 @@ interface ProcessContextValue {
   setNodeError: (nodeId: string, error: string) => void;
   /** Get process state for a node */
   getNodeProcessState: (nodeId: string) => ProcessState;
+  
+  /** Approval-related methods */
+  setNodeApprovalStatus: (nodeId: string, status: 'pending' | 'approved' | 'declined') => void;
+  setNodeAutoApprove: (nodeId: string, autoApprove: boolean) => void;
+  setNodePendingData: (nodeId: string, data: any) => void;
+  setNodePendingApproval: (nodeId: string, data: any, autoApprove?: boolean) => void;
   
   /** FlowData - map of node/edge IDs to their data */
   flowData: Map<string, any>;
@@ -166,6 +178,66 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
     return nodeProcesses.get(nodeId) || { status: 'idle' };
   }, [nodeProcesses]);
 
+  // Approval-related methods
+  const setNodeApprovalStatus = useCallback((nodeId: string, status: 'pending' | 'approved' | 'declined') => {
+    setNodeProcesses(prev => {
+      const current = prev.get(nodeId);
+      if (!current) return prev;
+
+      const updatedState: ProcessState = {
+        ...current,
+        approvalStatus: status
+      };
+      
+      return new Map(prev).set(nodeId, updatedState);
+    });
+  }, []);
+
+  const setNodeAutoApprove = useCallback((nodeId: string, autoApprove: boolean) => {
+    setNodeProcesses(prev => {
+      const current = prev.get(nodeId);
+      if (!current) return prev;
+
+      const updatedState: ProcessState = {
+        ...current,
+        autoApprove
+      };
+      
+      return new Map(prev).set(nodeId, updatedState);
+    });
+  }, []);
+
+  const setNodePendingData = useCallback((nodeId: string, data: any) => {
+    setNodeProcesses(prev => {
+      const current = prev.get(nodeId);
+      if (!current) return prev;
+
+      const updatedState: ProcessState = {
+        ...current,
+        pendingData: data,
+        status: 'pending_approval'
+      };
+      
+      return new Map(prev).set(nodeId, updatedState);
+    });
+  }, []);
+
+  const setNodePendingApproval = useCallback((nodeId: string, data: any, autoApprove?: boolean) => {
+    setNodeProcesses(prev => {
+      const current = prev.get(nodeId);
+      if (!current) return prev;
+
+      const updatedState: ProcessState = {
+        ...current,
+        pendingData: data,
+        status: 'pending_approval',
+        autoApprove
+      };
+      
+      return new Map(prev).set(nodeId, updatedState);
+    });
+  }, []);
+
   // FlowData methods - simplified and reactive
   const setFlowDataValue = useCallback((id: string, data: any) => {
     setFlowData(prev => {
@@ -183,6 +255,7 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
   }, [flowData]);
 
   const clearFlowData = useCallback((id: string) => {
+    console.log(`[ProcessContext] Clearing FlowData for ${id}`);
     setFlowData(prev => {
       const newMap = new Map(prev);
       const existed = newMap.delete(id);
@@ -216,6 +289,10 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
     completeNodeProcess,
     setNodeError,
     getNodeProcessState,
+    setNodeApprovalStatus,
+    setNodeAutoApprove,
+    setNodePendingData,
+    setNodePendingApproval,
     flowData,
     setFlowData: setFlowDataValue,
     getFlowData,
@@ -231,6 +308,10 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
     completeNodeProcess,
     setNodeError,
     getNodeProcessState,
+    setNodeApprovalStatus,
+    setNodeAutoApprove,
+    setNodePendingData,
+    setNodePendingApproval,
     flowData,
     setFlowDataValue,
     getFlowData,
