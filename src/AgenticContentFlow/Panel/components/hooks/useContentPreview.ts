@@ -31,15 +31,6 @@ export const useContentPreview = ({ nodeId, expectedSchema }: UseContentPreviewP
       console.log(`🔍 Loading preview data for ${nodeId}`);
       
       // 1. First try to get the last processed data for this node
-      const lastData = processContext.getNodeLastData(nodeId);
-      if (lastData) {
-        console.log(`✅ Found last processed data:`, lastData);
-        setPreviewData(Array.isArray(lastData) ? lastData.slice(0, 10) : [lastData]);
-        setDataSource('realtime');
-        setIsLoading(false);
-        return;
-      }
-      
       // 2. Then try current flow data for this node
       const currentData = processContext.getFlowData(nodeId);
       if (currentData && isValidRealTimeData({ data: currentData })) {
@@ -49,25 +40,30 @@ export const useContentPreview = ({ nodeId, expectedSchema }: UseContentPreviewP
         setIsLoading(false);
         return;
       }
-      
-      // 3. Check incoming edges for data
-      const edges = getEdges();
-      const incomingEdges = edges.filter(edge => edge.target === nodeId);
-      
-      for (const edge of incomingEdges) {
-        const edgeData = processContext.getFlowData(edge.id);
-        if (edgeData && isValidRealTimeData({ data: edgeData })) {
-          console.log(`✅ Found edge data from ${edge.id}:`, edgeData);
-          setPreviewData(Array.isArray(edgeData) ? edgeData.slice(0, 10) : [edgeData]);
+      const lastData = processContext.getNodeLastData(nodeId);
+      if (lastData) {
+        console.log(`✅ Found last processed data:`, lastData);
+        
+        // Check if this is processed content node data with inputData
+        if (lastData.processed && lastData.inputData && Array.isArray(lastData.inputData)) {
+          console.log(`📋 Extracting inputData from processed content node result`);
+          setPreviewData(lastData.inputData.slice(0, 10));
           setDataSource('realtime');
           setIsLoading(false);
           return;
         }
+        
+        // Otherwise use the lastData as is
+        setPreviewData(Array.isArray(lastData) ? lastData.slice(0, 10) : [lastData]);
+        setDataSource('realtime');
+        setIsLoading(false);
+        return;
       }
       
-      // 4. Fallback to test data if we have a schema
+      
+      // 3. Fallback to test data if we have a schema
       if (expectedSchema) {
-        console.log(`⚠️ No real data found, generating test data`);
+        console.log(`⚠️ No real data found, generating test data, expected schema:`, expectedSchema);
         const testData = generateTestDataSafely(expectedSchema, dataSchemaManager.generateTestData.bind(dataSchemaManager));
         setPreviewData(testData);
         setDataSource('test');
@@ -119,7 +115,6 @@ export const useContentPreview = ({ nodeId, expectedSchema }: UseContentPreviewP
     const validation = dataSchemaManager.validateCompatibility(
       sourceSchema.outputSchema, 
       expectedSchema,
-      { hasRealTimeData: previewData && previewData.length > 0 }
     );
 
     console.log(`🔍 Validation result:`, validation);
