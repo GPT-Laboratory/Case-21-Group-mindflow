@@ -90,6 +90,7 @@ export function BaseNodeContainer({
     
     // Default state - use persisted border color (starts as black, then persists last process color)
     return {
+      border: `3px solid ${borderColorAfterProcess}`,
       ...baseStyle,
       backgroundColor: baseStyle.backgroundColor || 'var(--color-background)',
       // Add glow effect when selected

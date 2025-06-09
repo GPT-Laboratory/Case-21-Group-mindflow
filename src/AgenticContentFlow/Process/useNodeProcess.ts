@@ -20,28 +20,33 @@ export const useNodeProcess = (options: UseNodeProcessOptions) => {
   const processState = processContext.getNodeProcessState(nodeId);
   const availableData = processContext.getFlowData(nodeId);
 
-  // Auto-start processing when new data arrives
-  useEffect(() => {
-    if (!autoStartOnData || !availableData || hasProcessedCurrentData) return;
-    if (processState.status === 'processing') return;
-
-    console.log(`🚀 Auto-starting processing for node ${nodeId} with data:`, availableData);
-    startProcess(availableData);
-    setHasProcessedCurrentData(true);
-  }, [autoStartOnData, availableData, hasProcessedCurrentData, processState.status, nodeId]);
-
-  // Reset processed flag when data changes
-  useEffect(() => {
-    setHasProcessedCurrentData(false);
-  }, [availableData]);
-
   // Start processing
   const startProcess = useCallback((data?: any) => {
     processContext.startNodeProcess(nodeId, data);
     // Clear the input data since we're now processing it
     console.log(`🔄 Node ${nodeId} started processing with data:`, data);
+  }, [processContext, nodeId]);
 
-  }, [processContext, nodeId, availableData]);
+  // Auto-start processing when new data arrives - FIXED: Added startProcess to dependencies and improved logic
+  useEffect(() => {
+    if (!autoStartOnData || !availableData || hasProcessedCurrentData) return;
+    if (processState.status === 'processing') return;
+
+    console.log(`🚀 Auto-starting processing for node ${nodeId} with data:`, availableData);
+    
+    // Use setTimeout to ensure the data is fully propagated through React's state system
+    const timeoutId = setTimeout(() => {
+      startProcess(availableData);
+      setHasProcessedCurrentData(true);
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
+  }, [autoStartOnData, availableData, hasProcessedCurrentData, processState.status, nodeId, startProcess]);
+
+  // Reset processed flag when data changes
+  useEffect(() => {
+    setHasProcessedCurrentData(false);
+  }, [availableData]);
 
   // Complete processing and publish data to outgoing edges
   const completeProcess = useCallback((result?: any) => {
