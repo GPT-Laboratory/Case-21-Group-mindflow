@@ -1,7 +1,7 @@
 /** @format */
 import { BezierEdge, SmoothStepEdge, StepEdge } from '@xyflow/react';
 import { registerEdgeType } from '../Edge/registry/edgeTypeRegistry';
-import { AnimatedPackageEdge } from './AnimatedPackageEdge';
+import { AnimatedPackageEdge } from './ProcessPackageEdge';
 
 // Track initialization state
 let registered = false;
