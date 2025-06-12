@@ -61,6 +61,17 @@ const updateRegistry = () => {
   const store = useNodeTypeRegistryStore.getState();
   store.setNodeTypes(types);
   store.incrementVersion();
+
+  console.log(`🔄 Registry updated with ${Object.keys(types).length} node types:`, Object.keys(types));
+};
+
+// Force immediate registry update (for critical nodes like factory nodes)
+const forceUpdateRegistry = () => {
+  if (updateTimer) {
+    clearTimeout(updateTimer);
+    updateTimer = null;
+  }
+  updateRegistry();
 };
 
 // Debounce registry updates
@@ -76,6 +87,7 @@ const debouncedUpdateRegistry = () => {
  * @param Component The React component to render for this node type
  * @param createTemplate The function that creates the node template
  * @param isParent Whether this node type can act as a parent (default: false)
+ * @param forceImmediate Whether to force immediate registry update (for critical nodes like factory nodes)
  */
 export function registerNodeType(
   type: string,
@@ -85,10 +97,17 @@ export function registerNodeType(
   defaultDimensions: {
     width: number;
     height: number;
-  } = { width: 300, height: 200 }
+  } = { width: 300, height: 200 },
+  forceImmediate: boolean = false
 ) {
   nodeTypeRegistry.set(type, { Component, createTemplate, isParent, defaultDimensions });
-  debouncedUpdateRegistry();
+  
+  if (forceImmediate) {
+    forceUpdateRegistry();
+    console.log(`⚡ Force-registered node type: ${type}`);
+  } else {
+    debouncedUpdateRegistry();
+  }
 }
 
 /**

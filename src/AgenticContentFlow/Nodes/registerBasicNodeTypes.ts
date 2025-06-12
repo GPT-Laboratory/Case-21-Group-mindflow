@@ -15,18 +15,15 @@ import DataNode from "./DataNode/DataNode";
 import { createDataNodeTemplate } from "./DataNode/createDataNodeTemplate";
 import PageNode from "./PageNode/PageNode";
 import { createPageNodeTemplate } from "./PageNode/createPageNodeTemplate";
-import ContentNode from "./ContentNode/ContentNode";
-import { createContentNodeTemplate } from "./ContentNode/createContentNodeTemplate";
 import ConditionalNode from "./ConditionalNode/ConditionalNode";
 import { createConditionalNodeTemplate } from "./ConditionalNode/createConditionalNodeTemplate";
 import { InvisibleNode } from './InvisibleNode/InvisibleNode';
 import { createInvisibleNodeTemplate } from './InvisibleNode/createInvisibleNodeTemplate';
 import { StatisticsNode } from './StatisticsNode/StatisticsNode';
 import { createStatisticsNodeTemplate } from "./StatisticsNode/createStatisticsNodeTemplate";
-import RestNode from "./RestNode/RestNode";
-import { createRestNodeTemplate } from "./RestNode/createRestNodeTemplate";
-import { LogicalNode } from "./LogicalNode/LogicalNode";
-import { createLogicalNodeTemplate } from "./LogicalNode/createLogicalNodeTemplate";
+
+// Import factory system for RestNode, LogicalNode, and ContentNode
+import { factoryNodeRegistration } from "../Node/factory/FactoryNodeRegistration";
 
 // Import handle type registration
 import { ensureHandleTypesRegistered } from "../Handles/registerBasicHandleTypes";
@@ -37,7 +34,7 @@ let registered = false;
 /**
  * Call this function to ensure node types are registered
  */
-export function ensureNodeTypesRegistered(): void {
+export async function ensureNodeTypesRegistered(): Promise<void> {
   if (registered) return;
   registered = true;
 
@@ -54,9 +51,18 @@ export function ensureNodeTypesRegistered(): void {
   registerNodeType("conditionalnode", ConditionalNode, createConditionalNodeTemplate);
   registerNodeType("invisiblenode", InvisibleNode, createInvisibleNodeTemplate, true);
   registerNodeType("statisticsnode", StatisticsNode, createStatisticsNodeTemplate, true);
-  registerNodeType("contentnode", ContentNode, createContentNodeTemplate, false);
-  registerNodeType("restnode", RestNode, createRestNodeTemplate, false);
-  registerNodeType("logicalnode", LogicalNode, createLogicalNodeTemplate, false);
+  
+  // Initialize factory system and register RestNode, LogicalNode, and ContentNode
+  try {
+    await factoryNodeRegistration.initializeFactoryNodes();
+    console.log("✅ Factory-based nodes (RestNode, LogicalNode, ContentNode) registered successfully");
+  } catch (error) {
+    console.error("❌ Failed to register factory-based nodes:", error);
+    // Fall back to registering empty nodes if factory fails
+    registerNodeType("restnode", CellNode, createCellNodeTemplate);
+    registerNodeType("logicalnode", CellNode, createCellNodeTemplate);
+    registerNodeType("contentnode", CellNode, createCellNodeTemplate);
+  }
 
   // Register handle type configurations
   ensureHandleTypesRegistered();
