@@ -9,10 +9,10 @@ import {
   moduleNodeConfig,
   cellNodeConfig,
   invisibleNodeConfig,
-  statisticsNodeConfig
+  statisticsNodeConfig,
+  restNodeConfig,
+  logicalNodeConfig,
 } from './configs';
-import { restNodeConfig } from './configs/restnode-handles';
-import { logicalNodeConfig } from './configs/logicalnode-handles';
 
 // Track initialization state
 let registered = false;

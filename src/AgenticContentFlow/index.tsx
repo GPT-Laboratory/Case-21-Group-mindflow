@@ -19,7 +19,6 @@ import SelectLogic from "./Select/SelectLogic";
 import Minimap from "./Minimap/Minimap";
 import TestControlsRegistration from "./test/TestControlsRegistration";
 import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
-import { ensureNodeTypesRegistered } from "./Nodes/registerBasicNodeTypes";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
@@ -29,8 +28,7 @@ import ReactStateHistory from "./History/ReactStateHistory";
 import { LayoutProvider } from "@jalez/react-flow-automated-layout";
 import ShortcutsManager from "./ShortCuts/ShortcutsManager";
 
-// Register node types before any rendering occurs
-ensureNodeTypesRegistered();
+// Register edge types before any rendering occurs
 ensureEdgeTypesRegistered();
 
 export function AgenticContentFlowContent() {

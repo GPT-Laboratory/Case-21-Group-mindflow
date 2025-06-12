@@ -177,11 +177,7 @@ export const CellNode: React.FC<CellNodeProps> = ({
             <Badge variant="outline" className={cn("text-xs px-2 py-1 m-1 font-mono", config.badge.colorClasses)}>
               {config.badge.text}
             </Badge>
-            {config.additionalContent && (
-              <div className="mt-1 text-xs text-slate-600">
-                {config.additionalContent}
-              </div>
-            )}
+         
           </div>
           
           {/* Play Controls */}

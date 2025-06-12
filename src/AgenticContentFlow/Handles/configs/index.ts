@@ -8,3 +8,5 @@ export { moduleNodeConfig } from './moduleNode';
 export { cellNodeConfig } from './cellNode';
 export { invisibleNodeConfig } from './invisibleNode';
 export { statisticsNodeConfig } from './statisticsNode';
+export { restNodeConfig } from './restnode';
+export { logicalNodeConfig } from './logicalnode';

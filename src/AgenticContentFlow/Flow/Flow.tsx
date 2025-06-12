@@ -1,5 +1,5 @@
 import { Edge, MarkerType, Node, ReactFlow, SelectionMode, useOnSelectionChange } from "@xyflow/react";
-import { memo, useEffect, useCallback, useRef, useMemo } from "react";
+import { memo, useEffect, useCallback, useRef, useMemo, useState } from "react";
 import useNodeSelection from "../Node/hooks/useNodeSelect";
 import { useEdgeSelect } from "../Edge/hooks/useEdgeSelect";
 import { VIEWPORT_CONSTRAINTS } from "../constants";
@@ -15,6 +15,7 @@ import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import { useTransaction } from "@jalez/react-state-history";
 import { useEdgeTypeRegistry } from "../Edge/registry/edgeTypeRegistry";
 import { ensureEdgeTypesRegistered } from "../Edges/registerBasicEdgeTypes";
+import { ensureNodeTypesRegistered } from "../Nodes/registerBasicNodeTypes";
 import NodeConfigPanel from "../Panel/NodePanel";
 
 
@@ -25,7 +26,14 @@ const defaultEdgeOptions = {
   markerEnd: { type: MarkerType.Arrow },
 };
 
-function Flow({ children }: { children?: React.ReactNode }) {
+export interface FlowProps {
+  children?: React.ReactNode;
+}
+
+/**
+ * Core Flow component that renders the main ReactFlow diagram
+ */
+export const Flow: React.FC<FlowProps> = memo(({ children }) => {
   const { applyLayout, autoLayout } = useLayoutContext();
   const { visibleEdges, onEdgesChange, onEdgeRemove } = useEdgeContext();
   const selectedNodesRef = useRef<any[]>([]);
@@ -37,7 +45,17 @@ function Flow({ children }: { children?: React.ReactNode }) {
 
   // Ensure both node and edge types are registered on component mount
   useEffect(() => {
-    ensureEdgeTypesRegistered();
+    const initializeNodeTypes = async () => {
+      try {
+        ensureEdgeTypesRegistered();
+        await ensureNodeTypesRegistered();
+        console.log("✅ All node and edge types registered successfully");
+      } catch (error) {
+        console.error("❌ Failed to register node types:", error);
+      }
+    };
+    
+    initializeNodeTypes();
   }, []);
 
   const memoizedNodeTypes = useMemo(() => nodeTypes, [nodeTypes]);
@@ -134,6 +152,54 @@ const filteredNodes = useMemo(() => {
   return sourceNodes.filter(node => !node.hidden);
 }, [nodes, localNodes, isDragging]);
 
+  // 🔧 NEW: Add loading state for factory system initialization
+  const [isFactorySystemReady, setIsFactorySystemReady] = useState(false);
+  const [initializationProgress, setInitializationProgress] = useState("Initializing...");
+
+  // 🔧 NEW: Enhanced initialization with proper loading states
+  useEffect(() => {
+    const initializeNodeTypes = async () => {
+      try {
+        setInitializationProgress("Registering edge types...");
+        ensureEdgeTypesRegistered();
+        
+        setInitializationProgress("Registering factory-based nodes...");
+        await ensureNodeTypesRegistered();
+        
+        setInitializationProgress("Finalizing setup...");
+        // Give a small delay to ensure all registry updates are complete
+        setTimeout(() => {
+          setIsFactorySystemReady(true);
+          console.log("✅ Factory system initialization complete");
+        }, 100);
+      } catch (error) {
+        console.error("❌ Failed to register node types:", error);
+        setInitializationProgress("Error during initialization");
+        // Still mark as ready to avoid infinite loading
+        setTimeout(() => setIsFactorySystemReady(true), 1000);
+      }
+    };
+    
+    initializeNodeTypes();
+  }, []);
+
+  // Show loading screen until factory system is ready
+  if (!isFactorySystemReady) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh', 
+        fontSize: 18,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white'
+      }}>
+        🏭 {initializationProgress}
+      </div>
+    );
+  }
+
   return (
     <>
         {/* Register the grid controls */}
@@ -187,6 +253,6 @@ const filteredNodes = useMemo(() => {
         <NodeConfigPanel />
       </>
   );
-}
+})
 
-export default memo(Flow);
+export default Flow;
