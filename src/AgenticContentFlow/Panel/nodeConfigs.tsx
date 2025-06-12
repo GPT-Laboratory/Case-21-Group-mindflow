@@ -1,4 +1,4 @@
-import { NodeConfig } from './types';
+import { NodeConfig, FieldConfig } from './types';
 import { 
   Database, 
   Globe, 
@@ -6,6 +6,126 @@ import {
   Workflow,
   Settings
 } from 'lucide-react';
+
+// Factory configuration imports
+import { factoryNodeRegistration } from '../Node/factory/FactoryNodeRegistration';
+import { ProcessParameter } from '../Node/factory/types';
+
+// Helper function to convert ProcessParameter to FieldConfig
+const convertProcessParameterToFieldConfig = (param: ProcessParameter): FieldConfig => {
+  const baseConfig: FieldConfig = {
+    fieldType: param.ui?.component || 'text',
+    label: param.description || 'Parameter',
+    defaultValue: param.default,
+    required: param.required,
+    placeholder: param.ui?.placeholder,
+    description: param.description,
+    validation: param.validation
+  };
+
+  // Handle select options
+  if (param.ui?.options) {
+    baseConfig.options = param.ui.options;
+  }
+
+  // Map parameter types to field types
+  switch (param.type) {
+    case 'number':
+      baseConfig.fieldType = 'number';
+      break;
+    case 'boolean':
+      baseConfig.fieldType = 'boolean';
+      break;
+    case 'array':
+    case 'object':
+      baseConfig.fieldType = 'textarea';
+      break;
+    default:
+      if (param.ui?.component === 'textarea') {
+        baseConfig.fieldType = 'textarea';
+      } else if (param.ui?.component === 'select') {
+        baseConfig.fieldType = 'select';
+      } else {
+        baseConfig.fieldType = 'text';
+      }
+  }
+
+  return baseConfig;
+};
+
+// Get factory node configuration with process parameters
+export const getFactoryNodeConfig = (nodeType: string): NodeConfig | null => {
+  try {
+    const configLoader = factoryNodeRegistration.getConfigurationLoader();
+    const factoryConfig = configLoader.getConfiguration(nodeType);
+    
+    if (!factoryConfig) {
+      return null;
+    }
+
+    // Convert factory config to NodeConfig format
+    const nodeConfig: NodeConfig = {
+      nodeType: factoryConfig.nodeType,
+      metadata: {
+        title: factoryConfig.defaultLabel,
+        description: factoryConfig.description,
+        icon: 'settings', // Could map from factoryConfig.visual.icon
+        category: factoryConfig.category
+      },
+      configFields: {}
+    };
+
+    // Add basic node data fields from template.defaultData
+    const defaultData = factoryConfig.template.defaultData;
+    Object.entries(defaultData).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        nodeConfig.configFields[key] = {
+          fieldType: key === 'url' ? 'text' : 
+                     key === 'method' ? 'select' : 
+                     key.includes('body') || key.includes('headers') ? 'textarea' : 'text',
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+          defaultValue: value,
+          required: key === 'url' || key === 'method',
+          ...(key === 'method' && {
+            options: [
+              { value: 'GET', label: 'GET' },
+              { value: 'POST', label: 'POST' },
+              { value: 'PUT', label: 'PUT' },
+              { value: 'DELETE', label: 'DELETE' },
+              { value: 'PATCH', label: 'PATCH' }
+            ]
+          })
+        };
+      } else if (typeof value === 'number') {
+        nodeConfig.configFields[key] = {
+          fieldType: 'number',
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+          defaultValue: value,
+          required: false
+        };
+      } else if (typeof value === 'boolean') {
+        nodeConfig.configFields[key] = {
+          fieldType: 'boolean',
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
+          defaultValue: value,
+          required: false
+        };
+      }
+    });
+
+    // Add process parameters as configurable fields
+    if (factoryConfig.process.parameters) {
+      Object.entries(factoryConfig.process.parameters).forEach(([paramKey, param]) => {
+        nodeConfig.configFields[paramKey] = convertProcessParameterToFieldConfig(param);
+      });
+    }
+
+    return nodeConfig;
+  } catch (error) {
+    console.warn(`Failed to get factory config for ${nodeType}:`, error);
+    return null;
+  }
+};
 
 // Mock configurations - in a real app, these would be loaded from the actual config files
 export const mockConfigurations: Record<string, NodeConfig> = {
@@ -292,8 +412,15 @@ export const getNodeIcon = (nodeType: string) => {
   }
 };
 
-// Utility function to get node configuration
+// Utility function to get node configuration - now factory-aware
 export const getNodeConfig = (nodeType: string, nodeData: any): NodeConfig => {
+  // First try to get factory configuration (for restnode, logicalnode, contentnode)
+  const factoryConfig = getFactoryNodeConfig(nodeType);
+  if (factoryConfig) {
+    return factoryConfig;
+  }
+  
+  // Fall back to static configurations for non-factory nodes
   return mockConfigurations[nodeType] || {
     nodeType,
     metadata: {
