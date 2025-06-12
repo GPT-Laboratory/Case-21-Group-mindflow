@@ -182,19 +182,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Debug info - remove this after testing */}
-        {nodeType && (
-          <div className="text-xs bg-yellow-50 p-2 rounded border">
-            <p><strong>Debug Info:</strong></p>
-            <p>Node Type: {nodeType}</p>
-            <p>Total Fields: {Object.keys(fields).length}</p>
-            <p>Node Data Fields: {Object.keys(nodeDataFields).length}</p>
-            <p>Process Parameter Fields: {Object.keys(processParameterFields).length}</p>
-            <p>Factory Process Parameters: {Object.keys(factoryProcessParameters).length}</p>
-            <p>Factory Default Parameters: {Object.keys(factoryDefaultParameters).length}</p>
-            <p>Parameters: {Object.keys(factoryProcessParameters).join(', ')}</p>
-            <p>Default Parameters: {Object.keys(factoryDefaultParameters).join(', ')}</p>
-          </div>
-        )}
+
 
         {/* Configuration fields organized in accordion */}
         <Accordion type="single" collapsible defaultValue="nodeData">
