@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Play, RefreshCw } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Settings, Play, RefreshCw, Cog, Database } from 'lucide-react';
 import { FieldConfig } from '../../../types';
 import { dataSchemaManager } from '../../../../Process/DataSchemaManager';
 import { FormField } from '../../common/FormField';
@@ -25,6 +26,48 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processResult, setProcessResult] = useState<any>(null);
+  const [factoryProcessParameters, setFactoryProcessParameters] = useState<Record<string, any>>({});
+  const [factoryDefaultParameters, setFactoryDefaultParameters] = useState<Record<string, any>>({});
+
+  // Load factory configuration asynchronously
+  useEffect(() => {
+    const loadFactoryConfig = async () => {
+      if (nodeType) {
+        try {
+          const { factoryNodeRegistration } = await import('../../../../Node/factory/FactoryNodeRegistration');
+          const configLoader = factoryNodeRegistration.getConfigurationLoader();
+          const config = configLoader.getConfiguration(nodeType);
+          const parameters = config?.process?.parameters || {};
+          const defaultParams = config?.template?.defaultParameters || {};
+          setFactoryProcessParameters(parameters);
+          setFactoryDefaultParameters(defaultParams);
+          console.log('🔧 Loaded factory config for', nodeType, ':', {
+            hasConfig: !!config,
+            parameterKeys: Object.keys(parameters),
+            defaultParameterKeys: Object.keys(defaultParams)
+          });
+        } catch (error) {
+          console.warn('Could not load factory configuration:', error);
+        }
+      }
+    };
+
+    loadFactoryConfig();
+  }, [nodeType]);
+
+  // Separate fields into categories based on actual factory config
+  const nodeDataFields: Record<string, FieldConfig> = {};
+  const processParameterFields: Record<string, FieldConfig> = {};
+
+  Object.entries(fields).forEach(([key, field]) => {
+    if (factoryProcessParameters[key]) {
+      // This is a process parameter
+      processParameterFields[key] = field;
+    } else {
+      // This is node data (url, method, etc.)
+      nodeDataFields[key] = field;
+    }
+  });
 
   // Generate smart test data based on node type
   const generateTestData = () => {
@@ -138,16 +181,107 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Regular configuration fields */}
-        {Object.entries(fields).map(([fieldKey, fieldConfig]) => (
-          <FormField
-            key={fieldKey}
-            fieldKey={fieldKey}
-            config={fieldConfig}
-            value={formData[fieldKey]}
-            onChange={(value) => onFieldChange(fieldKey, value)}
-          />
-        ))}
+        {/* Debug info - remove this after testing */}
+        {nodeType && (
+          <div className="text-xs bg-yellow-50 p-2 rounded border">
+            <p><strong>Debug Info:</strong></p>
+            <p>Node Type: {nodeType}</p>
+            <p>Total Fields: {Object.keys(fields).length}</p>
+            <p>Node Data Fields: {Object.keys(nodeDataFields).length}</p>
+            <p>Process Parameter Fields: {Object.keys(processParameterFields).length}</p>
+            <p>Factory Process Parameters: {Object.keys(factoryProcessParameters).length}</p>
+            <p>Factory Default Parameters: {Object.keys(factoryDefaultParameters).length}</p>
+            <p>Parameters: {Object.keys(factoryProcessParameters).join(', ')}</p>
+            <p>Default Parameters: {Object.keys(factoryDefaultParameters).join(', ')}</p>
+          </div>
+        )}
+
+        {/* Configuration fields organized in accordion */}
+        <Accordion type="single" collapsible defaultValue="nodeData">
+          {/* Node Data Section */}
+          {Object.keys(nodeDataFields).length > 0 && (
+            <AccordionItem value="nodeData">
+              <AccordionTrigger className="text-sm font-medium">
+                <Database className="w-4 h-4 mr-2" />
+                Node Data ({Object.keys(nodeDataFields).length} fields)
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                {Object.entries(nodeDataFields).map(([fieldKey, fieldConfig]) => (
+                  <FormField
+                    key={fieldKey}
+                    fieldKey={fieldKey}
+                    config={fieldConfig}
+                    value={formData[fieldKey]}
+                    onChange={(value) => onFieldChange(fieldKey, value)}
+                  />
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Process Parameters Section */}
+          {Object.keys(processParameterFields).length > 0 && (
+            <AccordionItem value="processParameters">
+              <AccordionTrigger className="text-sm font-medium">
+                <Cog className="w-4 h-4 mr-2" />
+                Process Parameters ({Object.keys(processParameterFields).length} fields)
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                {Object.entries(processParameterFields).map(([fieldKey, fieldConfig]) => (
+                  <FormField
+                    key={fieldKey}
+                    fieldKey={fieldKey}
+                    config={fieldConfig}
+                    value={formData[fieldKey] ?? fieldConfig.defaultValue}
+                    onChange={(value) => onFieldChange(fieldKey, value)}
+                  />
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Default Parameters Section - Read-only info */}
+          {Object.keys(factoryDefaultParameters).length > 0 && (
+            <AccordionItem value="defaultParameters">
+              <AccordionTrigger className="text-sm font-medium">
+                <Settings className="w-4 h-4 mr-2" />
+                Default Parameters ({Object.keys(factoryDefaultParameters).length} values)
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border">
+                  <p className="font-medium mb-1">Global Default Values</p>
+                  <p>These are default parameter values applied to all nodes of this type. Some may be managed globally by the system (like retry settings).</p>
+                </div>
+                <div className="space-y-2">
+                  {Object.entries(factoryDefaultParameters).map(([paramKey, defaultValue]) => (
+                    <div key={paramKey} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                      <span className="text-sm font-medium text-gray-700">{paramKey}</span>
+                      <code className="text-xs bg-white px-2 py-1 rounded border">
+                        {JSON.stringify(defaultValue)}
+                      </code>
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+        </Accordion>
+
+        {/* Fallback: show all fields if accordion sections are empty */}
+        {Object.keys(nodeDataFields).length === 0 && Object.keys(processParameterFields).length === 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">All Configuration Fields</h4>
+            {Object.entries(fields).map(([fieldKey, fieldConfig]) => (
+              <FormField
+                key={fieldKey}
+                fieldKey={fieldKey}
+                config={fieldConfig}
+                value={formData[fieldKey]}
+                onChange={(value) => onFieldChange(fieldKey, value)}
+              />
+            ))}
+          </div>
+        )}
 
         <Separator className="my-4" />
 
