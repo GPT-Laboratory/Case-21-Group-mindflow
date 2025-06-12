@@ -1,16 +1,15 @@
 /** @format */
 
 export * from './types';
-export * from './JSONNodeFactory';
+export * from './NodeFactory';
 export * from './IconResolver';
-export * from './ProcessExecutor';
+export { ProcessExecutor } from './ProcessExecutor';
 export * from './NodeConfigurationLoader';
 
 // Re-export for convenience
-export { JSONNodeFactory } from './JSONNodeFactory';
+export { NodeFactory } from './NodeFactory';
 export { NodeConfigurationLoader } from './NodeConfigurationLoader';
 export { IconResolver } from './IconResolver';
-export { ProcessExecutor, CodeValidator } from './ProcessExecutor';
 
 // Export type guards and utilities
 export type {
