@@ -1,13 +1,11 @@
 import { 
-  JSONNodeFactory, 
+  NodeFactory, 
   NodeConfigurationLoader,
   NodeFactoryJSON 
 } from './index';
 import { registerNodeType } from '../registry/nodeTypeRegistry';
 import { Node } from '@xyflow/react';
 import { NodeData } from '../../types';
-import { handleRegistry } from '../../Handle/registry/handleTypeRegistry';
-import { NodeHandleConfiguration } from '../../types/handleTypes';
 
 /**
  * Factory-based node registration system
@@ -16,11 +14,11 @@ import { NodeHandleConfiguration } from '../../types/handleTypes';
  * Instead of manually creating node components, nodes are generated from JSON configurations.
  */
 export class FactoryNodeRegistration {
-  private factory: JSONNodeFactory;
+  private factory: NodeFactory;
   private configLoader: NodeConfigurationLoader;
   
   constructor() {
-    this.factory = new JSONNodeFactory();
+    this.factory = new NodeFactory();
     this.configLoader = new NodeConfigurationLoader();
   }
   
@@ -37,7 +35,6 @@ export class FactoryNodeRegistration {
     // Register each configuration as a node type
     configurations.forEach((config) => {
       this.registerFactoryNode(config);
-      this.registerFactoryHandles(config);
     });
     
     console.log(`✅ Registered ${configurations.size} factory-based node types:`, 
@@ -96,106 +93,6 @@ export class FactoryNodeRegistration {
     console.log(`🏭 Registered factory node: ${config.nodeType}`);
   }
   
-  /**
-   * Register handle configurations for factory nodes
-   */
-  private registerFactoryHandles(config: NodeFactoryJSON): void {
-    console.log(`🔍 Attempting to register handles for: ${config.nodeType}`);
-    
-    // Create handle configuration based on node type
-    let handleConfig: NodeHandleConfiguration;
-    
-    switch (config.nodeType) {
-      case 'restnode':
-        handleConfig = {
-          nodeType: 'restnode',
-          category: 'integration',
-          handles: [
-            {
-              position: 'right',
-              type: 'source',
-              dataFlow: 'data',
-              connectsTo: ['logic', 'view'],
-              icon: 'arrow-right',
-              edgeType: 'package'
-            },
-            {
-              position: 'left',
-              type: 'target',
-              dataFlow: 'control',
-              acceptsFrom: ['data', 'logic'],
-              icon: 'arrow-left',
-              edgeType: 'default'
-            }
-          ]
-        };
-        break;
-        
-      case 'logicalnode':
-        handleConfig = {
-          nodeType: 'logicalnode',
-          category: 'logic',
-          handles: [
-            {
-              position: 'left',
-              type: 'target',
-              dataFlow: 'data',
-              acceptsFrom: ['integration', 'data'],
-              icon: 'arrow-left',
-              edgeType: 'package'
-            },
-            {
-              position: 'right',
-              type: 'source',
-              dataFlow: 'data',
-              connectsTo: ['view', 'logic'],
-              icon: 'arrow-right',
-              edgeType: 'package'
-            }
-          ]
-        };
-        break;
-        
-      case 'contentnode':
-        handleConfig = {
-          nodeType: 'contentnode',
-          category: 'view',
-          handles: [
-            {
-              position: 'left',
-              type: 'target',
-              dataFlow: 'data',
-              acceptsFrom: ['logic', 'integration', 'data'],
-              icon: 'arrow-left',
-              edgeType: 'package'
-            },
-            {
-              position: 'right',
-              type: 'source',
-              dataFlow: 'data',
-              connectsTo: ['integration', 'data'],
-              icon: 'arrow-right',
-              edgeType: 'package'
-            }
-          ]
-        };
-        break;
-        
-      default:
-        console.warn(`❌ No handle configuration available for factory node: ${config.nodeType}`);
-        return;
-    }
-    
-    console.log(`📋 Handle config created for ${config.nodeType}:`, handleConfig);
-    
-    try {
-      // Register the handle configuration immediately
-      handleRegistry.registerNodeHandles(handleConfig);
-      console.log(`🔌 Successfully registered handles for factory node: ${config.nodeType}`);
-    } catch (error) {
-      console.error(`❌ Failed to register handles for ${config.nodeType}:`, error);
-    }
-  }
   
   /**
    * Add a custom configuration and register it
@@ -208,7 +105,7 @@ export class FactoryNodeRegistration {
   /**
    * Get the factory instance for advanced usage
    */
-  getFactory(): JSONNodeFactory {
+  getFactory(): NodeFactory {
     return this.factory;
   }
   

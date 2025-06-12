@@ -17,15 +17,15 @@ The JSON-driven node factory system allows you to:
 ```
 factory/
 ├── types.ts                    # TypeScript interfaces
-├── JSONNodeFactory.tsx         # Main factory class
+├── NodeFactory.tsx             # Main factory class
 ├── ProcessExecutor.ts          # Code execution and validation
 ├── IconResolver.ts             # Icon resolution system
 ├── NodeConfigurationLoader.ts  # Configuration loading and validation
 ├── FactoryNodeRegistration.ts  # Integration with existing system
-└── configs/                    # JSON configurations
-    ├── restnode-config.json
-    ├── logicalnode-config.json
-    └── contentnode-config.json
+└── configs/                    # node configurations
+    ├── restnode-config.ts
+    ├── logicalnode-config.ts
+    └── contentnode-config.ts
 ```
 
 ## Quick Start
