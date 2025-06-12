@@ -32,7 +32,7 @@ export const apiFlowNodesData: Node[] = [
       method: 'GET',
       url: 'https://jsonplaceholder.typicode.com/posts',
       authentication: 'none',
-      timeout: 30,
+      timeout: 30000, // Fix: 30 seconds instead of 30ms
       retryAttempts: 3,
       headers: {
         'Content-Type': 'application/json'
@@ -170,7 +170,7 @@ export const apiFlowNodesData: Node[] = [
       method: 'POST',
       url: 'https://jsonplaceholder.typicode.com/posts',
       authentication: 'none',
-      timeout: 30,
+      timeout: 30000, // Fix: 30 seconds instead of 30ms
       retryAttempts: 3,
       headers: {
         'Content-Type': 'application/json'
