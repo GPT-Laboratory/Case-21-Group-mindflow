@@ -1,0 +1,103 @@
+{
+  "nodeType": "contentnode",
+  "defaultLabel": "Content Display",
+  "category": "view",
+  "description": "Displays and renders data in various formats like lists, tables, cards. Creates a need for upstream nodes to supply data in specific formats",
+  
+  "visual": {
+    "icon": { "type": "builtin", "value": "Eye" },
+    "headerIcon": { "type": "builtin", "value": "Eye", "className": "w-4 h-4 stroke-blue-700" },
+    "headerGradient": "bg-gradient-to-r from-blue-50 to-blue-100",
+    "selectedColor": "blue",
+    "variants": {
+      "fieldName": "displayType",
+      "options": {
+        "list": { "badgeText": "LIST", "badgeColor": "bg-blue-100 text-blue-800" },
+        "table": { "badgeText": "TABLE", "badgeColor": "bg-green-100 text-green-800" },
+        "cards": { "badgeText": "CARDS", "badgeColor": "bg-purple-100 text-purple-800" },
+        "json": { "badgeText": "JSON", "badgeColor": "bg-orange-100 text-orange-800" },
+        "chart": { "badgeText": "CHART", "badgeColor": "bg-red-100 text-red-800" }
+      },
+      "default": { "badgeText": "VIEW", "badgeColor": "bg-gray-100 text-gray-800" }
+    },
+    "additionalContentFunction": ".displayType"
+  },
+  
+  "process": {
+    "code": "async function process(incomingData, nodeData, params) {\n  try {\n    const { displayType = 'list', maxItems = 10, expectedSchema } = nodeData;\n    const { enableFormatting = true, showMetadata = false } = params;\n    \n    if (params.enableLogging) {\n      console.log(`Displaying data as ${displayType}:`, incomingData);\n    }\n    \n    // ContentNode is primarily for display - it doesn't alter data\n    // but it can format it for presentation purposes\n    let processedData = incomingData;\n    \n    // Handle different input types\n    if (!processedData) {\n      // Generate sample data if no input (for preview purposes)\n      processedData = generateSampleData(expectedSchema);\n    } else if (typeof processedData === 'object' && !Array.isArray(processedData)) {\n      // Handle REST response wrappers\n      if (processedData.data && Array.isArray(processedData.data)) {\n        processedData = processedData.data;\n      } else if (processedData.response && Array.isArray(processedData.response)) {\n        processedData = processedData.response;\n      } else {\n        // Single object - wrap in array for consistent display\n        processedData = [processedData];\n      }\n    }\n    \n    // Ensure we have an array for display\n    if (!Array.isArray(processedData)) {\n      processedData = [];\n    }\n    \n    // Limit items if specified\n    if (maxItems > 0 && processedData.length > maxItems) {\n      processedData = processedData.slice(0, maxItems);\n    }\n    \n    // Format data based on display type\n    let formattedData = processedData;\n    \n    if (enableFormatting) {\n      switch (displayType) {\n        case 'table':\n          formattedData = formatForTable(processedData);\n          break;\n        case 'cards':\n          formattedData = formatForCards(processedData);\n          break;\n        case 'json':\n          formattedData = processedData; // JSON displays raw data\n          break;\n        case 'chart':\n          formattedData = formatForChart(processedData);\n          break;\n        default: // 'list'\n          formattedData = formatForList(processedData);\n      }\n    }\n    \n    const result = {\n      displayType,\n      data: formattedData,\n      itemCount: processedData.length,\n      originalItemCount: incomingData ? (Array.isArray(incomingData) ? incomingData.length : 1) : 0,\n      processedAt: new Date().toISOString()\n    };\n    \n    if (showMetadata) {\n      result.metadata = {\n        maxItems,\n        truncated: maxItems > 0 && processedData.length > maxItems,\n        expectedSchema,\n        actualSchema: inferSchema(processedData)\n      };\n    }\n    \n    return result;\n    \n  } catch (error) {\n    if (params.enableLogging) {\n      console.error('Content display error:', error);\n    }\n    \n    return {\n      success: false,\n      error: error.message,\n      displayType: nodeData.displayType || 'list',\n      timestamp: new Date().toISOString()\n    };\n  }\n}\n\n// Helper function to generate sample data\nfunction generateSampleData(expectedSchema) {\n  if (!expectedSchema) {\n    return [\n      { id: 1, title: 'Sample Content 1', body: 'Sample body text', userId: 1 },\n      { id: 2, title: 'Sample Content 2', body: 'More sample text', userId: 2 }\n    ];\n  }\n  \n  // Generate based on schema (simplified)\n  if (expectedSchema.type === 'array') {\n    return Array(3).fill(null).map((_, index) => ({\n      id: index + 1,\n      title: `Sample Item ${index + 1}`,\n      value: Math.random() * 100\n    }));\n  }\n  \n  return [{ sample: true, message: 'No data provided' }];\n}\n\n// Formatting functions for different display types\nfunction formatForTable(data) {\n  if (!Array.isArray(data) || data.length === 0) return [];\n  \n  // Ensure consistent column structure\n  const columns = Object.keys(data[0] || {});\n  return data.map(item => {\n    const row = {};\n    columns.forEach(col => {\n      row[col] = item[col] !== undefined ? item[col] : '';\n    });\n    return row;\n  });\n}\n\nfunction formatForCards(data) {\n  if (!Array.isArray(data)) return [];\n  \n  return data.map(item => ({\n    ...item,\n    cardTitle: item.title || item.name || item.label || `Item ${item.id || 'Unknown'}`,\n    cardContent: item.body || item.description || item.content || 'No content available',\n    cardMeta: item.userId || item.author || item.category || ''\n  }));\n}\n\nfunction formatForList(data) {\n  if (!Array.isArray(data)) return [];\n  \n  return data.map(item => ({\n    ...item,\n    listTitle: item.title || item.name || item.label || `Item ${item.id || 'Unknown'}`,\n    listSubtitle: item.body || item.description || item.subtitle || ''\n  }));\n}\n\nfunction formatForChart(data) {\n  if (!Array.isArray(data)) return [];\n  \n  // Simple chart formatting - extract numeric values\n  return data.map((item, index) => {\n    const numericFields = Object.entries(item)\n      .filter(([key, value]) => typeof value === 'number')\n      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});\n    \n    return {\n      label: item.title || item.name || item.label || `Item ${index + 1}`,\n      ...numericFields,\n      x: index,\n      y: Object.values(numericFields)[0] || index\n    };\n  });\n}\n\n// Helper to infer data schema\nfunction inferSchema(data) {\n  if (!Array.isArray(data) || data.length === 0) {\n    return { type: 'array', items: { type: 'object' } };\n  }\n  \n  const sample = data[0];\n  const properties = {};\n  \n  Object.entries(sample).forEach(([key, value]) => {\n    properties[key] = { type: typeof value };\n  });\n  \n  return {\n    type: 'array',\n    items: {\n      type: 'object',\n      properties\n    }\n  };\n}",
+    
+    "metadata": {
+      "generatedBy": "manual",
+      "version": "1.0.0",
+      "lastUpdated": "2025-06-12T10:30:00Z",
+      "executionContext": "frontend",
+      "signature": "async function process(incomingData, nodeData, params)"
+    },
+    
+    "expectedInput": "array of objects or structured data",
+    "expectedOutput": "formatted data for display purposes",
+    
+    "parameters": {
+      "enableFormatting": {
+        "type": "boolean",
+        "description": "Apply display-specific formatting to the data",
+        "required": false,
+        "default": true,
+        "ui": { "component": "checkbox" }
+      },
+      "showMetadata": {
+        "type": "boolean",
+        "description": "Include metadata about data processing in output",
+        "required": false,
+        "default": false,
+        "ui": { "component": "checkbox" }
+      },
+      "enableLogging": {
+        "type": "boolean",
+        "description": "Enable detailed logging of display operations",
+        "required": false,
+        "default": false,
+        "ui": { "component": "checkbox" }
+      }
+    },
+    
+    "constraints": {
+      "timeout": 5000,
+      "maxRetries": 1,
+      "requiresAuth": false
+    }
+  },
+  
+  "menu": {
+    "items": [
+      { "key": "preview", "label": "Preview Display", "action": "execute" },
+      { "key": "configure", "label": "Configure Display", "action": "configure" },
+      { "key": "debug", "label": "Debug Display", "action": "debug" },
+      { "key": "export", "label": "Export Data", "action": "analyze" }
+    ]
+  },
+  
+  "template": {
+    "defaultData": {
+      "displayType": "list",
+      "maxItems": 10,
+      "expectedSchema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "number" },
+            "title": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        }
+      }
+    },
+    "defaultDimensions": { "width": 300, "height": 200 },
+    "defaultParameters": {
+      "enableFormatting": true,
+      "showMetadata": false,
+      "enableLogging": false
+    }
+  }
+}

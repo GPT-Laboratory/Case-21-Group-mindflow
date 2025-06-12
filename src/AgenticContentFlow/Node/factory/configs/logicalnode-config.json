@@ -1,0 +1,96 @@
+{
+  "nodeType": "logicalnode",
+  "defaultLabel": "Logic Processor",
+  "category": "logic",
+  "description": "Processes data with logical operations like filtering, transforming, aggregating, or conditional routing",
+  
+  "visual": {
+    "icon": { "type": "builtin", "value": "Settings" },
+    "headerIcon": { "type": "builtin", "value": "Settings", "className": "w-4 h-4 stroke-purple-700" },
+    "headerGradient": "bg-gradient-to-r from-purple-50 to-purple-100",
+    "selectedColor": "purple",
+    "variants": {
+      "fieldName": "operation",
+      "options": {
+        "filter": { "badgeText": "FILTER", "badgeColor": "bg-purple-100 text-purple-800" },
+        "transform": { "badgeText": "TRANSFORM", "badgeColor": "bg-blue-100 text-blue-800" },
+        "aggregate": { "badgeText": "AGGREGATE", "badgeColor": "bg-green-100 text-green-800" },
+        "conditional": { "badgeText": "CONDITIONAL", "badgeColor": "bg-orange-100 text-orange-800" },
+        "validate": { "badgeText": "VALIDATE", "badgeColor": "bg-red-100 text-red-800" }
+      },
+      "default": { "badgeText": "LOGIC", "badgeColor": "bg-gray-100 text-gray-800" }
+    },
+    "additionalContentFunction": ""
+  },
+  
+  "process": {
+    "code": "async function process(incomingData, nodeData, params) {\n  try {\n    const { operation, condition, logicRules } = nodeData;\n    const { enableLogging = true, strictMode = false } = params;\n    \n    if (enableLogging) {\n      console.log(`Processing ${operation} operation with data:`, incomingData);\n    }\n    \n    // Extract actual data from REST response wrapper if needed\n    let actualData = incomingData;\n    if (incomingData && typeof incomingData === 'object' && !Array.isArray(incomingData)) {\n      if (incomingData.response && Array.isArray(incomingData.response)) {\n        actualData = incomingData.response;\n      } else if (incomingData.data && Array.isArray(incomingData.data)) {\n        actualData = incomingData.data;\n      }\n    }\n    \n    switch (operation.toLowerCase()) {\n      case 'filter':\n        if (!Array.isArray(actualData)) {\n          if (strictMode) {\n            throw new Error('Filter operation requires array input');\n          }\n          return [];\n        }\n        \n        return actualData.filter((item) => {\n          if (logicRules && Array.isArray(logicRules)) {\n            // Use structured rules\n            return evaluateLogicRules(logicRules, item);\n          } else if (condition) {\n            // Legacy condition string evaluation\n            return evaluateCondition(condition, item);\n          }\n          return true;\n        });\n        \n      case 'transform':\n        if (!Array.isArray(actualData)) {\n          if (strictMode) {\n            throw new Error('Transform operation requires array input');\n          }\n          return [];\n        }\n        \n        return actualData.map((item) => ({\n          ...item,\n          transformed: true,\n          processedAt: new Date().toISOString(),\n          operation: 'transform'\n        }));\n        \n      case 'aggregate':\n        if (!Array.isArray(actualData)) {\n          if (strictMode) {\n            throw new Error('Aggregate operation requires array input');\n          }\n          return [{ count: 0, items: [], aggregated: true }];\n        }\n        \n        return [{\n          id: 'aggregate-summary',\n          title: `Summary of ${actualData.length} items`,\n          count: actualData.length,\n          summary: {\n            totalItems: actualData.length,\n            processedAt: new Date().toISOString()\n          },\n          aggregated: true,\n          originalData: actualData\n        }];\n        \n      case 'conditional':\n        // Route data based on condition\n        const passesCondition = actualData && Array.isArray(actualData) \n          ? actualData.some(item => evaluateCondition(condition, item))\n          : evaluateCondition(condition, actualData);\n          \n        return {\n          condition: condition,\n          result: passesCondition,\n          data: actualData,\n          routeTo: passesCondition ? 'true' : 'false'\n        };\n        \n      case 'validate':\n        if (!Array.isArray(actualData)) {\n          return [{\n            valid: false,\n            errors: ['Input must be an array'],\n            data: actualData\n          }];\n        }\n        \n        return actualData.map(item => ({\n          valid: item && typeof item === 'object',\n          errors: [],\n          data: item,\n          validatedAt: new Date().toISOString()\n        }));\n        \n      default:\n        if (strictMode) {\n          throw new Error(`Unknown operation: ${operation}`);\n        }\n        return actualData || [];\n    }\n    \n  } catch (error) {\n    if (params.enableLogging) {\n      console.error('Logic processing error:', error);\n    }\n    \n    return {\n      success: false,\n      error: error.message,\n      operation: nodeData.operation,\n      timestamp: new Date().toISOString()\n    };\n  }\n}\n\n// Helper function to evaluate logic rules\nfunction evaluateLogicRules(rules, item) {\n  if (!rules || rules.length === 0) return true;\n  \n  let result = true;\n  for (let i = 0; i < rules.length; i++) {\n    const rule = rules[i];\n    const ruleResult = evaluateSingleRule(rule, item);\n    \n    if (i === 0) {\n      result = ruleResult;\n    } else {\n      const prevRule = rules[i - 1];\n      if (prevRule.logicalOperator === 'OR') {\n        result = result || ruleResult;\n      } else {\n        result = result && ruleResult;\n      }\n    }\n  }\n  \n  return result;\n}\n\n// Helper function to evaluate a single rule\nfunction evaluateSingleRule(rule, item) {\n  const value = item[rule.field];\n  const targetValue = rule.value;\n  \n  switch (rule.operator) {\n    case 'equals': return value === targetValue;\n    case 'not_equals': return value !== targetValue;\n    case 'greater_than': return value > targetValue;\n    case 'less_than': return value < targetValue;\n    case 'contains': return String(value).includes(String(targetValue));\n    case 'starts_with': return String(value).startsWith(String(targetValue));\n    default: return true;\n  }\n}\n\n// Helper function for legacy condition evaluation\nfunction evaluateCondition(condition, item) {\n  if (!condition) return true;\n  \n  try {\n    // Simple condition evaluation (safe subset)\n    if (condition.includes('userId') && condition.includes('<=')) {\n      const userIdMatch = item.userId <= 5;\n      if (condition.includes('title.length')) {\n        const titleLengthMatch = item.title && item.title.length > 10;\n        return userIdMatch && titleLengthMatch;\n      }\n      return userIdMatch;\n    }\n    \n    return true;\n  } catch (error) {\n    console.warn('Failed to evaluate condition:', condition, error);\n    return true;\n  }\n}",
+    
+    "metadata": {
+      "generatedBy": "manual",
+      "version": "1.0.0",
+      "lastUpdated": "2025-06-12T10:30:00Z",
+      "executionContext": "frontend",
+      "signature": "async function process(incomingData, nodeData, params)"
+    },
+    
+    "expectedInput": "array of objects or data from upstream nodes",
+    "expectedOutput": "processed data based on operation type",
+    
+    "parameters": {
+      "enableLogging": {
+        "type": "boolean",
+        "description": "Enable detailed logging of processing steps",
+        "required": false,
+        "default": true,
+        "ui": { "component": "checkbox" }
+      },
+      "strictMode": {
+        "type": "boolean",
+        "description": "Throw errors for invalid inputs instead of returning defaults",
+        "required": false,
+        "default": false,
+        "ui": { "component": "checkbox" }
+      },
+      "maxItems": {
+        "type": "number",
+        "description": "Maximum number of items to process (0 = unlimited)",
+        "required": false,
+        "default": 0,
+        "validation": { "min": 0, "max": 10000 },
+        "ui": { "component": "number", "placeholder": "0" }
+      }
+    },
+    
+    "constraints": {
+      "timeout": 15000,
+      "maxRetries": 3,
+      "requiresAuth": false
+    }
+  },
+  
+  "menu": {
+    "items": [
+      { "key": "test", "label": "Test Logic", "action": "execute" },
+      { "key": "configure", "label": "Configure Logic", "action": "configure" },
+      { "key": "debug", "label": "Debug Logic", "action": "debug" },
+      { "key": "analyze", "label": "Analyze Performance", "action": "analyze" }
+    ]
+  },
+  
+  "template": {
+    "defaultData": {
+      "operation": "filter",
+      "condition": "",
+      "inputSchema": {},
+      "outputSchema": {},
+      "logicRules": []
+    },
+    "defaultDimensions": { "width": 200, "height": 200 },
+    "defaultParameters": {
+      "enableLogging": true,
+      "strictMode": false,
+      "maxItems": 0
+    }
+  }
+}
