@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Database, RefreshCw, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
-import { dataSchemaManager, flowSchemaAnalyzer, JSONSchema, NodeSchema } from '@/AgenticContentFlow/Schema';
+import { dataSchemaManager, flowSchemaAnalyzer, NodeSchema } from '@/AgenticContentFlow/Schema';
+import { 
+  TabContainer, 
+  StatusBadge, 
+  ActionButton, 
+  AlertBox, 
+  DataDisplay, 
+  EmptyState, 
+  Section,
+  InfoCard,
+  Separator 
+} from '../../shared';
 
 interface DataFlowTabProps {
   nodeId: string;
@@ -76,153 +83,113 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ nodeId, formData }) =>
     }
   };
 
-  const renderSchema = (schema: JSONSchema, title: string) => {
-    if (!schema) return null;
-
-    return (
-      <div className="space-y-2">
-        <h4 className="text-sm font-medium flex items-center gap-2">
-          <Database className="w-4 h-4" />
-          {title}
-        </h4>
-        <div className="border rounded p-3 bg-gray-50 font-mono text-xs">
-          <pre className="overflow-x-auto whitespace-pre-wrap">
-            {JSON.stringify(schema, null, 2)}
-          </pre>
-        </div>
-      </div>
-    );
-  };
-
-  const getStatusColor = () => {
-    switch (connectionStatus) {
-      case 'analyzing': return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'success': return 'text-green-600 bg-green-50 border-green-200';
-      case 'error': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
   const getStatusIcon = () => {
     switch (connectionStatus) {
-      case 'analyzing': return <RefreshCw className="w-4 h-4 animate-spin" />;
-      case 'success': return <CheckCircle className="w-4 h-4" />;
-      case 'error': return <AlertTriangle className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
+      case 'analyzing': return RefreshCw;
+      case 'success': return CheckCircle;
+      case 'error': return AlertTriangle;
+      default: return Activity;
     }
   };
 
+  const description = nodeType === 'restnode' 
+    ? 'Analyze endpoint structure and define data schemas'
+    : 'View and configure input/output data schemas';
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center space-x-2">
-          <Database className="w-4 h-4" />
-          <span>Data Schema</span>
-        </CardTitle>
-        <CardDescription className="text-xs">
-          {nodeType === 'restnode' 
-            ? 'Analyze endpoint structure and define data schemas'
-            : 'View and configure input/output data schemas'
-          }
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        
-        {/* Status Section */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={`text-xs ${getStatusColor()}`}>
-              {getStatusIcon()}
-              {connectionStatus === 'analyzing' ? 'Analyzing...' :
-               connectionStatus === 'success' ? 'Schema Ready' :
-               connectionStatus === 'error' ? 'Analysis Failed' :
-               'Ready to Analyze'}
-            </Badge>
-            {nodeSchema?.lastUpdated && (
-              <span className="text-xs text-gray-500">
-                Updated: {new Date(nodeSchema.lastUpdated).toLocaleTimeString()}
-              </span>
-            )}
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
+    <TabContainer
+      title="Data Schema"
+      description={description}
+      icon={Database}
+    >
+      {/* Status Section */}
+      <Section 
+        title="Schema Status"
+        actions={
+          <ActionButton
+            icon={RefreshCw}
+            text="Refresh Schema"
             onClick={handleRefreshSchema}
             disabled={isAnalyzing}
-          >
-            {isAnalyzing ? (
-              <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3 h-3 mr-2" />
-            )}
-            Refresh Schema
-          </Button>
-        </div>
+            loading={isAnalyzing}
+          />
+        }
+      >
+        <StatusBadge
+          status={connectionStatus}
+          icon={getStatusIcon()}
+          timestamp={nodeSchema?.lastUpdated ? 
+            `Updated: ${new Date(nodeSchema.lastUpdated).toLocaleTimeString()}` : 
+            undefined
+          }
+        />
+      </Section>
 
-        <Separator />
+      <Separator />
 
-        {/* REST Node Specific Info */}
-        {nodeType === 'restnode' && formData.url && (
-          <div className="flex items-start space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <Activity className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-blue-700">
-              <strong>Endpoint:</strong> {formData.method || 'GET'} {formData.url}
+      {/* REST Node Specific Info */}
+      {nodeType === 'restnode' && formData.url && (
+        <InfoCard
+          title="Endpoint Information"
+          type="info"
+          content={`${formData.method || 'GET'} ${formData.url}`}
+        />
+      )}
+
+      {/* Analysis Results */}
+      {analysisResult && (
+        <AlertBox
+          type={analysisResult.success ? 'success' : 'error'}
+          title={analysisResult.success ? '✓ Analysis Complete' : '✗ Analysis Failed'}
+          message={analysisResult.success ? 
+            `Schema generated successfully${analysisResult.timestamp ? ` at ${new Date(analysisResult.timestamp).toLocaleTimeString()}` : ''}` :
+            analysisResult.error
+          }
+        />
+      )}
+
+      {/* Input Schema */}
+      {nodeSchema?.inputSchema && (
+        <DataDisplay
+          data={nodeSchema.inputSchema}
+          title="Input Schema"
+          icon={Database}
+        />
+      )}
+
+      {/* Output Schema */}
+      {nodeSchema?.outputSchema && (
+        <DataDisplay
+          data={nodeSchema.outputSchema}
+          title="Output Schema"
+          icon={Database}
+        />
+      )}
+
+      {/* No Schema Message */}
+      {!nodeSchema?.inputSchema && !nodeSchema?.outputSchema && (
+        <EmptyState
+          icon={Database}
+          title="No schema available"
+          description={nodeType === 'restnode' 
+            ? 'Configure an endpoint URL to analyze its schema'
+            : 'Connect to other nodes or configure data sources'
+          }
+        />
+      )}
+
+      {/* Connection Info */}
+      {nodeSchema && (
+        <InfoCard
+          title="Connection Information"
+          content={
+            <div className="space-y-1">
+              <div>Node ID: {nodeId}</div>
+              <div>Type: {nodeType}</div>
             </div>
-          </div>
-        )}
-
-        {/* Analysis Results */}
-        {analysisResult && (
-          <div className={`flex items-start space-x-2 p-3 rounded-md ${analysisResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-            <div className="text-xs">
-              {analysisResult.success ? (
-                <div className="text-green-700">
-                  <strong>✓ Analysis Complete:</strong> Schema generated successfully
-                  <br />
-                  <span className="text-green-600">
-                    {analysisResult.timestamp && `at ${new Date(analysisResult.timestamp).toLocaleTimeString()}`}
-                  </span>
-                </div>
-              ) : (
-                <div className="text-red-700">
-                  <strong>✗ Analysis Failed:</strong> {analysisResult.error}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Input Schema */}
-        {nodeSchema?.inputSchema && renderSchema(nodeSchema.inputSchema, 'Input Schema')}
-
-        {/* Output Schema */}
-        {nodeSchema?.outputSchema && renderSchema(nodeSchema.outputSchema, 'Output Schema')}
-
-        {/* No Schema Message */}
-        {!nodeSchema?.inputSchema && !nodeSchema?.outputSchema && (
-          <div className="text-center py-8 text-gray-500">
-            <Database className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No schema available</p>
-            <p className="text-xs">
-              {nodeType === 'restnode' 
-                ? 'Configure an endpoint URL to analyze its schema'
-                : 'Connect to other nodes or configure data sources'
-              }
-            </p>
-          </div>
-        )}
-
-        {/* Connection Info */}
-        {nodeSchema && (
-          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-            <div className="flex justify-between">
-              <span>Node ID: {nodeId}</span>
-              <span>Type: {nodeType}</span>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          }
+        />
+      )}
+    </TabContainer>
   );
 };
