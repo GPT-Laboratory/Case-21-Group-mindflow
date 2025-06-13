@@ -6,7 +6,7 @@ import { useNodeContext } from "../../store/useNodeContext";
 import { createConnectionWithTargetHandle, validateConnection, createEdge } from "../../../Edge/hooks/utils/edgeUtils";
 import { useTransaction } from "@jalez/react-state-history";
 import { handleContainerization } from "../utils/nodeUtils";
-import { dataSchemaManager } from "../../../Process/DataSchemaManager";
+import { dataSchemaManager } from "../../../Schema";
 
 export const useDirectConnectionOperations = () => {
   const {

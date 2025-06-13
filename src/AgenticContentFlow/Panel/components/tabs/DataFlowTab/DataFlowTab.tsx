@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Database, RefreshCw, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import { useReactFlow } from '@xyflow/react';
-import { dataSchemaManager, JSONSchema, NodeSchema } from '@/AgenticContentFlow/Process/DataSchemaManager';
+import { dataSchemaManager, flowSchemaAnalyzer, JSONSchema, NodeSchema } from '@/AgenticContentFlow/Schema';
 
 interface DataFlowTabProps {
   nodeId: string;
@@ -42,35 +42,28 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ nodeId, formData }) =>
     if (nodeType === 'restnode' && formData.url && formData.url !== '') {
       // Add a small delay to ensure form data is fully updated
       const timeoutId = setTimeout(() => {
-        handleAnalyzeEndpoint();
+        handleRefreshSchema();
       }, 200);
       
       return () => clearTimeout(timeoutId);
     }
   }, [formData.url, formData.method, nodeType]);
 
-  const handleAnalyzeEndpoint = async () => {
-    if (!formData.url || nodeType !== 'restnode') return;
-
+  const handleRefreshSchema = async () => {
     setIsAnalyzing(true);
     setConnectionStatus('analyzing');
 
     try {
-      const schema = await dataSchemaManager.analyzeRestEndpoint(formData.url, formData.method || 'GET');
-      
-      // Update both input and output schemas for REST nodes
-      dataSchemaManager.updateSchema(nodeId, undefined, schema);
+      // Universal schema analysis for ALL node types
+      await flowSchemaAnalyzer.analyzeNodeFlow(nodeId, nodeType!, getNode, getEdges);
       
       setAnalysisResult({
         success: true,
         timestamp: new Date().toISOString(),
-        schema,
-        url: formData.url,
-        method: formData.method || 'GET'
+        message: 'Schema analysis completed'
       });
       
       setConnectionStatus('success');
-
     } catch (error) {
       setAnalysisResult({
         success: false,
@@ -80,25 +73,6 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ nodeId, formData }) =>
       setConnectionStatus('error');
     } finally {
       setIsAnalyzing(false);
-    }
-  };
-
-  const handleRefreshSchema = () => {
-    if (nodeType === 'restnode') {
-      handleAnalyzeEndpoint();
-    } else {
-      // For other node types, refresh from connected sources
-      const edges = getEdges();
-      const connectedSources = edges
-        .filter(edge => edge.target === nodeId)
-        .map(edge => edge.source);
-      
-      connectedSources.forEach(sourceId => {
-        const sourceSchema = dataSchemaManager.getSchema(sourceId);
-        if (sourceSchema?.outputSchema) {
-          dataSchemaManager.updateSchema(nodeId, sourceSchema.outputSchema);
-        }
-      });
     }
   };
 
@@ -182,7 +156,7 @@ export const DataFlowTab: React.FC<DataFlowTabProps> = ({ nodeId, formData }) =>
             ) : (
               <RefreshCw className="w-3 h-3 mr-2" />
             )}
-            {nodeType === 'restnode' ? 'Analyze Endpoint' : 'Refresh Schema'}
+            Refresh Schema
           </Button>
         </div>
 

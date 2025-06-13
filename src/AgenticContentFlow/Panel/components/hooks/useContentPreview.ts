@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import { dataSchemaManager, JSONSchema } from '../../../Process/DataSchemaManager';
+import { dataSchemaManager, schemaGenerator, JSONSchema } from '../../../Schema';
 import { useProcessContext } from '../../../Process/ProcessContext';
 import { 
   SchemaValidationResult, 
@@ -64,7 +64,7 @@ export const useContentPreview = ({ nodeId, expectedSchema }: UseContentPreviewP
       // 3. Fallback to test data if we have a schema
       if (expectedSchema) {
         console.log(`⚠️ No real data found, generating test data, expected schema:`, expectedSchema);
-        const testData = generateTestDataSafely(expectedSchema, dataSchemaManager.generateTestData.bind(dataSchemaManager));
+        const testData = generateTestDataSafely(expectedSchema, schemaGenerator.generateTestData.bind(schemaGenerator));
         setPreviewData(testData);
         setDataSource('test');
       } else {

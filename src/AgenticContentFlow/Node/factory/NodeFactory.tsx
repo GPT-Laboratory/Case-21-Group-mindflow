@@ -9,6 +9,9 @@ import { ProcessExecutor } from './ProcessExecutor';
 import { CellNode, CellNodeConfig } from '../../Nodes/common/CellNode';
 import { useNodeProcess } from '../../Process/useNodeProcess';
 
+// DataSchemaManager integration for factory nodes
+import { dataSchemaManager } from '../../Schema';
+
 /**
  * NodeFactory creates React node components from JSON configurations
  */
@@ -75,6 +78,29 @@ export class NodeFactory {
               );
               
               console.log(`✅ Factory node ${config.nodeType} (${id}) completed processing:`, result);
+              console.log(`🔍 Input data type:`, typeof availableData, Array.isArray(availableData) ? `Array[${availableData.length}]` : 'Non-array');
+              console.log(`🔍 Output data type:`, typeof result, Array.isArray(result) ? `Array[${result.length}]` : 'Non-array');
+              console.log(`🔍 Data reference equality:`, result === availableData);
+              
+              // 🔧 NEW: Update schemas in DataSchemaManager
+              const { inputSchema, outputSchema } = generateFactoryNodeSchemas(
+                config.nodeType,
+                availableData, // incoming data for input schema
+                result        // output data for output schema
+              );
+              
+              console.log(`📊 Generated schemas for factory node ${config.nodeType} (${id}):`, {
+                inputSchema: inputSchema ? 'Generated' : 'None',
+                outputSchema: outputSchema ? 'Generated' : 'None',
+                inputSchemaDetails: inputSchema,
+                outputSchemaDetails: outputSchema
+              });
+              
+              if (inputSchema || outputSchema) {
+                dataSchemaManager.updateSchema(id, inputSchema, outputSchema);
+                console.log(`📊 Updated schemas in DataSchemaManager for factory node ${config.nodeType} (${id})`);
+              }
+              
               completeProcess(result);
             } catch (error) {
               console.error(`❌ Factory node ${config.nodeType} (${id}) processing failed:`, error);
@@ -101,6 +127,22 @@ export class NodeFactory {
           );
           
           console.log(`✅ Factory node ${config.nodeType} (${id}) manual execution result:`, result);
+          
+          // 🔧 NEW: Update schemas in DataSchemaManager for manual execution
+          const { inputSchema, outputSchema } = generateFactoryNodeSchemas(
+            config.nodeType,
+            null,        // no incoming data for manual execution
+            result       // output data for output schema
+          );
+          
+          if (inputSchema || outputSchema) {
+            dataSchemaManager.updateSchema(id, inputSchema, outputSchema);
+            console.log(`📊 Updated schemas for factory node ${config.nodeType} (${id}) after manual execution:`, {
+              inputSchema,
+              outputSchema
+            });
+          }
+          
           completeProcess(result);
         } catch (error) {
           console.error(`❌ Factory node ${config.nodeType} (${id}) manual execution failed:`, error);
@@ -274,6 +316,92 @@ export class NodeFactory {
     nodeData: NodeInstanceData,
     incomingData?: any
   ): Promise<any> {
+    console.log('Executing process function with nodeData:', nodeData); // Use the parameter
     return await this.processExecutor.executeProcess(config, nodeData, incomingData);
   }
 }
+
+/**
+ * Helper function to generate schemas for factory nodes based on their type and data
+ */
+const generateFactoryNodeSchemas = (
+  nodeType: string, 
+  incomingData: any, 
+  outputData: any
+) => {
+  console.log(`🔍 generateFactoryNodeSchemas called for ${nodeType}:`, {
+    hasIncomingData: !!incomingData,
+    hasOutputData: !!outputData,
+    dataEquality: outputData === incomingData,
+    incomingDataType: typeof incomingData,
+    outputDataType: typeof outputData
+  });
+
+  let inputSchema = undefined;
+  let outputSchema = undefined;
+
+  // Generate input schema based on incoming data if available
+  if (incomingData) {
+    inputSchema = generateSchemaFromData(incomingData);
+    console.log(`📥 Generated input schema:`, inputSchema);
+  }
+
+  // Generate output schema based on output data if available
+  if (outputData) {
+    // Check if output data is exactly the same reference as input data
+    if (inputSchema && outputData === incomingData) {
+      console.log(`🔄 Factory node passed through data unchanged, inheriting input schema`);
+      outputSchema = inputSchema;
+    } else {
+      outputSchema = generateSchemaFromData(outputData);
+      console.log(`📤 Generated output schema:`, outputSchema);
+      
+      // Additional check: if the schemas are structurally identical but references are different,
+      // use the input schema to preserve fidelity
+      if (inputSchema && JSON.stringify(inputSchema) === JSON.stringify(outputSchema)) {
+        console.log(`🔄 Schemas are structurally identical, using input schema for fidelity`);
+        outputSchema = inputSchema;
+      }
+    }
+  }
+
+  return { inputSchema, outputSchema };
+};
+
+const generateSchemaFromData = (data: any): any => {
+  if (data === null || data === undefined) return { type: 'null' };
+  
+  if (Array.isArray(data)) {
+    // For arrays, analyze all items to get a complete schema
+    if (data.length === 0) {
+      return { type: 'array', items: { type: 'object' } };
+    }
+    
+    // If all items have the same structure, use the first item's schema
+    // This preserves detailed property information
+    const firstItemSchema = generateSchemaFromData(data[0]);
+    
+    return {
+      type: 'array',
+      items: firstItemSchema
+    };
+  }
+  
+  if (typeof data === 'object') {
+    const properties: Record<string, any> = {};
+    
+    // Generate schema for each property
+    Object.keys(data).forEach(key => {
+      properties[key] = generateSchemaFromData(data[key]);
+    });
+    
+    return {
+      type: 'object',
+      properties
+    };
+  }
+  
+  // Handle primitive types
+  return { type: typeof data };
+};
+

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Edge, EdgeChange, applyEdgeChanges, Connection } from "@xyflow/react";
 import { withErrorHandler } from "../../utils/withErrorHandler";
-import { dataSchemaManager } from "../../Process/DataSchemaManager";
+import { dataSchemaManager } from "../../Schema";
 
 // Import useTrackableState directly only in this file
 // In the future, this will be used only internally by EdgeProvider

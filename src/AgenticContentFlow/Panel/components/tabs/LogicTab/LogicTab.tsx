@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Plus, Play, Settings2 } from 'lucide-react';
 import { LogicRuleBuilder } from './LogicRuleBuilder';
 
-import { dataSchemaManager } from '../../../../Process/DataSchemaManager';
+import { dataSchemaManager } from '../../../../Schema';
 import { SchemaAnalysisCard } from '../../SchemaAnalysisCard';
 import { LogicPreview } from './LogicPreview';
 
