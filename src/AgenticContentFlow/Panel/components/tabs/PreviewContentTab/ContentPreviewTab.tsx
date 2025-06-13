@@ -4,11 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle, RefreshCw, Eye } from 'lucide-react';
 import { useContentPreview } from '../../hooks/useContentPreview';
-import { ContentDisplay } from '../../ContentDisplay';
-import { SchemaValidationDisplay } from '../../SchemaValidationDisplay';
-import { ApprovalActions } from '../../ApprovalActions';
-import { DataSourceInfo } from '../../DataSourceInfo';
-import { DebugInfo } from '../../DebugInfo';
+import { ContentDisplay } from './ContentDisplay';
+import { SchemaValidationDisplay } from './SchemaValidationDisplay';
+import { ApprovalActions } from './ApprovalActions';
+import { DataSourceInfo } from './DataSourceInfo';
+import { DebugInfo } from './DebugInfo';
 import { 
   parseListConfig, 
   DisplayType 
