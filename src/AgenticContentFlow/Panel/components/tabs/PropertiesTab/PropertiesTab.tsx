@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Settings, Play, RefreshCw, Cog, Database } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { FieldConfig } from '../../../types';
 import { dataSchemaManager, schemaGenerator } from '../../../../Schema';
 import { FormField } from '../../common/FormField';
+import { 
+  TabContainer, 
+  ActionButton, 
+  AlertBox, 
+  Section,
+  InfoCard,
+  MetadataGrid,
+  Badge,
+  Separator 
+} from '../../shared';
+
+// Define NodeGroup type locally since we removed the separate file
+export type NodeGroup = 'process' | 'preview' | 'container';
 
 interface PropertiesTabProps {
   fields: Record<string, FieldConfig>;
@@ -15,6 +24,7 @@ interface PropertiesTabProps {
   onFieldChange: (fieldKey: string, value: any) => void;
   nodeId?: string;
   nodeType?: string;
+  nodeGroup?: NodeGroup;
 }
 
 export const PropertiesTab: React.FC<PropertiesTabProps> = ({ 
@@ -22,7 +32,8 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   formData, 
   onFieldChange,
   nodeId,
-  nodeType
+  nodeType,
+  nodeGroup
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processResult, setProcessResult] = useState<any>(null);
@@ -41,11 +52,6 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
           const defaultParams = config?.template?.defaultParameters || {};
           setFactoryProcessParameters(parameters);
           setFactoryDefaultParameters(defaultParams);
-          console.log('🔧 Loaded factory config for', nodeType, ':', {
-            hasConfig: !!config,
-            parameterKeys: Object.keys(parameters),
-            defaultParameterKeys: Object.keys(defaultParams)
-          });
         } catch (error) {
           console.warn('Could not load factory configuration:', error);
         }
@@ -61,10 +67,8 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
 
   Object.entries(fields).forEach(([key, field]) => {
     if (factoryProcessParameters[key]) {
-      // This is a process parameter
       processParameterFields[key] = field;
     } else {
-      // This is node data (url, method, etc.)
       nodeDataFields[key] = field;
     }
   });
@@ -170,183 +174,150 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center space-x-2">
-          <Settings className="w-4 h-4" />
-          <span>Node Configuration</span>
-        </CardTitle>
-        <CardDescription className="text-xs">
-          Configure the behavior and properties of this node
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Debug info - remove this after testing */}
+    <TabContainer
+      title={`${nodeGroup?.charAt(0).toUpperCase()}${nodeGroup?.slice(1)} Node Configuration`}
+      description={`Configure the behavior and properties of this ${nodeGroup} node`}
+      icon={Settings}
+      badges={nodeType ? [<Badge key="type" variant="outline" className="text-xs">{nodeType}</Badge>] : []}
+    >
+      {/* Configuration fields organized in accordion */}
+      <Accordion type="single" collapsible defaultValue="nodeData">
+        {/* Node Data Section */}
+        {Object.keys(nodeDataFields).length > 0 && (
+          <AccordionItem value="nodeData">
+            <AccordionTrigger className="text-sm font-medium">
+              <Database className="w-4 h-4 mr-2" />
+              Node Data ({Object.keys(nodeDataFields).length} fields)
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              {Object.entries(nodeDataFields).map(([fieldKey, fieldConfig]) => (
+                <FormField
+                  key={fieldKey}
+                  fieldKey={fieldKey}
+                  config={fieldConfig}
+                  value={formData[fieldKey]}
+                  onChange={(value) => onFieldChange(fieldKey, value)}
+                />
+              ))}
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
+        {/* Process Parameters Section */}
+        {Object.keys(processParameterFields).length > 0 && (
+          <AccordionItem value="processParameters">
+            <AccordionTrigger className="text-sm font-medium">
+              <Cog className="w-4 h-4 mr-2" />
+              Process Parameters ({Object.keys(processParameterFields).length} fields)
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              {Object.entries(processParameterFields).map(([fieldKey, fieldConfig]) => (
+                <FormField
+                  key={fieldKey}
+                  fieldKey={fieldKey}
+                  config={fieldConfig}
+                  value={formData[fieldKey] ?? fieldConfig.defaultValue}
+                  onChange={(value) => onFieldChange(fieldKey, value)}
+                />
+              ))}
+            </AccordionContent>
+          </AccordionItem>
+        )}
 
-        {/* Configuration fields organized in accordion */}
-        <Accordion type="single" collapsible defaultValue="nodeData">
-          {/* Node Data Section */}
-          {Object.keys(nodeDataFields).length > 0 && (
-            <AccordionItem value="nodeData">
-              <AccordionTrigger className="text-sm font-medium">
-                <Database className="w-4 h-4 mr-2" />
-                Node Data ({Object.keys(nodeDataFields).length} fields)
-              </AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                {Object.entries(nodeDataFields).map(([fieldKey, fieldConfig]) => (
-                  <FormField
-                    key={fieldKey}
-                    fieldKey={fieldKey}
-                    config={fieldConfig}
-                    value={formData[fieldKey]}
-                    onChange={(value) => onFieldChange(fieldKey, value)}
-                  />
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {/* Process Parameters Section */}
-          {Object.keys(processParameterFields).length > 0 && (
-            <AccordionItem value="processParameters">
-              <AccordionTrigger className="text-sm font-medium">
-                <Cog className="w-4 h-4 mr-2" />
-                Process Parameters ({Object.keys(processParameterFields).length} fields)
-              </AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                {Object.entries(processParameterFields).map(([fieldKey, fieldConfig]) => (
-                  <FormField
-                    key={fieldKey}
-                    fieldKey={fieldKey}
-                    config={fieldConfig}
-                    value={formData[fieldKey] ?? fieldConfig.defaultValue}
-                    onChange={(value) => onFieldChange(fieldKey, value)}
-                  />
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {/* Default Parameters Section - Read-only info */}
-          {Object.keys(factoryDefaultParameters).length > 0 && (
-            <AccordionItem value="defaultParameters">
-              <AccordionTrigger className="text-sm font-medium">
-                <Settings className="w-4 h-4 mr-2" />
-                Default Parameters ({Object.keys(factoryDefaultParameters).length} values)
-              </AccordionTrigger>
-              <AccordionContent className="space-y-3">
-                <div className="text-xs text-blue-700 bg-blue-50 p-2 rounded border">
-                  <p className="font-medium mb-1">Global Default Values</p>
-                  <p>These are default parameter values applied to all nodes of this type. Some may be managed globally by the system (like retry settings).</p>
-                </div>
-                <div className="space-y-2">
-                  {Object.entries(factoryDefaultParameters).map(([paramKey, defaultValue]) => (
-                    <div key={paramKey} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
-                      <span className="text-sm font-medium text-gray-700">{paramKey}</span>
-                      <code className="text-xs bg-white px-2 py-1 rounded border">
-                        {JSON.stringify(defaultValue)}
-                      </code>
-                    </div>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
-        </Accordion>
-
-        {/* Fallback: show all fields if accordion sections are empty */}
-        {Object.keys(nodeDataFields).length === 0 && Object.keys(processParameterFields).length === 0 && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium">All Configuration Fields</h4>
-            {Object.entries(fields).map(([fieldKey, fieldConfig]) => (
-              <FormField
-                key={fieldKey}
-                fieldKey={fieldKey}
-                config={fieldConfig}
-                value={formData[fieldKey]}
-                onChange={(value) => onFieldChange(fieldKey, value)}
+        {/* Default Parameters Section - Read-only info */}
+        {Object.keys(factoryDefaultParameters).length > 0 && (
+          <AccordionItem value="defaultParameters">
+            <AccordionTrigger className="text-sm font-medium">
+              <Settings className="w-4 h-4 mr-2" />
+              Default Parameters ({Object.keys(factoryDefaultParameters).length} values)
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <InfoCard
+                title="Global Default Values"
+                type="info"
+                content="These are default parameter values applied to all nodes of this type. Some may be managed globally by the system (like retry settings)."
               />
-            ))}
+              <MetadataGrid
+                items={Object.entries(factoryDefaultParameters).map(([paramKey, defaultValue]) => ({
+                  label: paramKey,
+                  value: JSON.stringify(defaultValue)
+                }))}
+                columns={2}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        )}
+      </Accordion>
+
+      {/* Fallback: show all fields if accordion sections are empty */}
+      {Object.keys(nodeDataFields).length === 0 && Object.keys(processParameterFields).length === 0 && (
+        <Section title="All Configuration Fields">
+          {Object.entries(fields).map(([fieldKey, fieldConfig]) => (
+            <FormField
+              key={fieldKey}
+              fieldKey={fieldKey}
+              config={fieldConfig}
+              value={formData[fieldKey]}
+              onChange={(value) => onFieldChange(fieldKey, value)}
+            />
+          ))}
+        </Section>
+      )}
+
+      <Separator />
+
+      {/* Process Controls Section */}
+      <Section title="Process Controls">
+        {/* Use Test Data Checkbox */}
+        <FormField
+          fieldKey="useTestData"
+          config={{
+            fieldType: 'boolean',
+            label: 'Use Test Data',
+            defaultValue: false,
+            description: 'Enable automatic test data generation for this node'
+          }}
+          value={formData.useTestData}
+          onChange={(value) => onFieldChange('useTestData', value)}
+        />
+
+        {/* Auto-Generated Test Data Display */}
+        {formData.useTestData && formData.generatedTestData && (
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-700">Auto-Generated Test Data:</label>
+            <div className="border rounded p-2 bg-gray-50 max-h-32 overflow-y-auto">
+              <pre className="text-xs">{JSON.stringify(formData.generatedTestData, null, 2)}</pre>
+            </div>
           </div>
         )}
 
-        <Separator className="my-4" />
+        {/* Run Process Button */}
+        <ActionButton
+          icon={isProcessing ? RefreshCw : Play}
+          text={isProcessing ? 'Processing...' : 'Run Process'}
+          onClick={handleRunProcess}
+          disabled={isProcessing}
+          loading={isProcessing}
+          className="w-full"
+        />
 
-        {/* Process Controls Section */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Process Controls</h4>
-            {nodeType && (
-              <Badge variant="outline" className="text-xs">{nodeType}</Badge>
-            )}
-          </div>
-
-          {/* Use Test Data Checkbox */}
-          <FormField
-            fieldKey="useTestData"
-            config={{
-              fieldType: 'boolean',
-              label: 'Use Test Data',
-              defaultValue: false,
-              description: 'Enable automatic test data generation for this node'
-            }}
-            value={formData.useTestData}
-            onChange={(value) => onFieldChange('useTestData', value)}
-          />
-
-          {/* Auto-Generated Test Data Display */}
-          {formData.useTestData && formData.generatedTestData && (
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-700">Auto-Generated Test Data:</label>
-              <div className="border rounded p-2 bg-gray-50 max-h-32 overflow-y-auto">
-                <pre className="text-xs">{JSON.stringify(formData.generatedTestData, null, 2)}</pre>
+        {/* Process Results Display */}
+        {processResult && (
+          <AlertBox
+            type={processResult.success ? 'success' : 'error'}
+            title={processResult.success ? '✓ Process completed successfully' : '✗ Process failed'}
+            message={processResult.success ? (
+              <div className="space-y-1">
+                <div>Generated {processResult.dataGenerated} test data items</div>
+                <div className="text-gray-600">Type: {processResult.type}</div>
+                <div className="text-gray-600">Time: {new Date(processResult.timestamp).toLocaleTimeString()}</div>
               </div>
-            </div>
-          )}
-
-          {/* Run Process Button */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRunProcess}
-              disabled={isProcessing}
-              className="flex-1"
-            >
-              {isProcessing ? (
-                <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
-              ) : (
-                <Play className="w-3 h-3 mr-2" />
-              )}
-              {isProcessing ? 'Processing...' : 'Run Process'}
-            </Button>
-          </div>
-
-          {/* Process Results Display */}
-          {processResult && (
-            <div className={`p-3 rounded border text-xs ${
-              processResult.success 
-                ? 'bg-green-50 border-green-200 text-green-800' 
-                : 'bg-red-50 border-red-200 text-red-800'
-            }`}>
-              {processResult.success ? (
-                <div className="space-y-1">
-                  <div className="font-medium">✓ Process completed successfully</div>
-                  <div>Generated {processResult.dataGenerated} test data items</div>
-                  <div className="text-gray-600">Type: {processResult.type}</div>
-                  <div className="text-gray-600">Time: {new Date(processResult.timestamp).toLocaleTimeString()}</div>
-                </div>
-              ) : (
-                <div>
-                  <div className="font-medium">✗ Process failed</div>
-                  <div>{processResult.error}</div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            ) : (
+              processResult.error
+            )}
+          />
+        )}
+      </Section>
+    </TabContainer>
   );
 };
