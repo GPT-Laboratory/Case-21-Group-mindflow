@@ -38,6 +38,7 @@ export interface NodeFactoryJSON {
   nodeType: string;
   defaultLabel: string;
   category: 'integration' | 'logic' | 'view' | 'data' | 'container';
+  group: 'process' | 'preview' | 'container'; // Node group for UI behavior
   description: string; // AI uses this to understand node purpose
   
   // Visual configuration with variant support

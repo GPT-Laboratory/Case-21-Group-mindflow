@@ -1,4 +1,6 @@
 // Node type groupings for better organization
+import { factoryNodeRegistration } from '../../Node/factory/FactoryNodeRegistration';
+
 export type ProcessNodeType = 'restnode' | 'logicalnode';
 export type PreviewNodeType = 'contentnode';
 export type ContainerNodeType = 'customnode'; // Add more container types as needed
@@ -6,22 +8,20 @@ export type ContainerNodeType = 'customnode'; // Add more container types as nee
 export type NodeGroup = 'process' | 'preview' | 'container';
 
 export function getNodeGroup(nodeType: string): NodeGroup {
-  const processNodes: ProcessNodeType[] = ['restnode', 'logicalnode'];
-  const previewNodes: PreviewNodeType[] = ['contentnode'];
-  const containerNodes: ContainerNodeType[] = ['customnode'];
+  // First try to get the group from factory configuration
+  try {
+    const configLoader = factoryNodeRegistration.getConfigurationLoader();
+    const factoryConfig = configLoader.getConfiguration(nodeType);
+    
+    if (factoryConfig && factoryConfig.group) {
+        console.log(`Node type ${nodeType} found in factory config with group: ${factoryConfig.group}`);
+      return factoryConfig.group;
 
-  if (processNodes.includes(nodeType as ProcessNodeType)) {
-    return 'process';
+    }
+  } catch (error) {
+    console.warn(`Failed to get factory group for ${nodeType}:`, error);
   }
-  if (previewNodes.includes(nodeType as PreviewNodeType)) {
-    return 'preview';
-  }
-  if (containerNodes.includes(nodeType as ContainerNodeType)) {
-    return 'container';
-  }
-  
-  // Default fallback
-  return 'process';
+return 'process'; // Default to 'process' if no group found
 }
 
 export function isProcessNode(nodeType: string): boolean {

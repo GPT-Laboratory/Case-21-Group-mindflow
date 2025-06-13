@@ -4,6 +4,7 @@ export const restNodeConfig: NodeFactoryJSON = {
       nodeType: "restnode",
       defaultLabel: "REST API",
       category: "integration",
+      group: "process",
       description: "Fetches data from REST API endpoints with configurable HTTP methods and authentication",
       visual: {
         icon: { "type": "component", "value": "DomainIcon" },

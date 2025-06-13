@@ -4,6 +4,7 @@ export const contentNodeConfig: NodeFactoryJSON = {
     "nodeType": "contentnode",
     "defaultLabel": "Content Display",
     "category": "view",
+    "group": "preview",
     "description": "Displays and renders data in various formats",
     "visual": {
       "icon": { "type": "builtin", "value": "Eye" },

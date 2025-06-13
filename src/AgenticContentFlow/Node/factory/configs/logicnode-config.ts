@@ -4,6 +4,7 @@ export const logicNodeConfig: NodeFactoryJSON = {
       "nodeType": "logicalnode",
       "defaultLabel": "Logic Processor",
       "category": "logic",
+      "group": "process",
       "description": "Processes data with logical operations like filtering, transforming, aggregating, or conditional routing",
       "visual": {
         "icon": { "type": "builtin", "value": "Settings" },
