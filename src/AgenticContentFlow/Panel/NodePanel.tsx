@@ -20,6 +20,7 @@ import { LogicTab } from './components/tabs/LogicTab/LogicTab';
 import { AdvancedTab } from './components/tabs/AdvancedTab/AdvancedTab';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
 import { DataFlowTab } from './components/tabs/DataFlowTab/DataFlowTab';
+import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -136,6 +137,10 @@ export const NodeConfigPanel: React.FC = () => {
                   <TabsTrigger value="properties">Properties</TabsTrigger>
                   <TabsTrigger value="appearance">Appearance</TabsTrigger>
                   <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                  {/* Add Code Editor tab for factory nodes */}
+                  {(activeNode.type === "restnode" || activeNode.type === "logicalnode" || activeNode.type === "contentnode") && (
+                    <TabsTrigger value="codeeditor">Code Editor</TabsTrigger>
+                  )}
                   {activeNode.type === "restnode" && (
                     <>
                       <TabsTrigger value="preview">Preview</TabsTrigger>
@@ -220,6 +225,16 @@ export const NodeConfigPanel: React.FC = () => {
                         <DataFlowTab nodeId={activeNode.id} formData={formData} />
                       </TabsContent>
                     </>
+                  )}
+                  {/* Code Editor Tab for all factory nodes */}
+                  {(activeNode.type === "restnode" || activeNode.type === "logicalnode" || activeNode.type === "contentnode") && (
+                    <TabsContent value="codeeditor" className="m-0">
+                      <CodeEditorTab 
+                        nodeType={activeNode.type}
+                        formData={formData} 
+                        onFieldChange={handleFieldChange} 
+                      />
+                    </TabsContent>
                   )}
                   {activeNode.type === "customnode" && (
                     <TabsContent value="logic" className="m-0">
