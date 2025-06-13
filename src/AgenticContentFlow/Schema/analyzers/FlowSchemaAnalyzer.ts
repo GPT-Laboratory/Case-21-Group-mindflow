@@ -107,15 +107,12 @@ export class FlowSchemaAnalyzer {
     if (!sourceNode) {
       console.log(`⚠️ Source node ${sourceId} not found`);
       return;
-    }
-
-    console.log(`🔧 ${forceReAnalysis ? 'Re-analyzing' : 'Analyzing'} source node ${sourceId} (${sourceNode.type})`);
+    }    
     
     // First, ensure this node's upstream sources are analyzed
     const sourceEdges = edges.filter(edge => edge.target === sourceId);
     if (sourceEdges.length > 0) {
       const upstreamId = sourceEdges[0].source;
-      console.log(`🔗 Ensuring upstream node ${upstreamId} is analyzed first...`);
       await this.analyzeSourceNode(upstreamId, getNode, edges, forceReAnalysis);
     }
     
@@ -164,10 +161,6 @@ export class FlowSchemaAnalyzer {
         sampleInputData
       );
       
-      console.log(`✅ Factory node execution result:`, result);
-      console.log(`🔍 Input data was:`, sampleInputData);
-      console.log(`🔍 Result type:`, typeof result, Array.isArray(result) ? `Array[${result.length}]` : 'Non-array');
-      console.log(`🔍 Data reference equality:`, result === sampleInputData);
       
       // Generate schema from the actual output
       if (result !== undefined) {

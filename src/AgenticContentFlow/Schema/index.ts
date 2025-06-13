@@ -7,11 +7,9 @@ export * from './core/DataSchemaManager';
 export * from './generators/SchemaGenerator';
 
 // Schema analyzers
-export * from './analyzers/RestApiAnalyzer';
 export * from './analyzers/FlowSchemaAnalyzer';
 
 // Convenient re-exports for common use cases
 export { dataSchemaManager } from './core/DataSchemaManager';
 export { schemaGenerator } from './generators/SchemaGenerator';
-export { restApiAnalyzer } from './analyzers/RestApiAnalyzer';
 export { flowSchemaAnalyzer } from './analyzers/FlowSchemaAnalyzer';

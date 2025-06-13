@@ -67,35 +67,6 @@ export class SchemaGenerator {
     return { type: typeof data };
   }
 
-  /**
-   * Generate input schema for REST nodes based on HTTP method
-   */
-  generateRestInputSchema(method: string): JSONSchema {
-    if (method.toUpperCase() === 'GET') {
-      return {
-        type: 'object',
-        properties: {
-          params: { type: 'object' },
-          headers: { type: 'object' }
-        }
-      };
-    }
-    if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-      return {
-        type: 'object',
-        properties: {
-          data: { type: 'object' },
-          headers: { type: 'object' }
-        }
-      };
-    }
-    return {
-      type: 'object',
-      properties: {
-        headers: { type: 'object' }
-      }
-    };
-  }
 }
 
 // Global instance
