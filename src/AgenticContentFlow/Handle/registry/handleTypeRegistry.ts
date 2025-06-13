@@ -5,10 +5,10 @@ import {
   ConnectionCompatibility,
   NodeCategory 
 } from '../../types/handleTypes';
+import { nodeFactory } from '../../Node/factory/NodeFactory';
 
 export class HandleTypeRegistry {
   private static instance: HandleTypeRegistry;
-  private configurations = new Map<string, NodeHandleConfiguration>();
   
   static getInstance(): HandleTypeRegistry {
     if (!HandleTypeRegistry.instance) {
@@ -18,26 +18,19 @@ export class HandleTypeRegistry {
   }
   
   /**
-   * Register handle configuration for a node type
-   */
-  registerNodeHandles(config: NodeHandleConfiguration): void {
-    this.configurations.set(config.nodeType, config);
-  }
-  
-  /**
-   * Get all handle definitions for a node type
+   * Get all handle definitions for a node type from the node factory
    */
   getNodeHandles(nodeType: string): HandleTypeDefinition[] {
-    const config = this.configurations.get(nodeType);
-    return config?.handles || [];
+    const config = nodeFactory.getNodeConfig(nodeType);
+    return config?.handles?.definitions || [];
   }
   
   /**
-   * Get the node category for a given node type
+   * Get the node category for a given node type from the node factory
    */
   getNodeCategory(nodeType: string): NodeCategory | undefined {
-    const config = this.configurations.get(nodeType);
-    return config?.category;
+    const config = nodeFactory.getNodeConfig(nodeType);
+    return config?.handles?.category;
   }
   
   /**
@@ -124,17 +117,25 @@ export class HandleTypeRegistry {
   }
   
   /**
-   * Get all registered node types
+   * Get all registered node types from the node factory
    */
   getRegisteredNodeTypes(): string[] {
-    return Array.from(this.configurations.keys());
+    return nodeFactory.getRegisteredNodeTypes();
+  }
+  
+  // Legacy methods for backward compatibility - now no-ops since handles come from node factory
+  /**
+   * @deprecated Handles are now automatically loaded from node factory configurations
+   */
+  registerNodeHandles(config: NodeHandleConfiguration): void {
+    console.warn('registerNodeHandles is deprecated - handles are now loaded automatically from node factory configurations');
   }
   
   /**
-   * Clear all registrations (useful for testing)
+   * @deprecated No longer needed since handles come from node factory
    */
   clear(): void {
-    this.configurations.clear();
+    console.warn('clear() is deprecated - handles are managed by the node factory');
   }
 }
 
