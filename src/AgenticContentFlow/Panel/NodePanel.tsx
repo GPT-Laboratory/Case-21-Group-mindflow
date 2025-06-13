@@ -6,21 +6,17 @@ import { Separator } from '@/components/ui/separator';
 import { getNodeConfig, getVariantFields } from './nodeConfigs';
 import { PanelFooter } from './components/PanelFooter';
 import { PropertiesTab } from './components/tabs/PropertiesTab/PropertiesTab';
-import { AppearanceTab } from './components/tabs/AppearanceTab/AppearanceTab';
 import { PanelHeader } from './components/PanelHeader';
 import { PositionSelector } from './components/PositionSelector';
 import { PanelToggleDragHandle } from './components/PanelToggleDragHandle';
 import { PanelContainer } from './components/PanelContainer';
 import { useResizePanel } from './hooks/useResizePanel';
-import { PreviewTab } from './components/tabs/PreviewTab/PreviewTab';
-
-import { DebugTab } from './components/tabs/DebugTab.tsx/DebugTab';
+import { ErrorsTab } from './components/tabs/ErrorsTab/ErrorsTab';
 import { ScrollableTabs } from './components/ScrollableTabs';
-import { LogicTab } from './components/tabs/LogicTab/LogicTab';
-import { AdvancedTab } from './components/tabs/AdvancedTab/AdvancedTab';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
 import { DataFlowTab } from './components/tabs/DataFlowTab/DataFlowTab';
 import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
+import { getNodeGroup, isProcessNode, isPreviewNode } from './types/nodeGroups';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -135,34 +131,22 @@ export const NodeConfigPanel: React.FC = () => {
               <Tabs defaultValue="properties" className="flex flex-col flex-1 overflow-hidden">
                 <ScrollableTabs className="mb-4">
                   <TabsTrigger value="properties">Properties</TabsTrigger>
-                  <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                  {/* Add Code Editor tab for factory nodes */}
-                  {(activeNode.type === "restnode" || activeNode.type === "logicalnode" || activeNode.type === "contentnode") && (
+                  
+                  {/* Code Editor tab for ProcessNodes (restnode, logicalnode) */}
+                  {isProcessNode(activeNode.type) && (
                     <TabsTrigger value="codeeditor">Code Editor</TabsTrigger>
                   )}
-                  {activeNode.type === "restnode" && (
-                    <>
-                      <TabsTrigger value="preview">Preview</TabsTrigger>
-                      <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
-                    </>
+                  
+                  {/* Content Preview tab for PreviewNodes (contentnode) */}
+                  {isPreviewNode(activeNode.type) && (
+                    <TabsTrigger value="preview">Preview</TabsTrigger>
                   )}
-                  {activeNode.type === "logicalnode" && (
-                    <>
-                      <TabsTrigger value="logic">Logic</TabsTrigger>
-                      <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
-                      <TabsTrigger value="debug">Debug</TabsTrigger>
-                    </>
-                  )}
-                  {activeNode.type === "contentnode" && (
-                    <>
-                      <TabsTrigger value="preview">Preview</TabsTrigger>
-                      <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
-                    </>
-                  )}
-                  {activeNode.type === "customnode" && (
-                    <TabsTrigger value="logic">Logic</TabsTrigger>
-                  )}
+                  
+                  {/* Data Schema tab - universal for all nodes */}
+                  <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
+                  
+                  {/* Errors tab - universal for all nodes */}
+                  <TabsTrigger value="errors">Errors</TabsTrigger>
                 </ScrollableTabs>
                 
                 <div className="flex-1 overflow-y-auto">
@@ -173,61 +157,12 @@ export const NodeConfigPanel: React.FC = () => {
                       onFieldChange={handleFieldChange}
                       nodeId={activeNode.id}
                       nodeType={activeNode.type}
+                      nodeGroup={getNodeGroup(activeNode.type)}
                     />
                   </TabsContent>
-                  <TabsContent value="appearance" className="m-0">
-                    <AppearanceTab 
-                      activeNode={activeNode}
-                      formData={formData}
-                      onFieldChange={handleFieldChange}
-                    />
-                  </TabsContent>
-                  <TabsContent value="advanced" className="m-0">
-                    <AdvancedTab 
-                      activeNode={activeNode}
-                      formData={formData}
-                      onFieldChange={handleFieldChange}
-                    />
-                  </TabsContent>
-                  {activeNode.type === "restnode" && (
-                    <>
-                      <TabsContent value="preview" className="m-0">
-                        <PreviewTab formData={formData} />
-                      </TabsContent>
-                      <TabsContent value="dataschema" className="m-0">
-                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
-                      </TabsContent>
-                    </>
-                  )}
-                  {activeNode.type === "logicalnode" && (
-                    <>
-                      <TabsContent value="logic" className="m-0">
-                        <LogicTab 
-                          nodeId={activeNode.id} 
-                          formData={formData} 
-                          onFieldChange={handleFieldChange} 
-                        />
-                      </TabsContent>
-                      <TabsContent value="dataschema" className="m-0">
-                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
-                      </TabsContent>
-                      <TabsContent value="debug" className="m-0">
-                        <DebugTab nodeId={activeNode.id} formData={formData} />
-                      </TabsContent>
-                    </>
-                  )}
-                  {activeNode.type === "contentnode" && (
-                    <>
-                      <TabsContent value="preview" className="m-0">
-                        <ContentPreviewTab nodeId={activeNode.id} formData={formData} />
-                      </TabsContent>
-                      <TabsContent value="dataschema" className="m-0">
-                        <DataFlowTab nodeId={activeNode.id} formData={formData} />
-                      </TabsContent>
-                    </>
-                  )}
-                  {/* Code Editor Tab for all factory nodes */}
-                  {(activeNode.type === "restnode" || activeNode.type === "logicalnode" || activeNode.type === "contentnode") && (
+                  
+                  {/* Code Editor Tab for ProcessNodes */}
+                  {isProcessNode(activeNode.type) && (
                     <TabsContent value="codeeditor" className="m-0">
                       <CodeEditorTab 
                         nodeType={activeNode.type}
@@ -236,15 +171,26 @@ export const NodeConfigPanel: React.FC = () => {
                       />
                     </TabsContent>
                   )}
-                  {activeNode.type === "customnode" && (
-                    <TabsContent value="logic" className="m-0">
-                      <LogicTab 
+                  
+                  {/* Content Preview Tab for PreviewNodes */}
+                  {isPreviewNode(activeNode.type) && (
+                    <TabsContent value="preview" className="m-0">
+                      <ContentPreviewTab 
                         nodeId={activeNode.id} 
                         formData={formData} 
-                        onFieldChange={handleFieldChange} 
                       />
                     </TabsContent>
                   )}
+                  
+                  {/* Universal Data Schema Tab */}
+                  <TabsContent value="dataschema" className="m-0">
+                    <DataFlowTab nodeId={activeNode.id} formData={formData} />
+                  </TabsContent>
+                  
+                  {/* Universal Errors Tab */}
+                  <TabsContent value="errors" className="m-0">
+                    <ErrorsTab nodeId={activeNode.id} formData={formData} />
+                  </TabsContent>
                 </div>
               </Tabs>
 
