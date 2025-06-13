@@ -13,7 +13,7 @@ import {
   parseListConfig, 
   DisplayType 
 } from '../../utils/contentPreviewUtils';
-import { JSONSchema } from '@/AgenticContentFlow/Process/DataSchemaManager';
+import { JSONSchema } from '@/AgenticContentFlow/Schema';
 import { useProcessContext } from '@/AgenticContentFlow/Process/ProcessContext';
 
 interface ContentPreviewTabProps {

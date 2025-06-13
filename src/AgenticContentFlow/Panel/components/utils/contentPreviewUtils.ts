@@ -1,4 +1,4 @@
-import { JSONSchema } from '../../../Process/DataSchemaManager';
+import { JSONSchema } from '../../../Schema';
 
 export interface ListConfig {
   itemTemplate?: {
