@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Settings, Play, RefreshCw, Cog, Database } from 'lucide-react';
 import { FieldConfig } from '../../../types';
-import { dataSchemaManager } from '../../../../Process/DataSchemaManager';
+import { dataSchemaManager, schemaGenerator } from '../../../../Schema';
 import { FormField } from '../../common/FormField';
 
 interface PropertiesTabProps {
@@ -93,7 +93,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
         const upstreamSchema = dataSchemaManager.getSchema(nodeId);
         if (upstreamSchema?.inputSchema) {
           return {
-            testData: dataSchemaManager.generateTestData(upstreamSchema.inputSchema)
+            testData: schemaGenerator.generateTestData(upstreamSchema.inputSchema)
           };
         }
         return {
@@ -108,7 +108,7 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
         const expectedSchema = formData.expectedSchema;
         if (expectedSchema) {
           return {
-            testData: dataSchemaManager.generateTestData(expectedSchema)
+            testData: schemaGenerator.generateTestData(expectedSchema)
           };
         }
         return {
