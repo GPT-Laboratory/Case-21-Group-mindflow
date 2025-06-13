@@ -4,6 +4,9 @@
  * JSON-driven node factory types for RestNode, LogicalNode, and ContentNode
  */
 
+// Import handle types
+import { HandleTypeDefinition, NodeCategory } from '../../types/handleTypes';
+
 export interface IconReference {
   type: 'builtin' | 'path' | 'component';
   value: string; // e.g., 'Globe2', '/icons/custom.svg', 'DomainIcon'
@@ -65,6 +68,12 @@ export interface NodeFactoryJSON {
     
     // Simple content display function
     additionalContentFunction?: string; // Simple accessor like "data.url" or "data.condition"
+  };
+  
+  // Handle configuration - integrated into main config
+  handles: {
+    category: NodeCategory;
+    definitions: HandleTypeDefinition[];
   };
   
   // Process configuration with stored code

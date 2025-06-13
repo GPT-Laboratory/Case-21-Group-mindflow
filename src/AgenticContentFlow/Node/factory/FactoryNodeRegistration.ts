@@ -6,6 +6,7 @@ import {
 import { registerNodeType } from '../registry/nodeTypeRegistry';
 import { Node } from '@xyflow/react';
 import { NodeData } from '../../types';
+import { nodeFactory } from './NodeFactory';
 
 /**
  * Factory-based node registration system
@@ -18,7 +19,7 @@ export class FactoryNodeRegistration {
   private configLoader: NodeConfigurationLoader;
   
   constructor() {
-    this.factory = new NodeFactory();
+    this.factory = nodeFactory; // Use the singleton instance
     this.configLoader = new NodeConfigurationLoader();
   }
   
@@ -29,11 +30,15 @@ export class FactoryNodeRegistration {
     // Load built-in configurations
     await this.configLoader.loadBuiltInConfigurations();
     
-    // Get all configurations
+    // Get all configurations and register them with the factory
     const configurations = this.configLoader.getAllConfigurations();
     
-    // Register each configuration as a node type
+    // Register each configuration with the factory and node registry
     configurations.forEach((config) => {
+      // Register configuration with the factory
+      this.factory.registerConfiguration(config.nodeType, config);
+      
+      // Register as a node type
       this.registerFactoryNode(config);
     });
     

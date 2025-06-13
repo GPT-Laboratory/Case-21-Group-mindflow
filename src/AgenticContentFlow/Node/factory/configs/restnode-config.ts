@@ -1,12 +1,12 @@
 import { NodeFactoryJSON } from "../types";
 
 export const restNodeConfig: NodeFactoryJSON = {
-      "nodeType": "restnode",
-      "defaultLabel": "REST API",
-      "category": "integration",
-      "description": "Fetches data from REST API endpoints with configurable HTTP methods and authentication",
-      "visual": {
-        "icon": { "type": "component", "value": "DomainIcon" },
+      nodeType: "restnode",
+      defaultLabel: "REST API",
+      category: "integration",
+      description: "Fetches data from REST API endpoints with configurable HTTP methods and authentication",
+      visual: {
+        icon: { "type": "component", "value": "DomainIcon" },
         "headerIcon": { "type": "builtin", "value": "Globe2", "className": "w-6 h-6" },
         "headerGradient": "bg-gradient-to-r from-blue-50 to-blue-200",
         "selectedColor": "blue",
@@ -21,6 +21,27 @@ export const restNodeConfig: NodeFactoryJSON = {
           "default": { "badgeText": "API", "badgeColor": "bg-gray-100 text-gray-800" }
         },
         "additionalContentFunction": ".url"
+      },
+      handles: {
+        category: "integration",
+        definitions: [
+          {
+            position: 'right',
+            type: 'source',
+            dataFlow: 'data',
+            connectsTo: ['logic', 'view'],
+            icon: 'arrow-right',
+            edgeType: 'package'
+          },
+          {
+            position: 'left',
+            type: 'target',
+            dataFlow: 'control',
+            acceptsFrom: ['data', 'logic'],
+            icon: 'arrow-right',
+            edgeType: 'default'
+          }
+        ]
       },
       "process": {
         "code": `async function process(incomingData, nodeData, params) {

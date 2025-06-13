@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { TypedHandle } from "../../Handle/components/TypedHandle";
-import { handleRegistry } from "../../Handle/registry/handleTypeRegistry";
+import { nodeFactory } from "../../Node/factory/NodeFactory";
 
 interface ConnectionHandlesProps {
     nodeType: string;
@@ -14,14 +14,16 @@ interface ConnectionHandlesProps {
 }
 
 const ConnectionHandles = ({ nodeType, color }: ConnectionHandlesProps) => {
-    // Get handle definitions from registry
-    const handleDefinitions = handleRegistry.getNodeHandles(nodeType);
+    // Get handle definitions from the node factory configuration
+    const nodeConfig = nodeFactory.getNodeConfig(nodeType);
     
-    // If no handle definitions found, render nothing (or could fallback to old system)
-    if (handleDefinitions.length === 0) {
+    // If no node configuration found, render nothing
+    if (!nodeConfig || !nodeConfig.handles?.definitions) {
         console.warn(`No handle definitions found for node type: ${nodeType}`);
         return null;
     }
+
+    const handleDefinitions = nodeConfig.handles.definitions;
 
     return (
         <>

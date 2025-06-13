@@ -19,6 +19,27 @@ export const contentNodeConfig: NodeFactoryJSON = {
         "default": { "badgeText": "VIEW", "badgeColor": "bg-gray-100 text-gray-800" }
       }
     },
+    "handles": {
+      "category": "view",
+      "definitions": [
+        {
+          "position": "left",
+          "type": "target",
+          "dataFlow": "data",
+          "acceptsFrom": ["logic", "integration", "data"],
+          "icon": "arrow-right",
+          "edgeType": "package"
+        },
+        {
+          "position": "right",
+          "type": "source",
+          "dataFlow": "data",
+          "connectsTo": ["integration", "data"],
+          "icon": "arrow-right",
+          "edgeType": "package"
+        }
+      ]
+    },
     "process": {
       "code": "async function process(incomingData, nodeData, params) { /* display formatting code */ return incomingData; }",
       "metadata": {

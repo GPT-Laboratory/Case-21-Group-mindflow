@@ -19,9 +19,46 @@ export class NodeFactory {
   private iconResolver: IconResolver;
   private processExecutor: ProcessExecutor;
   
+  // Static instance for global access
+  private static instance: NodeFactory;
+  
+  // Store configurations directly in the factory
+  private configurations: Map<string, NodeFactoryJSON> = new Map();
+  
   constructor() {
     this.iconResolver = new IconResolver();
     this.processExecutor = new ProcessExecutor(); // No longer needs CodeValidator
+  }
+  
+  /**
+   * Get singleton instance
+   */
+  static getInstance(): NodeFactory {
+    if (!NodeFactory.instance) {
+      NodeFactory.instance = new NodeFactory();
+    }
+    return NodeFactory.instance;
+  }
+  
+  /**
+   * Register a configuration
+   */
+  registerConfiguration(nodeType: string, config: NodeFactoryJSON): void {
+    this.configurations.set(nodeType, config);
+  }
+  
+  /**
+   * Get node configuration by type
+   */
+  getNodeConfig(nodeType: string): NodeFactoryJSON | undefined {
+    return this.configurations.get(nodeType);
+  }
+  
+  /**
+   * Get all registered node types
+   */
+  getRegisteredNodeTypes(): string[] {
+    return Array.from(this.configurations.keys());
   }
   
   /**
@@ -404,4 +441,7 @@ const generateSchemaFromData = (data: any): any => {
   // Handle primitive types
   return { type: typeof data };
 };
+
+// Export singleton instance for global use
+export const nodeFactory = NodeFactory.getInstance();
 

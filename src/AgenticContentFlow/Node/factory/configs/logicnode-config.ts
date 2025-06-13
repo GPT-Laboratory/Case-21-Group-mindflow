@@ -21,6 +21,27 @@ export const logicNodeConfig: NodeFactoryJSON = {
         },
         "additionalContentFunction": ".condition"
       },
+      "handles": {
+        "category": "logic",
+        "definitions": [
+          {
+            "position": "left",
+            "type": "target",
+            "dataFlow": "data",
+            "acceptsFrom": ["integration", "data"],
+            "icon": "arrow-right",
+            "edgeType": "package"
+          },
+          {
+            "position": "right",
+            "type": "source",
+            "dataFlow": "data",
+            "connectsTo": ["view", "logic"],
+            "icon": "arrow-right",
+            "edgeType": "package"
+          }
+        ]
+      },
       "process": {
         "code": "async function process(incomingData, nodeData, params) { /* logic processing code */ return incomingData; }",
         "metadata": {
