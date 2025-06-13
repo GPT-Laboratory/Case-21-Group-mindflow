@@ -2,7 +2,7 @@ import { Node, Edge } from '@xyflow/react';
 
 export const apiFlowNodesData: Node[] = [
   {
-    id: 'container-course-lr-lms', // ID for the container
+    id: 'invisible-lr-rest', // ID for the container
     type: 'invisiblenode',
     position: { x: 0, y: 0 }, // Initial position doesn't matter, layout will set it
     data: {
@@ -18,7 +18,7 @@ export const apiFlowNodesData: Node[] = [
   {
     id: 'api-request',
     type: 'restnode',
-    parentId: 'container-course-lr-lms', // Set the parentId to the container
+    parentId: 'invisible-lr-rest', // Set the parentId to the container
     extent: 'parent',
     position: { x: 100, y: 100 },
     data: {
@@ -43,7 +43,7 @@ export const apiFlowNodesData: Node[] = [
     id: 'logic-processor',
     type: 'logicalnode',
     position: { x: 400, y: 100 },
-    parentId: 'container-course-lr-lms', // Set the parentId to the container
+    parentId: 'invisible-lr-rest', // Set the parentId to the container
     extent: 'parent',
     data: {
       label: 'Filter Active Posts',
@@ -113,7 +113,7 @@ export const apiFlowNodesData: Node[] = [
   {
     id: 'content-display',
     type: 'contentnode',
-    parentId: 'container-course-lr-lms',
+    parentId: 'invisible-lr-rest',
     extent: 'parent',
     position: { x: 700, y: 100 },
     data: {
@@ -156,7 +156,7 @@ export const apiFlowNodesData: Node[] = [
   {
     id: 'post-submission',
     type: 'restnode',
-    parentId: 'container-course-lr-lms',
+    parentId: 'invisible-lr-rest',
     extent: 'parent',
     position: { x: 1000, y: 100 },
     data: {
