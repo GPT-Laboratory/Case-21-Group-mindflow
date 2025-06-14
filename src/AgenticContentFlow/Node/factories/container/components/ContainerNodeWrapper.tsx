@@ -13,10 +13,8 @@ import ConnectionHandles from '../../../../Nodes/common/ConnectionHandles';
 import { LAYOUT_CONSTANTS } from '../../../../Layout/utils/layoutUtils';
 import { colorByDepth } from '../../../../Nodes/common/utils/colorByDepth';
 
-// Import original styled components for proper styling
-import { DataNodeContainer } from '../../../../Nodes/DataNode/DataNodeStyles';
-import { PageNodeContainer } from '../../../../Nodes/PageNode/PageNodeStyles';
-import { InvisibleNodeContainer } from '../../../../Nodes/InvisibleNode/InvisibleNodeStyles';
+// Import container styles from shared location
+import { DataNodeContainer, PageNodeContainer, InvisibleNodeContainer } from './ContainerStyles';
 
 interface ContainerNodeWrapperProps extends NodeProps {
   config: ContainerNodeJSON;
