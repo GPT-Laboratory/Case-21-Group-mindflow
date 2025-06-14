@@ -9,7 +9,7 @@ export const conditionalNodeConfig: NodeHandleConfiguration = {
       position: 'top',
       type: 'target',
       dataFlow: 'control',
-      acceptsFrom: ['view', 'logic', 'container'],
+      acceptsFrom: ['view', 'logic', 'container', 'integration'],
       icon: 'arrow-down',
       edgeType: 'default'
     },
@@ -17,9 +17,19 @@ export const conditionalNodeConfig: NodeHandleConfiguration = {
       position: 'bottom',
       type: 'source',
       dataFlow: 'control',
-      connectsTo: ['logic', 'container', 'page'],
+      connectsTo: ['logic', 'container', 'page', 'view'],
       icon: 'arrow-down',
       edgeType: 'default'
+      // Note: Handle labels will be added in future UI enhancement
+    },
+    {
+      position: 'right',
+      type: 'source',
+      dataFlow: 'control',
+      connectsTo: ['logic', 'container', 'page', 'view'],
+      icon: 'arrow-right',
+      edgeType: 'default'
+      // Note: Handle labels will be added in future UI enhancement
     }
   ]
 };
