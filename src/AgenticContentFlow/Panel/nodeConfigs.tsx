@@ -1,5 +1,5 @@
-import { ProcessParameter } from '../Node/factories/factory';
-import { factoryNodeRegistration } from '../Node/factories/factory/FactoryNodeRegistration';
+import { ProcessParameter } from '../Node/factories/cell';
+import { factoryNodeRegistration } from '../Node/factories/cell/FactoryNodeRegistration';
 import { NodeConfig, FieldConfig } from './types';
 import { 
   Database, 

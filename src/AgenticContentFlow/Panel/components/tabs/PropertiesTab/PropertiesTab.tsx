@@ -14,7 +14,7 @@ import {
   Badge,
   Separator 
 } from '../../shared';
-import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/factory/FactoryNodeRegistration';
+import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/cell/FactoryNodeRegistration';
 
 // Define NodeGroup type locally since we removed the separate file
 export type NodeGroup = 'process' | 'preview' | 'container';

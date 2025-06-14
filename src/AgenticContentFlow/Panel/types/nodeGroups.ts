@@ -1,6 +1,6 @@
 // Node type groupings for better organization
 
-import { factoryNodeRegistration } from "@/AgenticContentFlow/Node/factories/factory/FactoryNodeRegistration";
+import { factoryNodeRegistration } from "@/AgenticContentFlow/Node/factories/cell/FactoryNodeRegistration";
 
 export type ProcessNodeType = 'restnode' | 'logicalnode';
 export type PreviewNodeType = 'contentnode';

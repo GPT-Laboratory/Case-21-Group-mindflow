@@ -3,7 +3,7 @@
 import { Node, Edge } from '@xyflow/react';
 import { dataSchemaManager, JSONSchema } from '../core/DataSchemaManager';
 import { schemaGenerator } from '../generators/SchemaGenerator';
-import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/factory/FactoryNodeRegistration';
+import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/cell/FactoryNodeRegistration';
 
 /**
  * Flow Schema Analyzer

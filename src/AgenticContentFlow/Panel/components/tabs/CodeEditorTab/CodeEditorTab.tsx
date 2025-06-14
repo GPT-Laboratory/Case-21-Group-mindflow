@@ -11,8 +11,8 @@ import {
   Badge,
   Separator 
 } from '../../shared';
-import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/factory/FactoryNodeRegistration';
-import { CodeValidator } from '@/AgenticContentFlow/Node/factories/factory/process/ProcessContextManager';
+import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/cell/FactoryNodeRegistration';
+import { CodeValidator } from '@/AgenticContentFlow/Node/factories/cell/process/ProcessContextManager';
 
 interface CodeEditorTabProps {
   nodeType: string;
