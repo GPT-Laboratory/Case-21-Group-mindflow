@@ -10,23 +10,23 @@ import { createCellNodeTemplate } from "./CellNode/createCellNodeTemplate";
 import ContainerNode from "./ContainerNode/ContainerNode";
 import { createContainerNodeTemplate } from "./ContainerNode/createContainerNodeTemplate";
 
-// Import new node components
-import DataNode from "./DataNode/DataNode";
-import { createDataNodeTemplate } from "./DataNode/createDataNodeTemplate";
-import PageNode from "./PageNode/PageNode";
-import { createPageNodeTemplate } from "./PageNode/createPageNodeTemplate";
+// Import legacy conditional node (not yet factory-based)
 import ConditionalNode from "./ConditionalNode/ConditionalNode";
 import { createConditionalNodeTemplate } from "./ConditionalNode/createConditionalNodeTemplate";
-import { InvisibleNode } from './InvisibleNode/InvisibleNode';
-import { createInvisibleNodeTemplate } from './InvisibleNode/createInvisibleNodeTemplate';
-import { StatisticsNode } from './StatisticsNode/StatisticsNode';
-import { createStatisticsNodeTemplate } from "./StatisticsNode/createStatisticsNodeTemplate";
 
-// Import factory system for RestNode, LogicalNode, and ContentNode
-import { factoryNodeRegistration } from "../Node/factory/FactoryNodeRegistration";
+// Import factory systems
+import { containerNodeRegistration } from "../Node/factories/container/ContainerNodeRegistration";
 
 // Import handle type registration
 import { ensureHandleTypesRegistered } from "../Handles/registerBasicHandleTypes";
+import DataNode from "./DataNode/DataNode";
+import PageNode from "./PageNode/PageNode";
+import { createStatisticsNodeTemplate, StatisticsNode } from "./StatisticsNode";
+import InvisibleNode from "./InvisibleNode/InvisibleNode";
+import { createDataNodeTemplate } from "./DataNode/createDataNodeTemplate";
+import { createPageNodeTemplate } from "./PageNode/createPageNodeTemplate";
+import { createInvisibleNodeTemplate } from "./InvisibleNode/createInvisibleNodeTemplate";
+import { factoryNodeRegistration } from "../Node/factories/factory/FactoryNodeRegistration";
 
 // Track initialization state
 let registered = false;
@@ -41,27 +41,39 @@ export async function ensureNodeTypesRegistered(): Promise<void> {
   // Register basic node types
   registerNodeType("cellnode", CellNode, createCellNodeTemplate);
   
-  // Register container nodes with isParent=true
+  // Register container nodes with isParent=true (legacy)
   registerNodeType("coursenode", ContainerNode, createContainerNodeTemplate, true);
   registerNodeType("modulenode", ContainerNode, createContainerNodeTemplate, true);
   
-  // Register new node types
-  registerNodeType("datanode", DataNode, createDataNodeTemplate, true);
-  registerNodeType("pagenode", PageNode, createPageNodeTemplate, true);
+  // Register legacy conditional node (not yet factory-based)
   registerNodeType("conditionalnode", ConditionalNode, createConditionalNodeTemplate);
-  registerNodeType("invisiblenode", InvisibleNode, createInvisibleNodeTemplate, true);
-  registerNodeType("statisticsnode", StatisticsNode, createStatisticsNodeTemplate, true);
   
-  // Initialize factory system and register RestNode, LogicalNode, and ContentNode
+  // Initialize cell factory system for process nodes (RestNode, LogicalNode, ContentNode)
   try {
     await factoryNodeRegistration.initializeFactoryNodes();
-    console.log("✅ Factory-based nodes (RestNode, LogicalNode, ContentNode) registered successfully");
+    console.log("✅ Cell factory nodes (RestNode, LogicalNode, ContentNode) registered successfully");
   } catch (error) {
-    console.error("❌ Failed to register factory-based nodes:", error);
+    console.error("❌ Failed to register cell factory nodes:", error);
     // Fall back to registering empty nodes if factory fails
     registerNodeType("restnode", CellNode, createCellNodeTemplate);
     registerNodeType("logicalnode", CellNode, createCellNodeTemplate);
     registerNodeType("contentnode", CellNode, createCellNodeTemplate);
+  }
+
+  // Initialize container factory system for container nodes (DataNode, PageNode, StatisticsNode, InvisibleNode)
+  try {
+    await containerNodeRegistration.initializeContainerNodes();
+    console.log("✅ Container factory nodes (DataNode, PageNode, StatisticsNode, InvisibleNode) registered successfully");
+  } catch (error) {
+    console.error("❌ Failed to register container factory nodes:", error);
+    // Fall back to registering legacy implementations if factory fails
+  
+    registerNodeType("datanode", DataNode, createDataNodeTemplate, true);
+    registerNodeType("pagenode", PageNode, createPageNodeTemplate, true);
+    registerNodeType("statisticsnode", StatisticsNode, createStatisticsNodeTemplate, true);
+    registerNodeType("invisiblenode", InvisibleNode, createInvisibleNodeTemplate, true);
+    
+    console.log("✅ Fallback: Legacy container nodes registered");
   }
 
   // Register handle type configurations
