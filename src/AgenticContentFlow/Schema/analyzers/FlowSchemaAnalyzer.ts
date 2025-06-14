@@ -3,6 +3,7 @@
 import { Node, Edge } from '@xyflow/react';
 import { dataSchemaManager, JSONSchema } from '../core/DataSchemaManager';
 import { schemaGenerator } from '../generators/SchemaGenerator';
+import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/factory/FactoryNodeRegistration';
 
 /**
  * Flow Schema Analyzer
@@ -108,7 +109,7 @@ export class FlowSchemaAnalyzer {
       console.log(`⚠️ Source node ${sourceId} not found`);
       return;
     }    
-    
+
     // First, ensure this node's upstream sources are analyzed
     const sourceEdges = edges.filter(edge => edge.target === sourceId);
     if (sourceEdges.length > 0) {
@@ -152,7 +153,6 @@ export class FlowSchemaAnalyzer {
       console.log(`⚡ Executing factory node ${currentNode.type} process function with sample data...`);
       
       // Import the factory registration system
-      const { factoryNodeRegistration } = await import('../../Node/factory/FactoryNodeRegistration');
       
       // Execute the actual process function with sample data
       const result = await factoryNodeRegistration.testNodeConfiguration(
