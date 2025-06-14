@@ -5,32 +5,130 @@ import {
   ConnectionCompatibility,
   NodeCategory 
 } from '../../types/handleTypes';
-import { nodeFactory } from '../../Node/factory/NodeFactory';
+import { containerNodeFactory } from '../../Node/factories/container/ContainerNodeFactory';
+
+// Import legacy handle configurations
+import { 
+  invisibleNodeConfig, 
+  conditionalNodeConfig,
+  cellNodeConfig,
+  containerNodeConfig,
+  moduleNodeConfig
+} from '../../Handles/configs';
+import { nodeFactory } from '@/AgenticContentFlow/Node/factories/factory';
 
 export class HandleTypeRegistry {
   private static instance: HandleTypeRegistry;
   
+  // Store legacy handle configurations
+  private legacyHandleConfigs: Map<string, NodeHandleConfiguration> = new Map();
+  
   static getInstance(): HandleTypeRegistry {
     if (!HandleTypeRegistry.instance) {
       HandleTypeRegistry.instance = new HandleTypeRegistry();
+      // Initialize legacy configurations
+      HandleTypeRegistry.instance.initializeLegacyConfigs();
     }
     return HandleTypeRegistry.instance;
   }
   
   /**
-   * Get all handle definitions for a node type from the node factory
+   * Initialize legacy handle configurations for nodes not in factory systems
    */
-  getNodeHandles(nodeType: string): HandleTypeDefinition[] {
-    const config = nodeFactory.getNodeConfig(nodeType);
-    return config?.handles?.definitions || [];
+  private initializeLegacyConfigs(): void {
+    const legacyConfigs = [
+      invisibleNodeConfig,
+      conditionalNodeConfig,
+      cellNodeConfig,
+      containerNodeConfig,
+      moduleNodeConfig
+    ];
+    
+    legacyConfigs.forEach(config => {
+      this.legacyHandleConfigs.set(config.nodeType, config);
+    });
   }
   
   /**
-   * Get the node category for a given node type from the node factory
+   * Get all handle definitions for a node type from any source
+   */
+  getNodeHandles(nodeType: string): HandleTypeDefinition[] {
+    // First try cell factory
+    const cellConfig = nodeFactory.getNodeConfig(nodeType);
+    if (cellConfig?.handles?.definitions) {
+      return cellConfig.handles.definitions;
+    }
+    
+    // Then try container factory
+    const containerConfig = containerNodeFactory.getNodeConfig(nodeType);
+    if (containerConfig?.handles?.definitions) {
+      // Convert container handles to the expected format
+      return containerConfig.handles.definitions.map(handle => ({
+        position: handle.position,
+        type: handle.type,
+        dataFlow: handle.dataFlow,
+        acceptsFrom: this.mapToNodeCategories(handle.acceptsFrom),
+        connectsTo: this.mapToNodeCategories(handle.connectsTo),
+        icon: handle.icon,
+        edgeType: handle.edgeType
+      }));
+    }
+    
+    // Finally try legacy configurations
+    const legacyConfig = this.legacyHandleConfigs.get(nodeType);
+    return legacyConfig?.handles || [];
+  }
+  
+  /**
+   * Get the node category for a given node type from any source
    */
   getNodeCategory(nodeType: string): NodeCategory | undefined {
-    const config = nodeFactory.getNodeConfig(nodeType);
-    return config?.handles?.category;
+    // First try cell factory
+    const cellConfig = nodeFactory.getNodeConfig(nodeType);
+    if (cellConfig?.handles?.category) {
+      return cellConfig.handles.category;
+    }
+    
+    // Then try container factory
+    const containerConfig = containerNodeFactory.getNodeConfig(nodeType);
+    if (containerConfig?.handles?.category) {
+      // Map container category to NodeCategory
+      const categoryMap: { [key: string]: NodeCategory } = {
+        'data': 'data',
+        'page': 'page',
+        'statistics': 'statistics',
+        'container': 'container'
+      };
+      return categoryMap[containerConfig.handles.category] || containerConfig.handles.category as NodeCategory;
+    }
+    
+    // Finally try legacy configurations
+    const legacyConfig = this.legacyHandleConfigs.get(nodeType);
+    return legacyConfig?.category;
+  }
+  
+  /**
+   * Helper to map string arrays to NodeCategory arrays
+   */
+  private mapToNodeCategories(strings?: string[]): NodeCategory[] {
+    if (!strings) return [];
+    return strings.map(str => {
+      const categoryMap: { [key: string]: NodeCategory } = {
+        'datanode': 'data',
+        'pagenode': 'page', 
+        'statisticsnode': 'statistics',
+        'containernode': 'container',
+        'logicnode': 'logic',
+        'contentnode': 'view',
+        'data': 'data',
+        'page': 'page',
+        'statistics': 'statistics',
+        'container': 'container',
+        'logic': 'logic',
+        'view': 'view'
+      };
+      return categoryMap[str] || str as NodeCategory;
+    });
   }
   
   /**
@@ -117,17 +215,21 @@ export class HandleTypeRegistry {
   }
   
   /**
-   * Get all registered node types from the node factory
+   * Get all registered node types from all sources
    */
   getRegisteredNodeTypes(): string[] {
-    return nodeFactory.getRegisteredNodeTypes();
+    const cellTypes = nodeFactory.getRegisteredNodeTypes();
+    const containerTypes = containerNodeFactory.getRegisteredNodeTypes();
+    const legacyTypes = Array.from(this.legacyHandleConfigs.keys());
+    
+    return [...new Set([...cellTypes, ...containerTypes, ...legacyTypes])];
   }
   
   // Legacy methods for backward compatibility - now no-ops since handles come from node factory
   /**
    * @deprecated Handles are now automatically loaded from node factory configurations
    */
-  registerNodeHandles(config: NodeHandleConfiguration): void {
+  registerNodeHandles(_config: NodeHandleConfiguration): void {
     console.warn('registerNodeHandles is deprecated - handles are now loaded automatically from node factory configurations');
   }
   
