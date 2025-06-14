@@ -4,14 +4,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NodeProps, useUpdateNodeInternals, useReactFlow } from '@xyflow/react';
 import { ContainerNodeJSON, ContainerInstanceData, ExpandCollapseState } from '../types';
 import { ContainerStyleManager } from './ContainerStyleManager';
-import { ExpandCollapseHandler } from './ExpandCollapseHandler';
+import { ExpandCollapseHandler } from './ContainerExpandCollapseHandler';
 import { IconResolver } from '../../shared/IconResolver';
-import { NodeHeader } from '../../../../Nodes/common/NodeHeader';
+import { NodeHeader } from '../../shared/components/NodeHeader';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import CornerResizer from '../../../../Nodes/common/CornerResizer';
-import ConnectionHandles from '../../../../Nodes/common/ConnectionHandles';
+import CornerResizer from '../../shared/components/CornerResizer';
+import ConnectionHandles from '../../shared/components/ConnectionHandles';
 import { LAYOUT_CONSTANTS } from '../../../../Layout/utils/layoutUtils';
-import { colorByDepth } from '../../../../Nodes/common/utils/colorByDepth';
+import { colorByDepth } from '../../shared/utils/colorByDepth';
 
 // Import container styles from shared location
 import { DataNodeContainer, PageNodeContainer, InvisibleNodeContainer } from './ContainerStyles';

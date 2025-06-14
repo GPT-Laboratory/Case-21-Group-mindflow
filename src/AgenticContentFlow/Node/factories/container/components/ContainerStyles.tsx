@@ -1,8 +1,7 @@
 /** @format */
 
 import { cn } from "@/lib/utils";
-import { ReactNode } from "react";
-import { BaseNodeContainer, BaseNodeProps } from "../../../../Nodes/common/NodeStyles";
+import { BaseNodeContainer, BaseNodeProps } from "../../shared/components/NodeStyles";
 
 // Define additional props interface for the DataNodeContainer
 interface DataNodeProps extends BaseNodeProps {

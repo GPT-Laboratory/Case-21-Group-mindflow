@@ -15,15 +15,17 @@ export const statisticsNodeConfig: ContainerNodeJSON = {
   
   visual: {
     icon: { 
-      type: "component", 
-      value: "ChartIcon",
+      type: "builtin", 
+      value: "BarChart3",
       className: "stroke-slate-700"
     },
     headerIcon: { 
-      type: "component", 
-      value: "ChartIcon", 
+      type: "builtin", 
+      value: "BarChart3", 
       className: "w-6 h-6" 
     },
+    headerGradient: "bg-gradient-to-r from-purple-50 to-purple-100",
+    selectedColor: "purple",
     depthColorScheme: "default",
     containerStyle: {
       borderStyle: "solid",

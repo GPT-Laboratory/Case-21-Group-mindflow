@@ -3,10 +3,10 @@
 import React, { useState, useCallback } from 'react';
 import { Node } from '@xyflow/react';
 import { useNodeContext } from '../../../store/useNodeContext';
-import { updateNodeHierarchyVisibility } from '../../../../Nodes/common/utils/nodeHierarchyUtils';
 import { ContainerNodeJSON, ExpandCollapseState } from '../types';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { updateNodeHierarchyVisibility } from '../utils/nodeHierarchyUtils';
 
 interface ExpandCollapseHandlerProps {
   config: ContainerNodeJSON;

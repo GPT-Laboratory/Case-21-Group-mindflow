@@ -9,7 +9,7 @@ export * from './ContainerNodeRegistration';
 // Component exports
 export * from './components/ContainerNodeWrapper';
 export * from './components/ContainerStyleManager';
-export * from './components/ExpandCollapseHandler';
+export * from './components/ContainerExpandCollapseHandler';
 
 // Main factory instance
 export { containerNodeFactory } from './ContainerNodeFactory';

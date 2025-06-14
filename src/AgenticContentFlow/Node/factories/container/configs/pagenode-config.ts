@@ -15,15 +15,17 @@ export const pageNodeConfig: ContainerNodeJSON = {
   
   visual: {
     icon: { 
-      type: "component", 
-      value: "WebIcon",
+      type: "builtin", 
+      value: "Globe",
       className: "stroke-slate"
     },
     headerIcon: { 
-      type: "component", 
-      value: "WebIcon", 
+      type: "builtin", 
+      value: "Globe", 
       className: "w-6 h-6" 
     },
+    headerGradient: "bg-gradient-to-r from-green-50 to-green-100",
+    selectedColor: "green",
     depthColorScheme: "default",
     containerStyle: {
       borderStyle: "solid",
