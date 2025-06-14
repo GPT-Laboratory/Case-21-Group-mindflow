@@ -45,12 +45,14 @@ export const restNodeConfig: NodeFactoryJSON = {
         ]
       },
       "process": {
-        "code": `async function process(incomingData, nodeData, params) {
+        "code": `async function process(incomingData, nodeData, params, targetMap, sourceMap) {
   const { url, method, headers } = nodeData;
         
   if (!url) {
     throw new Error('URL is required');
   }
+
+  console.log('🌐 REST API call:', { method: method || 'GET', url });
 
   const response = await fetch(url, {
     method: method || 'GET',
@@ -79,9 +81,9 @@ export const restNodeConfig: NodeFactoryJSON = {
         "metadata": {
           "generatedBy": "manual",
           "version": "1.0.0",
-          "lastUpdated": "2025-06-12T10:30:00Z",
+          "lastUpdated": "2025-06-15T10:30:00Z",
           "executionContext": "frontend",
-          "signature": "async function process(incomingData, nodeData, params)"
+          "signature": "async function process(incomingData, nodeData, params, targetMap, sourceMap)"
         },
         "expectedInput": "trigger signal or data to send",
         "expectedOutput": "api response data",

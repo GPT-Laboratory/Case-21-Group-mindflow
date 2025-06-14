@@ -4,6 +4,7 @@ import { NodeFactoryJSON, NodeInstanceData } from './types';
 import { ParameterValidator } from './process/ParameterValidator';
 import { RetryManager, RetryOptions } from './process/RetryManager';
 import { ProcessContextManager, CodeValidator } from './process/ProcessContextManager';
+import { Edge, Node } from '@xyflow/react';
 
 interface ExecutionOptions {
   timeout?: number;
@@ -27,16 +28,62 @@ export class ProcessExecutor {
     this.contextManager = new ProcessContextManager(codeValidator);
   }
 
+  /**
+   * Build target and source maps for a given node
+   */
+  private buildNodeMaps(
+    nodeId: string,
+    getEdges: () => Edge[],
+    getNode: (id: string) => Node | undefined
+  ): { targetMap: Map<string, Node>; sourceMap: Map<string, Node>; edgeMap: Map<string, Edge>; edgeMetadataMap: Map<string, any> } {
+    const edges = getEdges();
+    const targetMap = new Map<string, Node>();
+    const sourceMap = new Map<string, Node>();
+    const edgeMap = new Map<string, Edge>();
+    const edgeMetadataMap = new Map<string, any>();
+    
+    // Build target map (outgoing edges) and store edge references with metadata
+    edges
+      .filter(edge => edge.source === nodeId)
+      .forEach(edge => {
+        const targetNode = getNode(edge.target);
+        if (targetNode) {
+          targetMap.set(edge.target, targetNode);
+          edgeMap.set(edge.target, edge);
+          // NEW: Store edge metadata for conditional routing
+          if (edge.data) {
+            edgeMetadataMap.set(edge.target, edge.data);
+          }
+        }
+      });
+    
+    // Build source map (incoming edges)
+    edges
+      .filter(edge => edge.target === nodeId)
+      .forEach(edge => {
+        const sourceNode = getNode(edge.source);
+        if (sourceNode) {
+          sourceMap.set(edge.source, sourceNode);
+        }
+      });
+    
+    return { targetMap, sourceMap, edgeMap, edgeMetadataMap };
+  }
+
   async executeProcess(
     config: NodeFactoryJSON,
     nodeData: NodeInstanceData,
     incomingData: any,
+    nodeId?: string,
+    getEdges?: () => Edge[],
+    getNode?: (id: string) => Node | undefined,
     options: ExecutionOptions = {}
   ): Promise<any> {
     console.log(`🔍 ProcessExecutor.executeProcess called for ${config.nodeType}:`, {
       nodeData,
       incomingData,
-      hasCode: !!config.process.code
+      hasCode: !!config.process.code,
+      hasNodeContext: !!(nodeId && getEdges && getNode)
     });
     
     // Get process code
@@ -47,6 +94,28 @@ export class ProcessExecutor {
     // Merge and validate parameters
     const parameters = this.mergeParameters(config, nodeData);
     this.parameterValidator.validateParameters(config.process.parameters, parameters);
+
+    // Build node maps if context is available
+    let targetMap = new Map<string, Node>();
+    let sourceMap = new Map<string, Node>();
+    let edgeMap = new Map<string, Edge>();
+    let edgeMetadataMap = new Map<string, any>();
+    
+    if (nodeId && getEdges && getNode) {
+      const maps = this.buildNodeMaps(nodeId, getEdges, getNode);
+      targetMap = maps.targetMap;
+      sourceMap = maps.sourceMap;
+      edgeMap = maps.edgeMap;
+      edgeMetadataMap = maps.edgeMetadataMap;
+      
+      console.log(`🗺️ Built node maps for ${nodeId}:`, {
+        targets: targetMap.size,
+        sources: sourceMap.size,
+        targetIds: Array.from(targetMap.keys()),
+        sourceIds: Array.from(sourceMap.keys()),
+        hasMetadata: edgeMetadataMap.size > 0
+      });
+    }
 
     // Setup retry options
     const retryOptions: RetryOptions = {
@@ -64,8 +133,26 @@ export class ProcessExecutor {
         }
         
         return config.process.metadata.executionContext === 'frontend'
-          ? await this.contextManager.executeFrontend(processCode, incomingData, nodeData, parameters)
-          : await this.contextManager.executeBackend(processCode, incomingData, nodeData, parameters);
+          ? await this.contextManager.executeFrontend(
+              processCode, 
+              incomingData, 
+              nodeData, 
+              parameters,
+              targetMap,
+              sourceMap,
+              edgeMap,
+              edgeMetadataMap
+            )
+          : await this.contextManager.executeBackend(
+              processCode, 
+              incomingData, 
+              nodeData, 
+              parameters,
+              targetMap,
+              sourceMap,
+              edgeMap,
+              edgeMetadataMap
+            );
       },
       retryOptions
     );

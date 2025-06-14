@@ -1,16 +1,16 @@
 /** @format */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { NodeProps } from '@xyflow/react';
+import { NodeProps, useReactFlow } from '@xyflow/react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { NodeFactoryJSON, NodeInstanceData } from './types';
 import { IconResolver } from './IconResolver';
 import { ProcessExecutor } from './ProcessExecutor';
-import { CellNode, CellNodeConfig } from '../../../Nodes/common/CellNode';
 import { useNodeProcess } from '../../../Process/useNodeProcess';
 
 // DataSchemaManager integration for factory nodes
 import { dataSchemaManager } from '../../../Schema';
+import { CellNode, CellNodeConfig } from './components';
 
 /**
  * NodeFactory creates React node components from JSON configurations
@@ -60,7 +60,7 @@ export class NodeFactory {
   getRegisteredNodeTypes(): string[] {
     return Array.from(this.configurations.keys());
   }
-  
+
   /**
    * Create a node component from JSON configuration
    */
@@ -70,8 +70,9 @@ export class NodeFactory {
     return (props: NodeProps) => {
       const { id, data } = props;
       const [isRegenerating, setIsRegenerating] = useState(false);
+      const { getEdges, getNode } = useReactFlow();
       
-      // Use the existing process system
+      // Use the existing process system with enhanced selective routing
       const { 
         isProcessing, 
         isCompleted, 
@@ -83,6 +84,8 @@ export class NodeFactory {
       } = useNodeProcess({ 
         nodeId: id,
         autoStartOnData: true,
+        // NEW: Enhanced complete process that handles selective routing
+        enhancedCompleteProcess: true
       });
 
       // Loop state management (required by CellNode)
@@ -99,7 +102,7 @@ export class NodeFactory {
         setLoopInterval(interval);
       };
 
-      // 🔧 FIX: Add automatic processing logic for incoming data
+      // 🔧 ENHANCED: Auto-processing with TargetMap/SourceMap support
       useEffect(() => {
         // Automatic processing when data is received and we're currently processing
         if (isProcessing && availableData) {
@@ -107,18 +110,21 @@ export class NodeFactory {
             try {
               console.log(`🔄 Factory node ${config.nodeType} (${id}) auto-processing data:`, availableData);
               
-              // Execute the stored process function with incoming data
+              // Execute the stored process function with incoming data and node maps
               const result = await processExecutor.executeProcess(
                 config, 
                 data as NodeInstanceData, 
-                availableData // Pass the incoming data
+                availableData, // Pass the incoming data
+                id,           // NEW: Pass node ID for map building
+                getEdges,     // NEW: Pass getEdges function
+                getNode       // NEW: Pass getNode function
               );
               
               console.log(`✅ Factory node ${config.nodeType} (${id}) completed processing:`, result);
               console.log(`🔍 Input data type:`, typeof availableData, Array.isArray(availableData) ? `Array[${availableData.length}]` : 'Non-array');
               console.log(`🔍 Output data type:`, typeof result, Array.isArray(result) ? `Array[${result.length}]` : 'Non-array');
               console.log(`🔍 Data reference equality:`, result === availableData);
-              
+          
               // 🔧 NEW: Update schemas in DataSchemaManager
               const { inputSchema, outputSchema } = generateFactoryNodeSchemas(
                 config.nodeType,
@@ -138,6 +144,7 @@ export class NodeFactory {
                 console.log(`📊 Updated schemas in DataSchemaManager for factory node ${config.nodeType} (${id})`);
               }
               
+              // 🎯 NEW: Enhanced complete process with selective routing support
               completeProcess(result);
             } catch (error) {
               console.error(`❌ Factory node ${config.nodeType} (${id}) processing failed:`, error);
@@ -147,8 +154,8 @@ export class NodeFactory {
           
           executeAutoProcessing();
         }
-      }, [isProcessing, availableData, config, data, id, completeProcess, setError, processExecutor]); // Dependencies for auto-processing
-      
+      }, [isProcessing, availableData, config, data, id, completeProcess, setError, processExecutor, getEdges, getNode]); // Enhanced dependencies
+
       // Handle manual execution using the stored process function
       const handleManualExecution = useCallback(async () => {
         try {
@@ -156,11 +163,14 @@ export class NodeFactory {
           
           console.log(`🔧 Factory node ${config.nodeType} (${id}) executing manual process...`);
           
-          // Execute the stored process function
+          // Execute the stored process function with enhanced context
           const result = await processExecutor.executeProcess(
             config, 
             data as NodeInstanceData, 
-            null // No incoming data for manual execution
+            null, // No incoming data for manual execution
+            id,   // NEW: Pass node ID for map building
+            getEdges, // NEW: Pass getEdges function
+            getNode   // NEW: Pass getNode function
           );
           
           console.log(`✅ Factory node ${config.nodeType} (${id}) manual execution result:`, result);
@@ -171,7 +181,7 @@ export class NodeFactory {
             null,        // no incoming data for manual execution
             result       // output data for output schema
           );
-          
+        
           if (inputSchema || outputSchema) {
             dataSchemaManager.updateSchema(id, inputSchema, outputSchema);
             console.log(`📊 Updated schemas for factory node ${config.nodeType} (${id}) after manual execution:`, {
@@ -185,7 +195,7 @@ export class NodeFactory {
           console.error(`❌ Factory node ${config.nodeType} (${id}) manual execution failed:`, error);
           setError(`Failed to execute: ${error}`);
         }
-      }, [config, data, startProcess, completeProcess, setError, processExecutor]);
+      }, [config, data, startProcess, completeProcess, setError, processExecutor, id, getEdges, getNode]);
       
       // Handle menu actions
       const handleMenuAction = useCallback((action: string) => {
@@ -369,7 +379,6 @@ const generateFactoryNodeSchemas = (
   console.log(`🔍 generateFactoryNodeSchemas called for ${nodeType}:`, {
     hasIncomingData: !!incomingData,
     hasOutputData: !!outputData,
-    dataEquality: outputData === incomingData,
     incomingDataType: typeof incomingData,
     outputDataType: typeof outputData
   });
@@ -377,50 +386,41 @@ const generateFactoryNodeSchemas = (
   let inputSchema = undefined;
   let outputSchema = undefined;
 
-  // Generate input schema based on incoming data if available
-  if (incomingData) {
+  // Generate input schema from incoming data
+  if (incomingData !== null && incomingData !== undefined) {
     inputSchema = generateSchemaFromData(incomingData);
-    console.log(`📥 Generated input schema:`, inputSchema);
+    console.log(`📥 Generated input schema for ${nodeType}:`, inputSchema);
   }
 
-  // Generate output schema based on output data if available
-  if (outputData) {
-    // Check if output data is exactly the same reference as input data
-    if (inputSchema && outputData === incomingData) {
-      console.log(`🔄 Factory node passed through data unchanged, inheriting input schema`);
-      outputSchema = inputSchema;
+  // Generate output schema from output data
+  if (outputData !== null && outputData !== undefined) {
+    // Handle selective routing result format
+    if (typeof outputData === 'object' && outputData.data && outputData.targets) {
+      outputSchema = generateSchemaFromData(outputData.data);
+      console.log(`📤 Generated output schema for ${nodeType} (selective routing):`, outputSchema);
     } else {
       outputSchema = generateSchemaFromData(outputData);
-      console.log(`📤 Generated output schema:`, outputSchema);
-      
-      // Additional check: if the schemas are structurally identical but references are different,
-      // use the input schema to preserve fidelity
-      if (inputSchema && JSON.stringify(inputSchema) === JSON.stringify(outputSchema)) {
-        console.log(`🔄 Schemas are structurally identical, using input schema for fidelity`);
-        outputSchema = inputSchema;
-      }
+      console.log(`📤 Generated output schema for ${nodeType}:`, outputSchema);
     }
   }
 
   return { inputSchema, outputSchema };
 };
 
+/**
+ * Generate a JSON schema from sample data
+ */
 const generateSchemaFromData = (data: any): any => {
-  if (data === null || data === undefined) return { type: 'null' };
+  if (data === null || data === undefined) {
+    return { type: 'null' };
+  }
   
   if (Array.isArray(data)) {
-    // For arrays, analyze all items to get a complete schema
-    if (data.length === 0) {
-      return { type: 'array', items: { type: 'object' } };
-    }
-    
-    // If all items have the same structure, use the first item's schema
-    // This preserves detailed property information
-    const firstItemSchema = generateSchemaFromData(data[0]);
-    
+    // Generate schema for array
+    const itemSchema = data.length > 0 ? generateSchemaFromData(data[0]) : { type: 'any' };
     return {
       type: 'array',
-      items: firstItemSchema
+      items: itemSchema
     };
   }
   

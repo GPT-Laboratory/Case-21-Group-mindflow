@@ -3,6 +3,7 @@
 import { contentNodeConfig } from './configs/contentnode-config';
 import { logicNodeConfig } from './configs/logicnode-config';
 import { restNodeConfig } from './configs/restnode-config';
+import { conditionalNodeConfig } from './configs/conditionalnode-config';
 import { NodeFactoryJSON } from './types';
 
 /**
@@ -67,11 +68,12 @@ export class NodeConfigurationLoader {
    * Load all built-in configurations
    */
   async loadBuiltInConfigurations(): Promise<void> {
-    // Load the three main configurations
+    // Load all four main configurations including the new ConditionalNode
     const configs = [
       await this.loadRestNodeConfig(),
       await this.loadLogicalNodeConfig(),
-      await this.loadContentNodeConfig()
+      await this.loadContentNodeConfig(),
+      await this.loadConditionalNodeConfig()
     ];
     
     configs.forEach(config => {
@@ -136,11 +138,10 @@ export class NodeConfigurationLoader {
     return restNodeConfig;
   }
   
-  /**w
+  /**
    * Load logical node configuration
    */
   private async loadLogicalNodeConfig(): Promise<NodeFactoryJSON> {
-    // Return the logical node configuration (shortened for brevity)
     return logicNodeConfig;
   }
   
@@ -148,7 +149,13 @@ export class NodeConfigurationLoader {
    * Load content node configuration
    */
   private async loadContentNodeConfig(): Promise<NodeFactoryJSON> {
-    // Return the content node configuration (shortened for brevity)
     return contentNodeConfig;
+  }
+  
+  /**
+   * Load conditional node configuration
+   */
+  private async loadConditionalNodeConfig(): Promise<NodeFactoryJSON> {
+    return conditionalNodeConfig;
   }
 }

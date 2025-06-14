@@ -44,13 +44,13 @@ export const logicNodeConfig: NodeFactoryJSON = {
         ]
       },
       "process": {
-        "code": "async function process(incomingData, nodeData, params) { /* logic processing code */ return incomingData; }",
+        "code": "async function process(incomingData, nodeData, params, targetMap, sourceMap) { /* logic processing code */ return incomingData; }",
         "metadata": {
           "generatedBy": "manual",
           "version": "1.0.0",
-          "lastUpdated": "2025-06-12T10:30:00Z",
+          "lastUpdated": "2025-06-15T10:30:00Z",
           "executionContext": "frontend",
-          "signature": "async function process(incomingData, nodeData, params)"
+          "signature": "async function process(incomingData, nodeData, params, targetMap, sourceMap)"
         },
         "parameters": {
           "enableLogging": {
