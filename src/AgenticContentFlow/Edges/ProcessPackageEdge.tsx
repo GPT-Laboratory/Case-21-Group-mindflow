@@ -143,28 +143,26 @@ export function AnimatedPackageEdge({
         
         {/* Animated package - only during animation */}
         {isAnimationStarted && !isAnimationComplete && (
-          <g   transform="translate(-12, -12)">
-            <Package 
-              size={24} 
-              stroke={colors.packageColor} 
-              fill="white"
-              strokeWidth="2"
-            
+          <Package 
+            size={24} 
+            stroke={colors.packageColor} 
+            fill="white"
+            strokeWidth="2"
+            transform="translate(-12, -12)"
+          >
+            <animateMotion
+              ref={animationRef}
+              dur={`${animationDuration}s`}
+              repeatCount="1"
+              begin="indefinite"
+              fill="freeze"
+              rotate="0"
+              keyTimes="0;1"
+              keyPoints="0;1"
             >
-              <animateMotion
-                ref={animationRef}
-                dur={`${animationDuration}s`}
-                repeatCount="1"
-                begin="indefinite"
-                fill="freeze"
-                rotate="0"
-                keyTimes="0;1"
-                keyPoints="0;1"
-              >
-                <mpath href={`#path-${id}`} />
-              </animateMotion>
-            </Package>
-          </g>
+              <mpath href={`#path-${id}`} />
+            </animateMotion>
+          </Package>
         )}
       </svg>
     </>
