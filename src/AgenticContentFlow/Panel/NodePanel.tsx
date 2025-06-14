@@ -16,7 +16,7 @@ import { ScrollableTabs } from './components/ScrollableTabs';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
 import { DataFlowTab } from './components/tabs/DataFlowTab/DataFlowTab';
 import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
-import { getNodeGroup, isProcessNode, isPreviewNode } from './types/nodeGroups';
+import { getNodeGroup, isProcessNode, isPreviewNode, isContainerNode } from './types/nodeGroups';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 

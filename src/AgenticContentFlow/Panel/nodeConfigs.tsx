@@ -1,3 +1,5 @@
+import { ProcessParameter } from '../Node/factories/factory';
+import { factoryNodeRegistration } from '../Node/factories/factory/FactoryNodeRegistration';
 import { NodeConfig, FieldConfig } from './types';
 import { 
   Database, 
@@ -6,10 +8,6 @@ import {
   Workflow,
   Settings
 } from 'lucide-react';
-
-// Factory configuration imports
-import { factoryNodeRegistration } from '../Node/factory/FactoryNodeRegistration';
-import { ProcessParameter } from '../Node/factory/types';
 
 // Helper function to convert ProcessParameter to FieldConfig
 const convertProcessParameterToFieldConfig = (param: ProcessParameter): FieldConfig => {

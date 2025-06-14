@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Code2, Save, RotateCcw, Eye, Edit3, Settings } from 'lucide-react';
-import { factoryNodeRegistration } from '../../../../Node/factory/FactoryNodeRegistration';
 import Editor from '@monaco-editor/react';
 import { 
   TabContainer, 
@@ -12,6 +11,8 @@ import {
   Badge,
   Separator 
 } from '../../shared';
+import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/factory/FactoryNodeRegistration';
+import { CodeValidator } from '@/AgenticContentFlow/Node/factories/factory/process/ProcessContextManager';
 
 interface CodeEditorTabProps {
   nodeType: string;
@@ -116,7 +117,6 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
     setIsValidating(true);
     try {
       // Import the CodeValidator dynamically
-      const { CodeValidator } = await import('../../../../Node/factory/process/ProcessContextManager');
       const validator = new CodeValidator();
       const result = validator.validateProcessCode(editedCode);
       setValidationResult(result);

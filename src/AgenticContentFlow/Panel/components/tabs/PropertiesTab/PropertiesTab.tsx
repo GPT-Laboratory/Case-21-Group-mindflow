@@ -14,6 +14,7 @@ import {
   Badge,
   Separator 
 } from '../../shared';
+import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/factory/FactoryNodeRegistration';
 
 // Define NodeGroup type locally since we removed the separate file
 export type NodeGroup = 'process' | 'preview' | 'container';
@@ -45,7 +46,6 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
     const loadFactoryConfig = async () => {
       if (nodeType) {
         try {
-          const { factoryNodeRegistration } = await import('../../../../Node/factory/FactoryNodeRegistration');
           const configLoader = factoryNodeRegistration.getConfigurationLoader();
           const config = configLoader.getConfiguration(nodeType);
           const parameters = config?.process?.parameters || {};
