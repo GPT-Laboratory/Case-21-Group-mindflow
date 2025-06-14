@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { TypedHandle } from "../../Handle/components/TypedHandle";
-import { nodeFactory } from "../../Node/factory/NodeFactory";
+import { handleRegistry } from "../../Handle/registry/handleTypeRegistry";
 
 interface ConnectionHandlesProps {
     nodeType: string;
@@ -14,16 +14,23 @@ interface ConnectionHandlesProps {
 }
 
 const ConnectionHandles = ({ nodeType, color }: ConnectionHandlesProps) => {
-    // Get handle definitions from the node factory configuration
-    const nodeConfig = nodeFactory.getNodeConfig(nodeType);
+    // List of node types that are intentionally designed without handles
+    const noHandleNodeTypes = ['invisiblenode'];
     
-    // If no node configuration found, render nothing
-    if (!nodeConfig || !nodeConfig.handles?.definitions) {
+    // If this is a node type that shouldn't have handles, render nothing silently
+    if (noHandleNodeTypes.includes(nodeType)) {
+        return null;
+    }
+    
+    // Get handle definitions from the unified handle registry
+    // This now checks cell factory, container factory, and legacy configurations
+    const handleDefinitions = handleRegistry.getNodeHandles(nodeType);
+    
+    // If no handle definitions found, render nothing
+    if (!handleDefinitions || handleDefinitions.length === 0) {
         console.warn(`No handle definitions found for node type: ${nodeType}`);
         return null;
     }
-
-    const handleDefinitions = nodeConfig.handles.definitions;
 
     return (
         <>
