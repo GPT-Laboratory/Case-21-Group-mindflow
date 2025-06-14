@@ -7,10 +7,12 @@ export interface UseNodeProcessOptions {
   nodeId: string;
   /** Auto-start processing when data is received */
   autoStartOnData?: boolean;
+  /** Enhanced complete process for selective routing */
+  enhancedCompleteProcess?: boolean;
 }
 
 export const useNodeProcess = (options: UseNodeProcessOptions) => {
-  const { nodeId, autoStartOnData = false } = options;
+  const { nodeId, autoStartOnData = false, enhancedCompleteProcess = false } = options;
   const processContext = useProcessContext();
   const { getEdges } = useReactFlow();
   
@@ -54,19 +56,58 @@ export const useNodeProcess = (options: UseNodeProcessOptions) => {
     processContext.completeNodeProcess(nodeId, result);
     processContext.clearFlowData(nodeId);
     
-    
-    // Publish result to outgoing edges if we have meaningful data
-    if (result !== undefined && result !== null) {
-      const edges = getEdges();
-      const outgoingEdges = edges.filter(edge => edge.source === nodeId);
-      
-      // Set data for each outgoing EDGE (not directly to target node)
-      outgoingEdges.forEach(edge => {
-        console.log(`📤 Node ${nodeId} publishing data to edge ${edge.id}:`, result);
-        processContext.setFlowData(edge.id, result);
-      });
+    // 🎯 NEW: Enhanced selective routing support
+    if (enhancedCompleteProcess && result !== undefined && result !== null) {
+      // Check if result has selective routing format
+      if (typeof result === 'object' && result.data && result.targets && Array.isArray(result.targets)) {
+        const { data, targets } = result;
+        
+        console.log(`🎯 Node ${nodeId} using selective routing to targets:`, targets);
+        
+        // Only publish to specified targets
+        const edges = getEdges();
+        const targetEdges = edges.filter(edge => 
+          edge.source === nodeId && targets.includes(edge.target)
+        );
+        
+        targetEdges.forEach(edge => {
+          console.log(`📤 Node ${nodeId} publishing data to specific target ${edge.target} via edge ${edge.id}:`, data);
+          processContext.setFlowData(edge.id, data);
+        });
+        
+        // Log which edges were skipped
+        const allOutgoingEdges = edges.filter(edge => edge.source === nodeId);
+        const skippedEdges = allOutgoingEdges.filter(edge => !targets.includes(edge.target));
+        if (skippedEdges.length > 0) {
+          console.log(`⏭️ Node ${nodeId} skipped publishing to:`, skippedEdges.map(e => e.target));
+        }
+        
+      } else {
+        // Legacy behavior - send to all targets
+        console.log(`📤 Node ${nodeId} using legacy routing (all targets)`);
+        const edges = getEdges();
+        const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+        
+        // Set data for each outgoing EDGE (not directly to target node)
+        outgoingEdges.forEach(edge => {
+          console.log(`📤 Node ${nodeId} publishing data to edge ${edge.id}:`, result);
+          processContext.setFlowData(edge.id, result);
+        });
+      }
+    } else {
+      // Standard behavior for non-enhanced nodes
+      if (result !== undefined && result !== null) {
+        const edges = getEdges();
+        const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+        
+        // Set data for each outgoing EDGE (not directly to target node)
+        outgoingEdges.forEach(edge => {
+          console.log(`📤 Node ${nodeId} publishing data to edge ${edge.id}:`, result);
+          processContext.setFlowData(edge.id, result);
+        });
+      }
     }
-  }, [processContext, nodeId, getEdges]);
+  }, [processContext, nodeId, getEdges, enhancedCompleteProcess]);
 
   // Set error state
   const setError = useCallback((error: string) => {
