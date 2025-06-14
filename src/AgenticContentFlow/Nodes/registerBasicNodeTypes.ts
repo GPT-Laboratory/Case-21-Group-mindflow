@@ -16,17 +16,10 @@ import { createConditionalNodeTemplate } from "./ConditionalNode/createCondition
 
 // Import factory systems
 import { containerNodeRegistration } from "../Node/factories/container/ContainerNodeRegistration";
+import { factoryNodeRegistration } from "../Node/factories/cell/FactoryNodeRegistration";
 
 // Import handle type registration
 import { ensureHandleTypesRegistered } from "../Handles/registerBasicHandleTypes";
-import DataNode from "./DataNode/DataNode";
-import PageNode from "./PageNode/PageNode";
-import { createStatisticsNodeTemplate, StatisticsNode } from "./StatisticsNode";
-import InvisibleNode from "./InvisibleNode/InvisibleNode";
-import { createDataNodeTemplate } from "./DataNode/createDataNodeTemplate";
-import { createPageNodeTemplate } from "./PageNode/createPageNodeTemplate";
-import { createInvisibleNodeTemplate } from "./InvisibleNode/createInvisibleNodeTemplate";
-import { factoryNodeRegistration } from "../Node/factories/factory/FactoryNodeRegistration";
 
 // Track initialization state
 let registered = false;
@@ -66,14 +59,8 @@ export async function ensureNodeTypesRegistered(): Promise<void> {
     console.log("✅ Container factory nodes (DataNode, PageNode, StatisticsNode, InvisibleNode) registered successfully");
   } catch (error) {
     console.error("❌ Failed to register container factory nodes:", error);
-    // Fall back to registering legacy implementations if factory fails
-  
-    registerNodeType("datanode", DataNode, createDataNodeTemplate, true);
-    registerNodeType("pagenode", PageNode, createPageNodeTemplate, true);
-    registerNodeType("statisticsnode", StatisticsNode, createStatisticsNodeTemplate, true);
-    registerNodeType("invisiblenode", InvisibleNode, createInvisibleNodeTemplate, true);
-    
-    console.log("✅ Fallback: Legacy container nodes registered");
+    // Factory system is the primary method now - if it fails, we have a real issue
+    throw new Error(`Container factory system failed to initialize: ${error}`);
   }
 
   // Register handle type configurations
