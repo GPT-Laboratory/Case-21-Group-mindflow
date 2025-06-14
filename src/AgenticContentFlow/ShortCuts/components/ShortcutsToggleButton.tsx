@@ -1,4 +1,3 @@
-import React from "react";
 import { Keyboard } from "lucide-react";
 import { useShortcuts } from "../context/ShortcutsContext";
 import ControlButton from "../../Controls/Components/ControlButton";

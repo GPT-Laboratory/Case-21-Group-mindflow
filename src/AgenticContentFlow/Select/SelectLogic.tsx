@@ -3,7 +3,6 @@ import { registerControl } from "../Controls";
 import DeleteSelectedButton from "./buttons/DeleteSelected";
 import CenterSelectedButton from "./buttons/CenterSelected";
 import { CONTROL_TYPES } from "../constants";
-import SelectionDisplay from "./SelectionDisplay";
 
 const SelectLogic = () => {
   useEffect(() => {
