@@ -110,12 +110,33 @@ export const apiFlowNodesData: Node[] = [
       ]
     },
   },
+  // NEW: ConditionalNode for routing based on post count
+  {
+    id: 'posts-filter-condition',
+    type: 'conditionalnode',
+    parentId: 'invisible-lr-rest',
+    extent: 'parent',
+    position: { x: 700, y: 100 },
+    data: {
+      label: 'Check Post Count',
+      details: 'Route based on number of filtered posts',
+      subject: 'logic',
+      nodeLevel: 'intermediate',
+      expanded: true,
+      depth: 0,
+      isParent: false,
+      condition: 'data.data.length > 3',
+      conditionType: 'greater',
+      leftValue: 'data.data.length',
+      rightValue: '3'
+    }
+  },
   {
     id: 'content-display',
     type: 'contentnode',
     parentId: 'invisible-lr-rest',
     extent: 'parent',
-    position: { x: 700, y: 100 },
+    position: { x: 1000, y: 50 }, // Adjusted position for true path
     data: {
       label: 'Post List',
       details: 'Display filtered posts as a list component',
@@ -158,7 +179,7 @@ export const apiFlowNodesData: Node[] = [
     type: 'restnode',
     parentId: 'invisible-lr-rest',
     extent: 'parent',
-    position: { x: 1000, y: 100 },
+    position: { x: 1000, y: 150 }, // Adjusted position for false path
     data: {
       label: 'Submit New Post',
       details: 'Create a new post via JSONPlaceholder API',
@@ -181,6 +202,24 @@ export const apiFlowNodesData: Node[] = [
         userId: 1
       }
     },
+  },
+  // NEW: Final processing node to show the results
+  {
+    id: 'final-processor',
+    type: 'logicalnode',
+    parentId: 'invisible-lr-rest',
+    extent: 'parent',
+    position: { x: 1300, y: 100 },
+    data: {
+      label: 'Final Results',
+      details: 'Process and finalize the results from both paths',
+      subject: 'logic',
+      nodeLevel: 'intermediate',
+      expanded: true,
+      depth: 0,
+      isParent: false,
+      operation: 'transform'
+    }
   }
 ];
 
@@ -193,20 +232,56 @@ export const apiFlowEdgesData: Edge[] = [
     sourceHandle: 'right',
     targetHandle: 'left'
   },
-  // Add edge connecting logic to content
+  // Connect logic processor to conditional node
   {
-    id: 'edge-logic-content',
+    id: 'edge-logic-condition',
     source: 'logic-processor',
-    target: 'content-display',
+    target: 'posts-filter-condition',
     type: 'package',
     sourceHandle: 'right',
     targetHandle: 'left'
   },
-  // Add edge connecting content to post submission
+  // True path: enough posts -> display content
   {
-    id: 'edge-content-post',
-    source: 'content-display',
+    id: 'edge-condition-content-true',
+    source: 'posts-filter-condition',
+    target: 'content-display',
+    type: 'package',
+    sourceHandle: 'right',
+    targetHandle: 'left',
+    // NEW: Add routing metadata for conditional logic
+    data: {
+      routingCondition: 'true',
+      description: 'Route when condition evaluates to true (>3 posts)'
+    }
+  },
+  // False path: not enough posts -> skip to submission
+  {
+    id: 'edge-condition-post-false',
+    source: 'posts-filter-condition',
     target: 'post-submission',
+    type: 'package',
+    sourceHandle: 'right',
+    targetHandle: 'left',
+    // NEW: Add routing metadata for conditional logic
+    data: {
+      routingCondition: 'false',
+      description: 'Route when condition evaluates to false (≤3 posts)'
+    }
+  },
+  // Both paths converge at final processor
+  {
+    id: 'edge-content-final',
+    source: 'content-display',
+    target: 'final-processor',
+    type: 'package',
+    sourceHandle: 'right',
+    targetHandle: 'left'
+  },
+  {
+    id: 'edge-post-final',
+    source: 'post-submission',
+    target: 'final-processor',
     type: 'package',
     sourceHandle: 'right',
     targetHandle: 'left'
