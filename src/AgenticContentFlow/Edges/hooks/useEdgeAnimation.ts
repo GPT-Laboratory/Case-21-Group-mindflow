@@ -48,6 +48,14 @@ export function useEdgeAnimation({
 
   // Determine the lifecycle phase based on source node process state
   useEffect(() => {
+    // 🎯 NEW: Check if this specific edge has data to deliver
+    const hasEdgeData = processContext.getFlowData(id) !== undefined;
+    
+    // 🔍 DEBUG: Log edge data status for ConditionalNode edges
+    if (source === 'posts-filter-condition') {
+      console.log(`🔍 Edge ${id} (${source} → ${target}): hasEdgeData=${hasEdgeData}, sourceStatus=${sourceProcessState.status}`);
+    }
+    
     if (sourceProcessState.status === 'idle') {
       if (!hasCompletedOnce) {
         setLifecyclePhase('black');
@@ -55,7 +63,12 @@ export function useEdgeAnimation({
         setIsAnimationStarted(false);
         setHasDeliveredData(false);
       } else {
-        setLifecyclePhase('green');
+        // 🎯 UPDATED: Only turn green if this edge actually has data
+        const newPhase = hasEdgeData ? 'green' : 'black';
+        if (source === 'posts-filter-condition') {
+          console.log(`🎨 Edge ${id} setting lifecycle phase to: ${newPhase}`);
+        }
+        setLifecyclePhase(newPhase);
       }
     } else if (sourceProcessState.status === 'processing') {
       setLifecyclePhase('blue');
@@ -64,7 +77,12 @@ export function useEdgeAnimation({
       setHasCompletedOnce(false);
       setHasDeliveredData(false);
     } else if (sourceProcessState.status === 'completed') {
-      setLifecyclePhase('green');
+      // 🎯 UPDATED: Only turn green if this edge actually has data
+      const newPhase = hasEdgeData ? 'green' : 'black';
+      if (source === 'posts-filter-condition') {
+        console.log(`🎨 Edge ${id} setting lifecycle phase to: ${newPhase} (source completed)`);
+      }
+      setLifecyclePhase(newPhase);
       setHasCompletedOnce(true);
     } else if (sourceProcessState.status === 'error') {
       setLifecyclePhase('black');
@@ -74,9 +92,17 @@ export function useEdgeAnimation({
       setHasDeliveredData(false);
       setAnimationKey(prev => prev + 1);
     }
-  }, [sourceProcessState.status, hasCompletedOnce]);
+  }, [sourceProcessState.status, hasCompletedOnce, processContext, id, source, target]);
 
-  const shouldAnimate = lifecyclePhase === 'green' && !isAnimationComplete && hasCompletedOnce && !hasDeliveredData;
+  // 🎯 NEW: Check if this specific edge has data to deliver (selective routing support)
+  const hasEdgeData = processContext.getFlowData(id) !== undefined;
+  
+  // 🎯 UPDATED: Only animate if there's actual data for this edge
+  const shouldAnimate = lifecyclePhase === 'green' && 
+                       !isAnimationComplete && 
+                       hasCompletedOnce && 
+                       !hasDeliveredData && 
+                       hasEdgeData; // NEW: Only animate if data is available for this edge
 
   // Reset animation when process starts again
   useEffect(() => {
