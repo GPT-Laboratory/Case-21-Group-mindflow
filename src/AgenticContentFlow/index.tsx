@@ -22,6 +22,7 @@ import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
+import { NotificationProvider } from "./Notifications";
 
 import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React Flow
 import ReactStateHistory from "./History/ReactStateHistory";
@@ -64,6 +65,7 @@ export function AgenticContentFlowContent() {
         debug: true // Enable for development
       }}
     >
+      <NotificationProvider>
         <LayoutProvider
           initialDirection="DOWN"
           initialAutoLayout={true}
@@ -105,6 +107,7 @@ export function AgenticContentFlowContent() {
             </FlowContainer>
           </ShortcutsManager>
         </LayoutProvider>
+      </NotificationProvider>
     </ProcessProvider>
   );
 }
