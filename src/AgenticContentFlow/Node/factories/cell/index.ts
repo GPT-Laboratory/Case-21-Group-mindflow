@@ -11,6 +11,10 @@ export { NodeFactory } from './NodeFactory';
 export { NodeConfigurationLoader } from './NodeConfigurationLoader';
 export { IconResolver } from './IconResolver';
 
+// Export new components and utilities
+export * from './components';
+export * from './utils/createCellNodeTemplate';
+
 // Export type guards and utilities
 export type {
   NodeFactoryJSON,
