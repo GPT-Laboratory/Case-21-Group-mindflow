@@ -9,13 +9,12 @@ import { containerNodeFactory } from '../../Node/factories/container/ContainerNo
 
 // Import legacy handle configurations
 import { 
-  invisibleNodeConfig, 
   conditionalNodeConfig,
   cellNodeConfig,
   containerNodeConfig,
   moduleNodeConfig
 } from '../../Handles/configs';
-import { nodeFactory } from '@/AgenticContentFlow/Node/factories/factory';
+import { nodeFactory } from '@/AgenticContentFlow/Node/factories/cell';
 
 export class HandleTypeRegistry {
   private static instance: HandleTypeRegistry;
@@ -37,7 +36,6 @@ export class HandleTypeRegistry {
    */
   private initializeLegacyConfigs(): void {
     const legacyConfigs = [
-      invisibleNodeConfig,
       conditionalNodeConfig,
       cellNodeConfig,
       containerNodeConfig,
