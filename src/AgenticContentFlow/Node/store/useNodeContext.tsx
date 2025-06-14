@@ -98,9 +98,25 @@ export const NodeProvider: React.FC<NodeProviderProps> = ({ children }) => {
       const savedState = localStorage.getItem(PERSIST_STORAGE_KEY);
       if (savedState) {
         const parsedState = JSON.parse(savedState);
+        
+        // Deduplicate nodes from localStorage before processing
+        const nodeIdMap = new Map<string, Node<any>>();
+        parsedState.nodes.forEach((node: Node<any>) => {
+          if (nodeIdMap.has(node.id)) {
+            console.warn(`[Storage] Duplicate node ID found during load: ${node.id}. Keeping the last occurrence.`);
+          }
+          nodeIdMap.set(node.id, node);
+        });
+        const deduplicatedNodes = Array.from(nodeIdMap.values());
+        
+        // Log if we found duplicates
+        if (deduplicatedNodes.length !== parsedState.nodes.length) {
+          console.warn(`[Storage] Removed ${parsedState.nodes.length - deduplicatedNodes.length} duplicate nodes during load`);
+        }
+        
         // Perform rehydration logic similar to Zustand's onRehydrateStorage
         // Rebuild maps and normalize data
-        const rehydratedNodes = parsedState.nodes.map(normalizeNodeExpandedState);
+        const rehydratedNodes = deduplicatedNodes.map(normalizeNodeExpandedState);
         const { nodeMap, nodeParentIdMapWithChildIdSet, pureChildIdSet } = rebuildMapState(rehydratedNodes);
 
         // Ensure parent and child nodes are correctly categorized
@@ -162,9 +178,24 @@ export const NodeProvider: React.FC<NodeProviderProps> = ({ children }) => {
   // We only save the 'nodes' array as maps and parent/child arrays can be rebuilt
   useEffect(() => {
     try {
-      // Save only the essential data (nodes array)
-      const stateToSave = { nodes: state.nodes };
+      // Deduplicate nodes before saving to prevent accumulating duplicates
+      const nodeIdMap = new Map<string, Node<any>>();
+      state.nodes.forEach(node => {
+        if (nodeIdMap.has(node.id)) {
+          console.warn(`[Storage] Duplicate node ID found during save: ${node.id}. Keeping the last occurrence.`);
+        }
+        nodeIdMap.set(node.id, node);
+      });
+      const deduplicatedNodes = Array.from(nodeIdMap.values());
+      
+      // Save only the essential data (deduplicated nodes array)
+      const stateToSave = { nodes: deduplicatedNodes };
       localStorage.setItem(PERSIST_STORAGE_KEY, JSON.stringify(stateToSave));
+      
+      // Log if we found duplicates
+      if (deduplicatedNodes.length !== state.nodes.length) {
+        console.warn(`[Storage] Removed ${state.nodes.length - deduplicatedNodes.length} duplicate nodes before saving`);
+      }
     } catch (error) {
       console.error("NodeProvider: Failed to save state to storage:", error);
     }

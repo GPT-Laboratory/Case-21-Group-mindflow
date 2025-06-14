@@ -26,14 +26,25 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
     switch (action.type) {
       case "SET_NODES": {
         const oldNodes = state.nodes;
-        const nodes = action.payload;
+        let nodes = action.payload;
         //If the first old node is the same as the first new node, we need to tell them that it is still a new state
         const isNewState = oldNodes.length > 0 && oldNodes[0].id === nodes[0].id ? true : false;
         if (!Array.isArray(nodes)) {
           console.error("Invalid nodes value:", nodes);
           return state;
         }
-        // Normalize and rebuild state from new nodes
+        
+        // Deduplicate nodes by ID - keep the last occurrence of each duplicate
+        const nodeIdMap = new Map<string, Node<any>>();
+        nodes.forEach(node => {
+          if (nodeIdMap.has(node.id)) {
+            console.warn(`Duplicate node ID found: ${node.id}. Keeping the last occurrence.`);
+          }
+          nodeIdMap.set(node.id, node);
+        });
+        nodes = Array.from(nodeIdMap.values());
+        
+        // Normalize and rebuild state from deduplicated nodes
         const { nodeMap, nodeParentIdMapWithChildIdSet, pureChildIdSet } = rebuildMapState(nodes);
         const parentNodes = getOrganizedNodeParents(nodeParentIdMapWithChildIdSet, nodeMap);
         const childNodes = getPureNodeChildren(pureChildIdSet, nodeMap);
@@ -192,13 +203,24 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
       }
   
       case "UPDATE_NODES": {
-        const updatedNodes = action.payload.map(normalizeNodeExpandedState);
+        let updatedNodes = action.payload.map(normalizeNodeExpandedState);
+        
+        // Deduplicate the updated nodes by ID - keep the last occurrence of each duplicate
+        const nodeIdMap = new Map<string, Node<any>>();
+        updatedNodes.forEach(node => {
+          if (nodeIdMap.has(node.id)) {
+            console.warn(`[UPDATE_NODES] Duplicate node ID found: ${node.id}. Keeping the last occurrence.`);
+          }
+          nodeIdMap.set(node.id, node);
+        });
+        updatedNodes = Array.from(nodeIdMap.values());
+        
         // Create new maps (immutable update) starting from the current state
         const newNodeMap = new Map(state.nodeMap);
         const newNodeParentIdMapWithChildIdSet = new Map(
           state.nodeParentIdMapWithChildIdSet
         );
-  
+
         let newNodes: Node<any>[] = [...state.nodes];
 
         updatedNodes.forEach((updatedNode) => {
@@ -207,12 +229,12 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
             console.error("Node not found in the store:", updatedNode.id);
             return; // Skip this node if not found
           }
-  
+
           const oldNode = newNodeMap.get(updatedNode.id)!; // Get from potentially already updated map
-  
+
           // Update the node in the nodeMap
           newNodeMap.set(updatedNode.id, updatedNode);
-  
+
           // Update parent-child relationships if the parentId has changed
           if (oldNode?.parentId !== updatedNode?.parentId) {
             // Remove from old parent's child set
@@ -232,7 +254,7 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
                 newNodeMap.delete(oldParentId); 
               }
             }
-  
+
             // Add to new parent's child set
             const newParentId = updatedNode.parentId || "no-parent";
             // Ensure the new parent exists in the map before adding a child to it
@@ -249,11 +271,11 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
               }
               newNodeParentIdMapWithChildIdSet.get(newParentId)!.add(updatedNode.id);
             }
-  
+
             // If the node itself became or ceased to be a parent, update its entry in the parent map
             const wasParent = isParentNodeType(oldNode);
             const isNowParent = isParentNodeType(updatedNode);
-  
+
             if (wasParent && !isNowParent) {
               // Node is no longer a parent, remove its entry from the parent map
               newNodeParentIdMapWithChildIdSet.delete(updatedNode.id);
@@ -263,17 +285,17 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
                 newNodeParentIdMapWithChildIdSet.set(updatedNode.id, new Set());
               }
             }
-  
+
           } // End of parentId change check
-  
-  
+
+
         });
-  
+
         // Rebuild parent/child arrays based on the updated node map and parent map
         const newParentNodes = getOrganizedNodeParents(newNodeParentIdMapWithChildIdSet, newNodeMap);
         const newChildNodes = getPureNodeChildren(state.pureChildIdSet, newNodeMap);
         newNodes = [...newParentNodes, ...newChildNodes];
-  
+
         return {
           ...state,
           nodes: newNodes, // Update with the new nodes array
@@ -296,15 +318,26 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
         // This action is only dispatched internally during initialization
         // The payload is the state loaded from storage
         // We need to re-build the maps as they are not stored directly
-        const rehydratedNodes = action.payload.nodes.map(normalizeNodeExpandedState);
+        let rehydratedNodes = action.payload.nodes.map(normalizeNodeExpandedState);
+        
+        // Deduplicate nodes from REHYDRATE payload - keep the last occurrence of each duplicate
+        const nodeIdMap = new Map<string, Node<any>>();
+        rehydratedNodes.forEach(node => {
+          if (nodeIdMap.has(node.id)) {
+            console.warn(`[REHYDRATE] Duplicate node ID found: ${node.id}. Keeping the last occurrence.`);
+          }
+          nodeIdMap.set(node.id, node);
+        });
+        rehydratedNodes = Array.from(nodeIdMap.values());
+        
         const { nodeMap, nodeParentIdMapWithChildIdSet, pureChildIdSet } = rebuildMapState(rehydratedNodes);
-  
+
         // Re-categorize parent and child nodes based on the re-built maps
       
         const parentNodes = getOrganizedNodeParents(nodeParentIdMapWithChildIdSet, nodeMap);
         const childNodes = getPureNodeChildren(pureChildIdSet, nodeMap);
-  
-  
+
+
         return {
           ...defaultInitialState, // Start with defaults, but override with rehydrated data
           nodes: [...parentNodes, ...childNodes], // Flatten the arrays
