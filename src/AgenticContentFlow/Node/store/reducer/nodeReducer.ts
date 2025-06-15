@@ -28,7 +28,7 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
         const oldNodes = state.nodes;
         let nodes = action.payload;
         //If the first old node is the same as the first new node, we need to tell them that it is still a new state
-        const isNewState = oldNodes.length > 0 && oldNodes[0].id === nodes[0].id ? true : false;
+        const isNewState = oldNodes.length > 0 && nodes.length > 0 && oldNodes[0].id === nodes[0].id ? true : false;
         if (!Array.isArray(nodes)) {
           console.error("Invalid nodes value:", nodes);
           return state;
