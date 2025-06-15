@@ -31,11 +31,7 @@ export function AnimatedPackageEdge({
     animationDuration,
     setAnimationDuration,
     resetAnimation,
-  } = useEdgeAnimation({
-    id: id!,
-    source: source!,
-    target: target!,
-  });
+  } = useEdgeAnimation({ id: id!, source: source!, target: target! });
 
   // Controls logic
   const {
@@ -49,7 +45,7 @@ export function AnimatedPackageEdge({
     onDurationChange: setAnimationDuration,
   });
 
-  // Calculate edge path
+  // Compute the smooth step path
   const [edgePath] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -59,33 +55,27 @@ export function AnimatedPackageEdge({
     targetPosition,
   });
 
-  // Get colors based on lifecycle phase
   const colors = getEdgeColors(lifecyclePhase);
-
   const edgeStyle = {
     stroke: colors.edgeColor,
     strokeWidth: colors.strokeWidth,
     fill: 'none',
   };
 
-  // Calculate midpoint for controls positioning
   const midX = (sourceX + targetX) / 2;
   const midY = (sourceY + targetY) / 2;
-
-  // Show controls when edge is hovered or selected
-  const showControls = isHovered || selected || false;
+  const showControls = isHovered || selected || false
 
   return (
     <>
-      <BaseEdge 
-        id={id} 
-        path={edgePath} 
+      <BaseEdge
+        id={id}
+        path={edgePath}
         style={edgeStyle}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       />
-      
-      {/* Edge Controls Component */}
+
       <EdgeControls
         isVisible={showControls}
         isPlaying={isPlaying}
@@ -97,7 +87,6 @@ export function AnimatedPackageEdge({
         onPlayPause={() => handlePlayPause(animationRef, resetAnimation)}
       />
 
-      {/* SVG Animation Layer */}
       <svg
         style={{
           overflow: 'visible',
@@ -107,47 +96,32 @@ export function AnimatedPackageEdge({
           pointerEvents: 'none',
         }}
       >
+        {/* Hidden path remains for visibility or debugging if needed */}
         <path id={`path-${id}`} d={edgePath} style={{ visibility: 'hidden' }} />
-        
-        {/* Static package at source - visible in blue/green phases, hidden during/after animation */}
-        {lifecyclePhase !== 'black' && !isAnimationStarted && !(hasCompletedOnce && isAnimationComplete) && (
-          <g 
-          transform={`translate(${sourceX - 12}, ${sourceY - 12})`}
-          >
-            {lifecyclePhase === 'blue' ? (
-              <g>
-                {/* White background circle for the open package */}
-                <circle 
-                  cx="12" 
-                  cy="12" 
-                  r="10" 
-                  fill="white" 
-                  stroke="none"
-                />
-                <PackageOpen 
-                  size={24} 
-                  stroke={colors.packageColor} 
-                  strokeWidth="2"
-                />
-              </g>
-            ) : (
-              <Package 
-                size={24} 
-                stroke={colors.packageColor} 
-                fill="white"
-                strokeWidth="2"
-              />
-            )}
-          </g>
-        )}
-        
-        {/* Animated package - only during animation */}
+
+        {/* Static package at source */}
+        {lifecyclePhase !== 'black' &&
+          !isAnimationStarted &&
+          !(hasCompletedOnce && isAnimationComplete) && (
+            <g transform={`translate(${sourceX - 12}, ${sourceY - 12})`}>
+              {lifecyclePhase === 'blue' ? (
+                <g>
+                  <circle cx="12" cy="12" r="10" fill="white" />
+                  <PackageOpen size={24} stroke={colors.packageColor} strokeWidth={2} />
+                </g>
+              ) : (
+                <Package size={24} stroke={colors.packageColor} fill="white" strokeWidth={2} />
+              )}
+            </g>
+          )}
+
+        {/* Inline‐path animation */}
         {isAnimationStarted && !isAnimationComplete && (
-          <Package 
-            size={24} 
-            stroke={colors.packageColor} 
+          <Package
+            size={24}
+            stroke={colors.packageColor}
             fill="white"
-            strokeWidth="2"
+            strokeWidth={2}
             transform="translate(-12, -12)"
           >
             <animateMotion
@@ -157,11 +131,8 @@ export function AnimatedPackageEdge({
               begin="indefinite"
               fill="freeze"
               rotate="0"
-              keyTimes="0;1"
-              keyPoints="0;1"
-            >
-              <mpath href={`#path-${id}`} />
-            </animateMotion>
+              path={edgePath}    
+            />
           </Package>
         )}
       </svg>
