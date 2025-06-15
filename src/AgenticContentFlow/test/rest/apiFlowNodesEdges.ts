@@ -18,24 +18,42 @@ export const apiFlowNodesData: Node[] = [
   {
     id: 'api-request',
     type: 'restnode',
-    parentId: 'invisible-lr-rest', // Set the parentId to the container
+    parentId: 'invisible-lr-rest',
     extent: 'parent',
     position: { x: 100, y: 100 },
     data: {
-      label: 'Get Posts',
-      details: 'Fetch posts from JSONPlaceholder API',
-      subject: 'integration',
-      nodeLevel: 'intermediate',
       expanded: true,
       depth: 0,
       isParent: false,
-      method: 'GET',
-      url: 'https://jsonplaceholder.typicode.com/posts',
-      authentication: 'none',
-      timeout: 30000, // Fix: 30 seconds instead of 30ms
-      retryAttempts: 3,
-      headers: {
-        'Content-Type': 'application/json'
+      instanceCode: `async function process(incomingData, nodeData, params, targetMap, sourceMap) {
+        // Instance-specific implementation for fetching posts
+        const response = await fetch(nodeData.url, {
+          method: nodeData.method,
+          headers: nodeData.headers,
+          signal: AbortSignal.timeout(nodeData.timeout || 30000)
+        });
+        
+        if (!response.ok) {
+          throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+        }
+        
+        const data = await response.json();
+        console.log('Fetched posts:', data.length);
+        return { data, metadata: { source: 'jsonplaceholder', timestamp: new Date().toISOString() } };
+      }`,
+      instanceData: {
+        label: 'Get Posts',
+        details: 'Fetch posts from JSONPlaceholder API',
+        retryAttempts: 5,
+        timeout: 45000, 
+      },
+      templateData: {
+        method: 'GET',
+        url: 'https://jsonplaceholder.typicode.com/posts',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        authentication: 'none'
       }
     },
   },
@@ -43,71 +61,93 @@ export const apiFlowNodesData: Node[] = [
     id: 'logic-processor',
     type: 'logicalnode',
     position: { x: 400, y: 100 },
-    parentId: 'invisible-lr-rest', // Set the parentId to the container
+    parentId: 'invisible-lr-rest',
     extent: 'parent',
     data: {
-      label: 'Filter Active Posts',
-      details: 'Filter posts based on criteria and transform data',
-      subject: 'logic',
-      nodeLevel: 'intermediate',
-      expanded: true,
       depth: 0,
       isParent: false,
-      operation: 'filter',
-      // Legacy condition for backward compatibility
-      condition: 'userId <= 5 && title.length > 10',
-      // New structured logic rules
-      logicRules: [
-        {
-          id: 'rule-1',
-          field: 'userId',
-          operator: '<=',
-          value: 5,
-          logicalOperator: 'AND'
-        },
-        {
-          id: 'rule-2',
-          field: 'title',
-          operator: 'length>',
-          value: 10
-        }
-      ],
-      inputSchema: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            id: { type: 'number' },
-            userId: { type: 'number' },
-            title: { type: 'string' },
-            body: { type: 'string' }
+      expanded: true,
+      instanceCode: `async function process(incomingData, nodeData, params, targetMap, sourceMap) {
+        // Instance-specific implementation for filtering posts
+        const posts = incomingData.data || incomingData;
+        
+        const filtered = posts.filter(post => {
+          return post.userId <= 5 && post.title.length > 10;
+        });
+        
+        console.log(\`Filtered \${posts.length} posts down to \${filtered.length}\`);
+        
+        return {
+          data: filtered,
+          metadata: {
+            originalCount: posts.length,
+            filteredCount: filtered.length,
+            rules: nodeData.rules,
+            timestamp: new Date().toISOString()
           }
-        }
+        };
+      }`,
+      instanceData: {
+        label: 'Filter Active Posts',
+        details: 'Filter posts based on criteria and transform data',
       },
-      outputSchema: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            id: { type: 'number' },
-            userId: { type: 'number' },
-            title: { type: 'string' },
-            body: { type: 'string' }
+      templateData: {
+        operation: 'filter',
+        // Legacy condition for backward compatibility
+        condition: 'userId <= 5 && title.length > 10',
+        // New structured logic rules
+        logicRules: [
+          {
+            id: 'rule-1',
+            field: 'userId',
+            operator: '<=',
+            value: 5,
+            logicalOperator: 'AND'
+          },
+          {
+            id: 'rule-2',
+            field: 'title',
+            operator: 'length>',
+            value: 10
           }
-        }
-      },
-      rules: [
-        {
-          name: 'userFilter',
-          expression: 'post.userId <= 5',
-          description: 'Only include posts from users 1-5'
+        ],
+        inputSchema: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              userId: { type: 'number' },
+              title: { type: 'string' },
+              body: { type: 'string' }
+            }
+          }
         },
-        {
-          name: 'titleLength',
-          expression: 'post.title.length > 10',
-          description: 'Only include posts with meaningful titles'
-        }
-      ]
+        outputSchema: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              userId: { type: 'number' },
+              title: { type: 'string' },
+              body: { type: 'string' }
+            }
+          }
+        },
+        rules: [
+          {
+            name: 'userFilter',
+            expression: 'post.userId <= 5',
+            description: 'Only include posts from users 1-5'
+          },
+          {
+            name: 'titleLength',
+            expression: 'post.title.length > 10',
+            description: 'Only include posts with meaningful titles'
+          }
+        ]
+      }
     },
   },
   {
@@ -117,17 +157,21 @@ export const apiFlowNodesData: Node[] = [
     extent: 'parent',
     position: { x: 700, y: 100 },
     data: {
-      label: 'Check Post Count',
-      details: 'Route based on number of filtered posts',
-      subject: 'logic',
-      nodeLevel: 'intermediate',
-      expanded: true,
       depth: 0,
       isParent: false,
-      condition: 'data.data.length > 3',
-      conditionType: 'greater',
-      leftValue: 'data.data.length',
-      rightValue: '3'
+      expanded: true,
+      instanceData: {
+        label: 'Check Post Count',
+        details: 'Route based on number of filtered posts',
+        subject: 'logic',
+        nodeLevel: 'intermediate',
+      },
+      templateData: {
+        condition: 'data.data.length > 3',
+        conditionType: 'greater',
+        leftValue: 'data.data.length',
+        rightValue: '3'
+      }
     }
   },
   {
@@ -135,42 +179,44 @@ export const apiFlowNodesData: Node[] = [
     type: 'contentnode',
     parentId: 'invisible-lr-rest',
     extent: 'parent',
-    position: { x: 1000, y: 50 }, // Adjusted position for true path
+    position: { x: 1000, y: 50 },
     data: {
-      label: 'Post List',
-      details: 'Display filtered posts as a list component',
-      subject: 'visualization',
-      nodeLevel: 'basic',
-      expanded: true,
       depth: 0,
       isParent: false,
-      displayType: 'list',
-      listConfig: {
-        itemTemplate: {
-          title: '{{title}}',
-          subtitle: '{{body}}',
-          metadata: 'User: {{userId}} | ID: {{id}}'
-        },
-        maxItems: 10,
-        showSearch: true,
-        sortBy: 'title'
+      expanded: true,
+      instanceData: {
+        label: 'Post List',
+        details: 'Display filtered posts as a list component',
+        // Enable manual approval mode
+        requiresUserApproval: true,
+        autoApprove: false
       },
-      // Expected input schema for UI component
-      expectedSchema: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            id: { type: 'number', required: true },
-            title: { type: 'string', required: true },
-            body: { type: 'string', required: true },
-            userId: { type: 'number', required: true }
+      templateData: {
+        displayType: 'list',
+        listConfig: {
+          itemTemplate: {
+            title: '{{title}}',
+            subtitle: '{{body}}',
+            metadata: 'User: {{userId}} | ID: {{id}}'
+          },
+          maxItems: 10,
+          showSearch: true,
+          sortBy: 'title'
+        },
+        // Expected input schema for UI component
+        expectedSchema: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', required: true },
+              title: { type: 'string', required: true },
+              body: { type: 'string', required: true },
+              userId: { type: 'number', required: true }
+            }
           }
         }
-      },
-      // Enable manual approval mode
-      requiresUserApproval: true,
-      autoApprove: false
+      }
     }
   },
   {
@@ -178,31 +224,32 @@ export const apiFlowNodesData: Node[] = [
     type: 'restnode',
     parentId: 'invisible-lr-rest',
     extent: 'parent',
-    position: { x: 1000, y: 150 }, // Adjusted position for false path
+    position: { x: 1000, y: 150 },
     data: {
-      label: 'Submit New Post',
-      details: 'Create a new post via JSONPlaceholder API',
-      subject: 'integration',
-      nodeLevel: 'intermediate',
-      expanded: true,
       depth: 0,
+      expanded: true,
       isParent: false,
-      method: 'POST',
-      url: 'https://jsonplaceholder.typicode.com/posts',
-      authentication: 'none',
-      timeout: 30000, // Fix: 30 seconds instead of 30ms
-      retryAttempts: 3,
-      headers: {
-        'Content-Type': 'application/json'
+      instanceData: {
+        label: 'Submit New Post',
+        details: 'Create a new post via JSONPlaceholder API',
+        retryAttempts: 1, // Override from template default of 3
       },
-      body: {
-        title: 'New Post Title',
-        body: 'New post content',
-        userId: 1
+      templateData: {
+        method: 'POST',
+        url: 'https://jsonplaceholder.typicode.com/posts',
+        authentication: 'none',
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: {
+          title: 'New Post Title',
+          body: 'New post content',
+          userId: 1
+        }
       }
     },
   },
-  // NEW: Final processing node to show the results
   {
     id: 'final-processor',
     type: 'logicalnode',
@@ -210,14 +257,16 @@ export const apiFlowNodesData: Node[] = [
     extent: 'parent',
     position: { x: 1300, y: 100 },
     data: {
-      label: 'Final Results',
-      details: 'Process and finalize the results from both paths',
-      subject: 'logic',
-      nodeLevel: 'intermediate',
       expanded: true,
       depth: 0,
       isParent: false,
-      operation: 'transform'
+      instanceData: {
+        label: 'Final Results',
+        details: 'Process and finalize the results from both paths',
+      },
+      templateData: {
+        operation: 'transform'
+      }
     }
   }
 ];
