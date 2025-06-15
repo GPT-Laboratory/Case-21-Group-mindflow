@@ -7,6 +7,7 @@ import { BaseNodeContainer } from '@/AgenticContentFlow/Node/factories/shared/co
 import ConnectionHandles from '../../shared/components/ConnectionHandles';
 import { NodeHeader } from '@/AgenticContentFlow/Node/factories/shared/components/NodeHeader';
 import CellNodeProcessControls from '@/AgenticContentFlow/Node/factories/cell/components/CellNodeProcessControls';
+import ScrollingText from '../../shared/components/ScrollingText';
 
 
 export interface CellNodeConfig {
@@ -128,7 +129,8 @@ export const CellNode: React.FC<CellNodeProps> = ({
         className={cn(
           "w-full h-full flex flex-col select-none transition-all duration-200 ease-in-out",
           "rounded-lg shadow-lg bg-white",
-          "!min-w-0 !min-h-0"
+          "!min-w-0 !min-h-0",
+          config.headerGradient,
         )}
         style={{
           width: nodeInFlow?.width || nodeDimensions.width,
@@ -141,9 +143,9 @@ export const CellNode: React.FC<CellNodeProps> = ({
         />
 
         <NodeHeader 
-          className={cn("dragHandle", config.headerGradient)}
+          className={cn("dragHandle", config.headerGradient, "border-none")}
           icon={config.headerIcon}
-          label={label}
+          //label={label}
           isProcessing={isProcessing}
           isCompleted={isCompleted}
           hasError={hasError}
@@ -151,28 +153,12 @@ export const CellNode: React.FC<CellNodeProps> = ({
         />
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
-          <div className="flex items-center justify-center">
-            <div className={cn(
-              "w-12 h-12 rounded-lg flex items-center justify-center transition-all",
-              isProcessing ? "bg-blue-100 animate-pulse" : "bg-blue-100",
-              hasError ? "bg-red-100" : "",
-              isCompleted ? "bg-green-100" : ""
-            )}>
-              {React.isValidElement(config.icon) ? (
-                React.cloneElement(config.icon as React.ReactElement<any>, {
-                  className: cn(
-                    "w-6 h-6 transition-all",
-                    isProcessing ? "text-blue-600 animate-pulse" : "text-blue-600",
-                    hasError ? "text-red-600" : "",
-                    isCompleted ? "text-green-600" : "",
-                    (config.icon as any)?.props?.className
-                  )
-                })
-              ) : (
-                config.icon
-              )}
-            </div>
-          </div>
+          
+          <ScrollingText text={label}
+            maxWidth="100%"
+            className="text-center text-lg font-semibold text-slate-800"
+            sx={{ maxWidth: '100%' }}
+          />
           
           <div className="text-center text-sm text-slate-700 leading-relaxed px-1 flex flex-row items-center">
             <Badge variant="outline" className={cn("text-xs px-2 py-1 m-1 font-mono", config.badge.colorClasses)}>
