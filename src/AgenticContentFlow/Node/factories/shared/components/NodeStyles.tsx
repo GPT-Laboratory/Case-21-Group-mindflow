@@ -56,6 +56,8 @@ export function BaseNodeContainer({
       return {
         ...baseStyle,
         border: '3px solid transparent',
+        backgroundColor: baseStyle.backgroundColor || 'var(--color-background)',
+
         background: `
           linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
           linear-gradient(var(--angle, 0deg), #ae53ba, #2a8af6, #ae53ba) border-box
