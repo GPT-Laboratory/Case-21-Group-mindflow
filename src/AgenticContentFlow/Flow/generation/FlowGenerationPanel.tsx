@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Loader2, Send, RefreshCw, Settings } from 'lucide-react';
+import { Loader2, Send, RefreshCw } from 'lucide-react';
 import { FlowGenerationService, FlowGenerationRequest } from './FlowGenerationService';
 import { GenerationOrchestrator } from '../../Process/Generation/GenerationOrchestrator';
 import { LLMProvider } from '../../Process/Generation/types';
@@ -11,11 +11,10 @@ interface FlowGenerationPanelProps {
 
 const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
   onFlowGenerated,
-  onClose
 }) => {
   const [description, setDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [complexity, setComplexity] = useState<'simple' | 'intermediate' | 'advanced'>('simple');
+  const [complexity, _] = useState<'simple' | 'intermediate' | 'advanced'>('simple');
   const [selectedProvider, setSelectedProvider] = useState<LLMProvider>('openai');
   const [availableProviders, setAvailableProviders] = useState<Array<{
     provider: LLMProvider;
@@ -109,22 +108,6 @@ const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
     }
   };
 
-  const examplePrompts = [
-    "Create a todo management system with API integration",
-    "Build a user dashboard with data filtering and conditional routing", 
-    "Design an e-commerce product catalog with search and recommendations",
-    "Make a weather forecast app with location-based routing",
-    "Create a content management workflow with approval process"
-  ];
-
-  const handleReroll = useCallback(() => {
-    if (!description.trim()) return;
-    setIsGenerating(true);
-    // Reroll logic here, possibly calling the same generate function with the same parameters
-    // For now, we'll just simulate a reroll by clearing the description
-    setDescription('');
-    setIsGenerating(false);
-  }, [description]);
 
   return (
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">

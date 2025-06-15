@@ -170,7 +170,7 @@ Return a JSON object with:
     }
   }
 
-  private generateTodoFlow(variation: number): any {
+  private generateTodoFlow(_: number): any {
     // Variations for todo flow
     const baseFlow = {
       nodes: [
@@ -324,17 +324,17 @@ Return a JSON object with:
     };
   }
 
-  private generateWeatherFlow(variation: number): any {
+  private generateWeatherFlow(_: number): any {
     // Similar structure for weather flow...
     return completeFlowExample; // Simplified for now
   }
 
-  private generateEcommerceFlow(variation: number): any {
+  private generateEcommerceFlow(_: number): any {
     // Similar structure for ecommerce flow...
     return completeFlowExample; // Simplified for now
   }
 
-  private generateSocialMediaFlow(variation: number): any {
+  private generateSocialMediaFlow(_: number): any {
     // Themed flow for social media analytics
     return {
       nodes: [

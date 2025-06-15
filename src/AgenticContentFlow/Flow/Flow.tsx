@@ -16,7 +16,6 @@ import { ensureEdgeTypesRegistered } from "../Edges/registerBasicEdgeTypes";
 import { ensureNodeTypesRegistered } from "../Nodes/registerBasicNodeTypes";
 import NodeConfigPanel from "../Panel/NodePanel";
 import { useNotifications } from "../Notifications";
-import { NotificationDemo } from "../Notifications/components/NotificationDemo";
 import FlowGenerationPanel from "./generation/FlowGenerationPanel";
 
 

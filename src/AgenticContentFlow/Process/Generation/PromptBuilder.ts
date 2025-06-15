@@ -158,6 +158,7 @@ Generate a JavaScript async function for a ${nodeType} node in an Agentic Conten
   }
 
   private buildNodeSpecificRequirements(nodeType: string, templateData: Record<string, any>): string {
+    console.log(`Building requirements for node type: ${nodeType}`);
     let requirements = '**Configuration-Based Requirements**:\n';
     
     // Build requirements based on actual configuration data, not node type assumptions
