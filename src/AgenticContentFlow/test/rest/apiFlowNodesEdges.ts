@@ -110,7 +110,6 @@ export const apiFlowNodesData: Node[] = [
       ]
     },
   },
-  // NEW: ConditionalNode for routing based on post count
   {
     id: 'posts-filter-condition',
     type: 'conditionalnode',

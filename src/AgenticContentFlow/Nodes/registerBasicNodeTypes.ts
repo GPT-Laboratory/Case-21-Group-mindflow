@@ -7,9 +7,6 @@ import NodeCreationControl from "../Node/controls/NodeCreationControl";
 import { containerNodeRegistration } from "../Node/factories/container/ContainerNodeRegistration";
 import { factoryNodeRegistration } from "../Node/factories/cell/FactoryNodeRegistration";
 
-// Import handle type registration
-import { ensureHandleTypesRegistered } from "../Handles/registerBasicHandleTypes";
-
 // Track initialization state
 let registered = false;
 
@@ -39,9 +36,6 @@ export async function ensureNodeTypesRegistered(): Promise<void> {
     // Factory system is the primary method now - if it fails, we have a real issue
     throw new Error(`Container factory system failed to initialize: ${error}`);
   }
-
-  // Register handle type configurations
-  ensureHandleTypesRegistered();
 
   // Register the node creation control with all available node types
   registerControl(
