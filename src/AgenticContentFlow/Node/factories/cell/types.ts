@@ -80,7 +80,8 @@ export interface NodeFactoryJSON {
   // Process configuration with stored code
   process: {
     // The actual function code (AI-generated or manually created)
-    code: string; // JavaScript function as string
+    code?: string; // JavaScript function as string (legacy)
+    templateCode?: string; // Template code for instances to customize
     
     // Function metadata
     metadata: {
