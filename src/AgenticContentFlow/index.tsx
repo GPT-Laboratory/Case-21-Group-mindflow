@@ -19,6 +19,7 @@ import SelectLogic from "./Select/SelectLogic";
 import Minimap from "./Minimap/Minimap";
 import TestControlsRegistration from "./test/TestControlsRegistration";
 import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
+import APISetupControlsRegistration from "./Process/Generation/controls/APISetupControlsRegistration";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
@@ -103,6 +104,7 @@ export function AgenticContentFlowContent() {
                 {/* Register available controls here */}
                 <TestControlsRegistration />
                 <LayoutControlsRegistration />
+                <APISetupControlsRegistration />
               </Flow>
             </FlowContainer>
           </ShortcutsManager>

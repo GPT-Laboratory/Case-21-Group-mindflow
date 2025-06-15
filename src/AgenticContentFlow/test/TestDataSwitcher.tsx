@@ -21,6 +21,9 @@ import { lmsEdgesData } from "./lms/edgeData";
 // Import REST API example data
 import { apiFlowNodesData, apiFlowEdgesData } from "./rest/apiFlowNodesEdges";
 
+// Import generated flow example data
+import { completeFlowExampleNodes, completeFlowExampleEdges } from "./generated/completeFlowExample";
+
 /**
  * @description Switcher for loading different test data sets
  */
@@ -59,6 +62,14 @@ export const TestDataSwitcher = () => {
         })));
         setEdges(apiFlowEdgesData);
         break;
+      case "generated-flow":
+        setNodes(completeFlowExampleNodes);
+        setEdges(completeFlowExampleEdges);
+        break;
+      case "empty":
+        setNodes([]);
+        setEdges([]);
+        break;
 
       default:
         console.warn("Unknown test data set:", dataSet);
@@ -66,6 +77,11 @@ export const TestDataSwitcher = () => {
   };
 
   const testDataItems = [
+    {
+      key: "empty",
+      label: "Empty Flow (Test AI Generation)",
+      onClick: () => switchToDataSet("empty")
+    },
     {
       key: "simple",
       label: "Simple Example Data",
@@ -85,6 +101,11 @@ export const TestDataSwitcher = () => {
       key: "lms",
       label: "LMS Flow (Container Example)",
       onClick: () => switchToDataSet("lms")
+    },
+    {
+      key: "generated-flow",
+      label: "Generated Flow Example Data",
+      onClick: () => switchToDataSet("generated-flow")
     },
   ];
 
