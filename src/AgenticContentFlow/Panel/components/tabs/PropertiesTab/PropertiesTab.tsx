@@ -11,6 +11,9 @@ import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/cel
 // Define NodeGroup type locally since we removed the separate file
 export type NodeGroup = 'process' | 'preview' | 'container';
 
+// Track logged combinations to prevent spam
+const loggedCombinations = new Set<string>();
+
 interface PropertiesTabProps {
   fields: Record<string, any>;
   formData: Record<string, any>;
@@ -92,11 +95,16 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
       templateDefaults
     });
   } else {
-    console.log('Using new structure:', {
-      templateData: actualTemplateData,
-      instanceData: actualInstanceData,
-      templateDefaults
-    });
+    // Only log if we haven't seen this combination before to avoid spam
+    const logKey = `${nodeId}-${nodeType}-${Object.keys(actualTemplateData).length}-${Object.keys(actualInstanceData).length}`;
+    if (!loggedCombinations.has(logKey)) {
+      console.log('Using new structure:', {
+        templateData: actualTemplateData,
+        instanceData: actualInstanceData,
+        templateDefaults
+      });
+      loggedCombinations.add(logKey);
+    }
   }
 
   const handleInstanceDataChange = (fieldKey: string, value: any) => {
