@@ -1,392 +1,334 @@
-# Process Generation System Documentation
+# LLM-Powered Process Generation System
 
-## Overview
+This module provides AI-powered code generation for Agentic Content Flow nodes using Large Language Models (LLMs). It enables users to generate node-specific process functions by leveraging OpenAI GPT, Google Gemini, Anthropic Claude, or custom LLM providers.
 
-The Process Generation system is a sophisticated code generation engine that automatically creates JavaScript process functions for nodes in the Agentic Content Flow. It takes node configurations and instance data and generates executable code that can handle data processing, API calls, conditional logic, and content display.
+## Features
+
+- **Multi-Provider Support**: OpenAI, Google Gemini, Anthropic Claude, and custom APIs
+- **Intelligent Prompts**: Context-aware prompts built from node templates, instance data, and schemas
+- **Real-time Progress**: Live progress notifications during generation
+- **Code Validation**: Automatic validation of generated code for syntax and security
+- **Secure Storage**: Encrypted API key storage in localStorage
+- **Easy Setup**: User-friendly configuration dialogs with connection testing
 
 ## Architecture
 
 ### Core Components
 
-1. **ProcessGenerator** - Main orchestrator that coordinates generation strategies
-2. **Templates** - Node-agnostic template system for consistent code patterns  
-3. **AI Provider** - Smart code generation using AI analysis of prompts
-4. **Validator** - Security and syntax validation of generated code
-5. **Types** - TypeScript interfaces defining the system contracts
+#### `types.ts`
+Type definitions for LLM providers, generation requests, and results.
 
-### Generation Flow
+#### `APIKeyManager.ts`
+Secure storage and management of LLM API credentials:
+- Encrypted API key storage
+- Multi-provider configuration
+- Automatic preference management
+- Connection validation
 
-```
-Node Config + Instance Data → ProcessDescriptor → Generation Strategy → Validated Code
-```
+#### `LLMProviders.ts`
+Implementation of different LLM provider APIs:
+- `OpenAIProvider`: GPT-4 and GPT-3.5 models
+- `GeminiProvider`: Google's Gemini Pro models
+- `ClaudeProvider`: Anthropic's Claude 3 family
+- `CustomProvider`: Self-hosted or other compatible APIs
 
-## How It Works
+#### `PromptBuilder.ts`
+Constructs intelligent prompts from node context:
+- Template descriptions and configurations
+- Instance-specific data and requirements
+- Input/output schemas from connected nodes
+- Node-type specific examples and constraints
 
-### 1. Input Processing
+#### `GenerationOrchestrator.ts`
+Main coordinator for the generation process:
+- Provider selection and configuration
+- Progress tracking and error handling
+- Code validation and post-processing
+- Node updates and result management
 
-The system takes two main inputs:
+#### `components/APISetupDialog.tsx`
+React component for provider configuration:
+- Quick setup for popular providers
+- API key validation and testing
+- Advanced settings (model, temperature, tokens)
+- Connection testing and error handling
 
-**Node Configuration** (from factory configs like `restnode-config.ts`):
-- Defines the node type, category, and capabilities
-- Contains base process code template
-- Specifies handles, visual properties, and constraints
+## Usage
 
-**Instance Data** (from actual node instances like `apiFlowNodesData.ts`):
-- Runtime configuration values (URLs, methods, conditions)
-- User-defined parameters and settings
-- Connection and routing information
+### Basic Integration
 
-### 2. Generation Strategies
+The system is automatically integrated into the NodePanel. When users click the "Generate" button:
 
-The ProcessGenerator intelligently selects one of three strategies:
+1. **Configuration Check**: Verifies LLM provider setup
+2. **API Setup**: Shows configuration dialog if needed
+3. **Context Building**: Extracts node data, schemas, and flow context
+4. **Prompt Generation**: Creates intelligent prompts for the LLM
+5. **API Call**: Sends request to configured provider with progress tracking
+6. **Validation**: Validates generated code for syntax and security
+7. **Node Update**: Updates the node with generated code and metadata
 
-#### Template Strategy
-- **When**: Standard node types with well-defined patterns
-- **How**: Uses `UniversalProcessTemplate` that adapts to any node type
-- **Benefits**: Fast, reliable, predictable output
-- **Confidence**: ~90%
+### Setting Up LLM Providers
 
-#### AI Strategy  
-- **When**: Complex requirements or novel node configurations
-- **How**: Analyzes prompts to generate contextual code
-- **Benefits**: Handles edge cases, creates optimized solutions
-- **Confidence**: ~70-80%
-
-#### Hybrid Strategy
-- **When**: Moderate complexity or when AI enhancement is available
-- **How**: Starts with template base, then AI-enhances for specific needs
-- **Benefits**: Combines reliability with intelligence
-- **Confidence**: ~80%
-
-### 3. Code Generation Process
-
-#### Step 1: Descriptor Creation
-```typescript
-const descriptor = generator.generateDescriptor(nodeConfig, instanceData);
-```
-
-Creates a structured `ProcessDescriptor` containing:
-- Step-by-step process breakdown
-- Input/output schemas
-- Error handling requirements
-- Dependencies and constraints
-
-#### Step 2: Strategy Selection
-```typescript
-const strategy = selectGenerationStrategy(request);
-```
-
-Analyzes complexity and chooses optimal generation approach:
-- Template for standard patterns
-- AI for complex logic
-- Hybrid for balanced approach
-
-#### Step 3: Code Generation
-```typescript
-const result = await generateFromStrategy(request, strategy);
-```
-
-Generates the actual JavaScript process function using selected strategy.
-
-#### Step 4: Validation
-```typescript
-const validatedResult = await validateGeneration(result);
-```
-
-Validates syntax, security, and performance of generated code.
-
-## Node Type Examples
-
-### REST Node Generation
-
-**Input Configuration:**
+#### OpenAI
 ```typescript
 {
-  nodeType: "restnode",
-  method: "GET",
-  url: "https://api.example.com/posts",
-  authentication: "none",
-  timeout: 30000
+  provider: 'openai',
+  apiKey: 'sk-...',
+  model: 'gpt-4',
+  temperature: 0.3,
+  maxTokens: 2048
 }
 ```
 
-**Generated Process Function:**
-```javascript
-async function process(incomingData, nodeData, params, targetMap, sourceMap) {
-  const { url, method, headers } = nodeData;
-  
-  console.log('🌐 REST API call:', { method: method || 'GET', url });
-  
-  const response = await fetch(url, {
-    method: method || 'GET',
-    headers: {
-      'Accept': 'application/json',
-      ...headers
-    }
-  });
-  
-  const data = await response.json();
-  
-  return {
-    data,
-    metadata: {
-      status: response.status,
-      timestamp: new Date().toISOString()
-    }
-  };
-}
-```
-
-### Logical Node Generation
-
-**Input Configuration:**
+#### Google Gemini
 ```typescript
 {
-  nodeType: "logicalnode",
-  operation: "filter",
-  condition: "userId <= 5 && title.length > 10",
-  logicRules: [
-    { field: "userId", operator: "<=", value: 5 }
-  ]
+  provider: 'gemini',
+  apiKey: 'AI...',
+  model: 'gemini-pro',
+  temperature: 0.3,
+  maxTokens: 2048
 }
 ```
 
-**Generated Process Function:**
-```javascript
-async function process(incomingData, nodeData, params, targetMap, sourceMap) {
-  let result = incomingData;
-  
-  // Apply transformations based on node configuration
-  if (nodeData.transform) {
-    result = applyTransformations(result, nodeData.transform);
-  }
-  
-  // Add processing metadata
-  result = {
-    ...result,
-    metadata: {
-      processedBy: nodeData.nodeType,
-      processedAt: new Date().toISOString(),
-      configuration: nodeData
-    }
-  };
-  
-  return result;
-}
-```
-
-### Conditional Node Generation
-
-**Input Configuration:**
+#### Anthropic Claude
 ```typescript
 {
-  nodeType: "conditionalnode",
-  condition: "data.data.length > 3",
-  conditionType: "greater",
-  leftValue: "data.data.length",
-  rightValue: "3"
+  provider: 'claude',
+  apiKey: 'sk-ant-...',
+  model: 'claude-3-sonnet-20240229',
+  temperature: 0.3,
+  maxTokens: 2048
 }
 ```
 
-**Generated Process Function:**
-```javascript
-async function process(incomingData, nodeData, params, targetMap, sourceMap, edgeMap, edgeMetadataMap) {
-  const { condition, conditionType, leftValue, rightValue } = nodeData;
-  
-  // Evaluate condition based on type
-  let result = evaluateCondition(leftValue, rightValue, conditionType, incomingData);
-  
-  // Route to appropriate targets based on condition result
-  const selectedTargets = result ? trueTargets : falseTargets;
-  
-  return {
-    data: incomingData,
-    targets: selectedTargets,
-    conditionResult: result
-  };
+#### Custom Provider
+```typescript
+{
+  provider: 'custom',
+  apiKey: 'your-key',
+  baseUrl: 'https://your-api.com/v1',
+  model: 'your-model',
+  temperature: 0.3,
+  maxTokens: 2048
 }
 ```
 
-## AI-Powered Generation
-
-### Prompt Analysis
-
-The AI provider analyzes prompts to understand requirements:
+### Programmatic Usage
 
 ```typescript
-// Example prompt analysis
-const promptLower = prompt.toLowerCase();
-const isAsync = prompt.includes('async function');
-const hasErrorHandling = prompt.includes('error');
-const nodeType = prompt.match(/for a (\w+) node/)?.[1] || 'generic';
-```
+import { GenerationOrchestrator } from './GenerationOrchestrator';
+import { GenerationContext } from './types';
 
-### Contextual Code Generation
+const orchestrator = new GenerationOrchestrator();
 
-Based on analysis, generates appropriate code:
-
-- **API keywords** (`fetch`, `request`) → HTTP request handling
-- **Logic keywords** (`filter`, `transform`) → Data processing 
-- **Condition keywords** (`condition`, `route`) → Conditional routing
-- **Display keywords** (`display`, `render`) → UI formatting
-
-### Smart Features
-
-- **Dynamic helper functions** - Only includes needed utilities
-- **Contextual suggestions** - Provides relevant recommendations
-- **Error handling patterns** - Adds appropriate try/catch blocks
-- **Performance optimizations** - Includes timeout and retry logic
-
-## Integration with Node Factory System
-
-### Factory Configuration Integration
-
-The generation system reads from node factory configs:
-
-```typescript
-// From restnode-config.ts
-export const restNodeConfig: NodeFactoryJSON = {
-  nodeType: "restnode",
-  process: {
-    code: `async function process(...) { /* base template */ }`,
-    constraints: {
-      timeout: 30000,
-      maxRetries: 10
-    }
-  }
+const context: GenerationContext = {
+  nodeId: 'node-123',
+  nodeType: 'restnode',
+  formData: nodeData,
+  inputSchema: inputSchema,
+  onFieldChange: (field, value) => updateNode(field, value),
+  onGenerationComplete: (result) => console.log('Generated!', result),
+  onGenerationError: (error) => console.error('Failed:', error)
 };
+
+const result = await orchestrator.generateCode(context, (progress) => {
+  console.log(`${progress.stage}: ${progress.progress}%`);
+});
 ```
 
-### Instance Data Integration
+## Generated Code Structure
 
-Uses actual node instance data for customization:
+All generated functions follow this signature:
 
-```typescript
-// From apiFlowNodesData.ts
-{
-  id: 'api-request',
-  type: 'restnode',
-  data: {
-    method: 'GET',
-    url: 'https://jsonplaceholder.typicode.com/posts',
-    authentication: 'none'
+```javascript
+async function process(incomingData, nodeData, params, targetMap, sourceMap) {
+  console.log('🔄 Processing:', { incomingData, nodeData });
+  
+  try {
+    // Node-specific implementation
+    const result = {
+      data: processedData,
+      metadata: {
+        processedAt: new Date().toISOString(),
+        nodeType: 'restnode'
+      }
+    };
+    
+    console.log('✅ Completed:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Failed:', error);
+    throw error;
   }
 }
 ```
 
-## Security and Validation
+## Node Type Support
 
-### Code Validation
+### REST Node
+Generates HTTP client code with:
+- Configurable methods (GET, POST, PUT, DELETE)
+- Authentication handling
+- Error handling and retries
+- Response processing
 
-All generated code goes through validation:
+### Logical Node
+Generates data processing code with:
+- Filtering and transformation logic
+- Conditional routing
+- Data aggregation
+- Business rule application
 
-```typescript
-const validationResult = validator.validateCode(generatedCode);
-```
+### Conditional Node
+Generates conditional routing code with:
+- Boolean condition evaluation
+- Multi-path routing
+- Dynamic target selection
+- State preservation
 
-Checks for:
-- **Syntax errors** - Valid JavaScript syntax
-- **Security issues** - No dangerous patterns or injections
-- **Performance warnings** - Timeout handling, memory usage
-- **Best practices** - Error handling, logging patterns
+### Content Node
+Generates display formatting code with:
+- Data formatting for UI
+- List and grid configurations
+- Responsive layouts
+- Error state handling
 
-### Security Features
+## Security Considerations
 
-- **Safe expression evaluation** - Controlled condition parsing
-- **Input sanitization** - Validates data paths and values
-- **Execution constraints** - Timeout and retry limits
-- **Error boundaries** - Graceful failure handling
+- **API Key Encryption**: Keys are base64 encoded in localStorage
+- **Code Validation**: Generated code is validated for security patterns
+- **Sandbox Execution**: Generated code runs in controlled environments
+- **No Credential Logging**: API keys never appear in console or error messages
 
-## Usage Examples
+## Error Handling
 
-### Basic Usage
+The system provides comprehensive error handling:
 
-```typescript
-import { ProcessGenerator } from './ProcessGenerator';
+- **Network Errors**: Automatic retry with exponential backoff
+- **API Errors**: Clear error messages with troubleshooting hints
+- **Validation Errors**: Code syntax and security issue reporting
+- **Configuration Errors**: Guided setup and validation
 
-const generator = new ProcessGenerator();
+## Performance
 
-// Generate code for a REST node
-const result = await generator.generateProcess({
-  nodeConfig: restNodeConfig,
-  instanceData: { method: 'GET', url: 'https://api.example.com' },
-  descriptor: generatedDescriptor,
-  context: executionContext
-});
+- **Efficient Prompts**: Optimized prompt structure to minimize token usage
+- **Caching**: Results cached to avoid redundant API calls
+- **Streaming**: Real-time progress updates during generation
+- **Debouncing**: Prevents rapid-fire generation requests
 
-console.log('Generated code:', result.code);
-console.log('Confidence:', result.metadata.confidence);
-```
+## Extensibility
 
-### With AI Provider
+### Adding New Providers
 
-```typescript
-import { MockAIProvider } from './ai';
-
-const generator = new ProcessGenerator({
-  aiProvider: new MockAIProvider()
-});
-
-// Will use AI for complex scenarios
-const result = await generator.generateProcess(complexRequest);
-```
-
-### Custom Templates
-
-```typescript
-import { TemplateRegistry } from './templates';
-
-const customRegistry = new TemplateRegistry();
-const generator = new ProcessGenerator({
-  templateRegistry: customRegistry
-});
-```
-
-## Extension Points
-
-### Adding New Node Types
-
-1. **No code changes needed** - The system is completely node-agnostic
-2. **Configuration-driven** - Just add new factory configs
-3. **Template adaptation** - Universal template adapts automatically
-4. **AI enhancement** - AI provider learns from new patterns
-
-### Custom AI Providers
+1. Implement the `LLMProviderInterface`:
 
 ```typescript
-class CustomAIProvider implements AIProvider {
-  async generateCode(prompt: string): Promise<AIResult> {
-    // Custom AI implementation
+export class MyProvider implements LLMProviderInterface {
+  async generateCode(request: LLMGenerationRequest): Promise<LLMGenerationResult> {
+    // Implementation
+  }
+  
+  async testConnection(config: LLMAPIConfig): Promise<{ success: boolean; error?: string }> {
+    // Implementation
+  }
+  
+  getProviderInfo() {
+    return {
+      name: 'My Provider',
+      models: ['my-model'],
+      defaultModel: 'my-model'
+    };
   }
 }
 ```
 
-### Custom Validation
+2. Add to `LLMProviderFactory`:
 
 ```typescript
-class CustomValidator extends ProcessCodeValidator {
-  validateCode(code: string): ValidationResult {
-    // Custom validation logic
-  }
+case 'myprovider':
+  return new MyProvider();
+```
+
+3. Update types and UI as needed.
+
+### Custom Prompt Templates
+
+Extend `PromptBuilder` to customize prompts for specific node types:
+
+```typescript
+private buildCustomNodeRequirements(templateData: Record<string, any>): string {
+  // Custom prompt logic
 }
+```
+
+## Testing
+
+### Unit Tests
+- Provider API implementations
+- Prompt generation logic
+- Validation algorithms
+- Error handling scenarios
+
+### Integration Tests
+- End-to-end generation flow
+- Multi-provider scenarios
+- Schema integration
+- UI component behavior
+
+### Manual Testing
+Use the notification demo to test various scenarios:
+
+```typescript
+import { useNotifications } from '../Notifications/hooks/useNotifications';
+
+const { showSuccessToast, showErrorToast, showBlockingNotification } = useNotifications();
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**"No LLM provider configured"**
+- Solution: Click Generate button to open API setup dialog
+- Configure at least one provider with valid API key
+
+**"API error: 401 Unauthorized"**
+- Solution: Check API key validity in provider console
+- Re-enter API key in setup dialog
+
+**"Generation failed: Network error"**
+- Solution: Check internet connection and provider status
+- Verify API endpoint URLs for custom providers
+
+**"Validation failed"**
+- Generated code may have syntax errors
+- Review LLM temperature settings (lower = more consistent)
+- Check prompt quality and node configuration
+
+### Debug Mode
+
+Enable verbose logging:
+
+```typescript
+// In browser console
+localStorage.setItem('debug_llm_generation', 'true');
 ```
 
 ## Future Enhancements
 
-### Planned Features
+- **Streaming Responses**: Real-time code generation display
+- **Learning System**: Improve prompts based on user feedback
+- **Version Control**: Track code generation history
+- **Batch Generation**: Generate code for multiple nodes
+- **Custom Templates**: User-defined prompt templates
+- **Cost Tracking**: Monitor API usage and costs
 
-1. **Real AI Integration** - Connect to OpenAI, Claude, or local models
-2. **Code Optimization** - Performance analysis and auto-optimization
-3. **Testing Generation** - Auto-generate unit tests for process functions
-4. **Documentation Generation** - Auto-generate JSDoc and usage examples
-5. **Visual Code Editor** - UI for editing generated code with syntax highlighting
+## API Reference
 
-### Extensibility
-
-The system is designed for easy extension:
-- **Plugin architecture** - Add new generation strategies
-- **Template inheritance** - Create specialized templates
-- **Validation rules** - Add custom security and quality checks
-- **Metrics collection** - Track generation performance and quality
-
-This documentation provides a complete understanding of how the Process Generation system works, from input processing through code generation to validation and integration with the broader Agentic Content Flow system.
+See individual component files for detailed API documentation:
+- [Types](./types.ts)
+- [API Key Manager](./APIKeyManager.ts)
+- [LLM Providers](./LLMProviders.ts)
+- [Prompt Builder](./PromptBuilder.ts)
+- [Generation Orchestrator](./GenerationOrchestrator.ts)

@@ -56,12 +56,19 @@ export type SecurityIssueType =
   | 'dangerous-function'
   | 'prototype-pollution'
   | 'resource-exhaustion'
-  | 'data-exposure';
+  | 'data-exposure'
+  | 'unsafe-html'
+  | 'network-security';
 
 /**
  * Process Code Validator
  * 
- * Validates generated process functions for syntax, security, and best practices.
+ * Validates generated JavaScript code for syntax, security, and best practices.
+ * Used by the GenerationOrchestrator to ensure generated code quality.
+ * 
+ * @author Agentic Content Flow Team
+ * @version 1.0.0
+ * @since 2025-06-15
  */
 export class ProcessCodeValidator {
   private dangerousPatterns: Array<{
@@ -197,6 +204,23 @@ export class ProcessCodeValidator {
         result.warnings.push(`Line ${lineNumber}: Consider adding semicolon`);
       }
     });
+
+    // Check for required async function structure
+    if (!code.includes('async function process')) {
+      result.errors.push('Missing required "async function process" declaration');
+      result.isValid = false;
+    }
+
+    // Check for proper parameter structure
+    const functionMatch = code.match(/async\s+function\s+process\s*\(\s*([^)]*)\s*\)/);
+    if (functionMatch) {
+      const params = functionMatch[1].split(',').map(p => p.trim()).filter(p => p);
+      const expectedParams = ['incomingData', 'nodeData', 'params', 'targetMap', 'sourceMap'];
+      
+      if (params.length !== expectedParams.length) {
+        result.warnings.push(`Function should have ${expectedParams.length} parameters: ${expectedParams.join(', ')}`);
+      }
+    }
   }
 
   private validateSecurity(code: string, result: ValidationResult): void {
@@ -223,6 +247,36 @@ export class ProcessCodeValidator {
         type: 'data-exposure',
         description: 'Potential password logging detected',
         suggestion: 'Avoid logging sensitive data like passwords'
+      });
+    }
+
+    // Check for dangerous functions
+    const dangerousFunctions = ['eval', 'Function', 'setTimeout', 'setInterval'];
+    dangerousFunctions.forEach(func => {
+      if (code.includes(func + '(')) {
+        result.securityIssues.push({
+          type: 'dangerous-function',
+          description: `Usage of potentially dangerous function: ${func}`,
+          severity: func === 'eval' ? 'critical' : 'medium'
+        });
+      }
+    });
+
+    // Check for innerHTML usage
+    if (code.includes('innerHTML')) {
+      result.securityIssues.push({
+        type: 'unsafe-html',
+        description: 'Direct innerHTML usage can lead to XSS vulnerabilities',
+        severity: 'medium'
+      });
+    }
+
+    // Check for unvalidated network requests
+    if (code.includes('fetch(') && !code.includes('try')) {
+      result.securityIssues.push({
+        type: 'network-security',
+        description: 'Network requests should be wrapped in try-catch blocks',
+        severity: 'low'
       });
     }
   }
@@ -274,6 +328,26 @@ export class ProcessCodeValidator {
 
   private getLineNumber(code: string, index: number): number {
     return code.substring(0, index).split('\n').length;
+  }
+
+  /**
+   * Quick validation for real-time feedback
+   */
+  quickValidate(code: string): { isValid: boolean; errors: string[] } {
+    try {
+      new Function(code);
+      
+      if (!code.includes('async function process')) {
+        return { isValid: false, errors: ['Missing async function process declaration'] };
+      }
+      
+      return { isValid: true, errors: [] };
+    } catch (error) {
+      return { 
+        isValid: false, 
+        errors: [error instanceof Error ? error.message : 'Syntax error'] 
+      };
+    }
   }
 }
 

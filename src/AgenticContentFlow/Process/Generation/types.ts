@@ -162,3 +162,74 @@ export interface GenerationResult {
     usageInstructions: string[];
   };
 }
+
+/**
+ * LLM-Powered Process Generation Types
+ * 
+ * Type definitions for the LLM-based code generation system that creates
+ * node-specific process functions from natural language descriptions.
+ * 
+ * @author Agentic Content Flow Team
+ * @version 1.0.0
+ * @since 2025-06-15
+ */
+
+// LLM Provider Types
+export type LLMProvider = 'openai' | 'gemini' | 'claude' | 'ollama' | 'custom';
+
+export interface LLMAPIConfig {
+  provider: LLMProvider;
+  apiKey: string;
+  baseUrl?: string;
+  model?: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
+export interface LLMGenerationRequest {
+  prompt: string;
+  nodeType: string;
+  nodeId: string;
+  config?: Partial<LLMAPIConfig>;
+}
+
+export interface LLMGenerationResult {
+  code: string;
+  confidence: number;
+  provider: LLMProvider;
+  model?: string;
+  tokensUsed?: number;
+  explanation?: string;
+  suggestions?: string[];
+  warnings?: string[];
+}
+
+export interface PromptBuildRequest {
+  nodeType: string;
+  nodeId: string;
+  templateDescription: string;
+  instanceData: Record<string, any>;
+  templateData: Record<string, any>;
+  inputSchema?: any;
+  outputSchema?: any;
+  sourceNodes?: Array<{ id: string; type: string; data: any }>;
+  targetNodes?: Array<{ id: string; type: string; data: any }>;
+}
+
+export interface GenerationContext {
+  nodeId: string;
+  nodeType: string;
+  formData: Record<string, any>;
+  inputSchema?: any;
+  onFieldChange: (field: string, value: any) => void;
+  onGenerationComplete?: (result: LLMGenerationResult) => void;
+  onGenerationError?: (error: string) => void;
+}
+
+// Enhanced generation request that includes all node context
+export interface EnhancedGenerationRequest extends GenerationRequest {
+  llmProvider?: LLMProvider;
+  inputSchema?: any;
+  sourceNodes?: Array<{ id: string; type: string; data: any }>;
+  targetNodes?: Array<{ id: string; type: string; data: any }>;
+}
