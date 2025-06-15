@@ -59,7 +59,7 @@ export const NotificationDemo: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-white p-4 rounded-lg shadow-lg border">
+    <div className="fixed bottom-4 left-4 z-50 bg-white p-4 rounded-lg shadow-lg border">
       <h3 className="font-medium mb-3">Notification System Demo</h3>
       <div className="flex flex-col gap-2">
         <Button onClick={handleToastDemo} variant="outline" size="sm">

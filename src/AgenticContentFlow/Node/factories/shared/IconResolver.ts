@@ -30,6 +30,87 @@ export class IconResolver {
   }
 
   /**
+   * Get favicon URL from a given URL
+   */
+  getFaviconUrl(url: string): string | null {
+    try {
+      const urlObj = new URL(url);
+      
+      // Check if it's localhost
+      if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
+        return null; // Will trigger local icon
+      }
+      
+      // Use Google's favicon service
+      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
+    } catch (error) {
+      console.warn('Invalid URL provided for favicon:', url);
+      return null;
+    }
+  }
+
+  /**
+   * Create a favicon icon component from URL
+   */
+  createFaviconIcon(url: string, props: any = {}): React.ReactNode {
+    try {
+      const urlObj = new URL(url);
+      
+      // Check if it's localhost - use "L" icon
+      if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
+        return React.createElement('div', {
+          ...props,
+          className: `inline-flex items-center justify-center w-5 h-5 bg-blue-100 text-blue-800 rounded text-xs font-bold ${props.className || ''}`.trim(),
+          style: { fontSize: '12px', ...props.style }
+        }, 'L');
+      }
+      
+      // Use Google's favicon service for external URLs
+      const faviconUrl = this.getFaviconUrl(url);
+      if (faviconUrl) {
+        return React.createElement('img', {
+          ...props,
+          src: faviconUrl,
+          alt: `${urlObj.hostname} favicon`,
+          className: `w-5 h-5 ${props.className || ''}`.trim(),
+          style: { objectFit: 'contain', ...props.style },
+          onError: (e: any) => {
+            // Fallback to a generic web icon if favicon fails to load
+            console.warn(`Failed to load favicon for ${urlObj.hostname}`);
+            e.target.style.display = 'none';
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('Invalid URL provided for favicon:', url);
+    }
+    
+    // Fallback to generic web icon
+    const WebIconComponent = (LucideIcons as any)['Globe'];
+    if (WebIconComponent) {
+      return React.createElement(WebIconComponent, {
+        ...props,
+        className: `w-5 h-5 ${props.className || ''}`.trim()
+      });
+    }
+    
+    return null;
+  }
+
+  /**
+   * Resolve an icon, checking for URL in data first
+   */
+  resolveIconWithUrl(iconRef: IconReference, nodeData: any = {}, props: any = {}): React.ReactNode {
+    // Check if node has a URL and use favicon instead
+    if (nodeData.url && typeof nodeData.url === 'string') {
+      return this.createFaviconIcon(nodeData.url, props);
+    }
+    
+    // Fall back to regular icon resolution
+    return this.resolveIcon(iconRef, props);
+  }
+
+  /**
    * Resolve an icon reference to a React component
    */
   resolveIcon(iconRef: IconReference, props: any = {}): React.ReactNode {

@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import { NodeProps, useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import ConnectionHandles from '../../shared/components/ConnectionHandles';
 import { NodeHeader } from '@/AgenticContentFlow/Node/factories/shared/components/NodeHeader';
 import CellNodeProcessControls from '@/AgenticContentFlow/Node/factories/cell/components/CellNodeProcessControls';
 import ScrollingText from '../../shared/components/ScrollingText';
+import { IconResolver } from '../../shared/IconResolver';
 
 
 export interface CellNodeConfig {
@@ -99,6 +100,17 @@ export const CellNode: React.FC<CellNodeProps> = ({
 
   const color = "white";
 
+  // Create icon resolver instance
+  const iconResolver = useMemo(() => new IconResolver(), []);
+
+  // Determine the header icon - use favicon if URL is present in node data
+  const headerIcon = useMemo(() => {
+    if (nodeInFlow?.data?.url && typeof nodeInFlow.data.url === 'string') {
+      return iconResolver.createFaviconIcon(nodeInFlow.data.url, { className: 'w-5 h-5' });
+    }
+    return config.headerIcon;
+  }, [nodeInFlow?.data?.url, config.headerIcon, iconResolver]);
+
   if (!nodeInFlow) {
     console.error(`Node with id ${id} not found in store.`);
     return null;
@@ -144,7 +156,7 @@ export const CellNode: React.FC<CellNodeProps> = ({
 
         <NodeHeader 
           className={cn("dragHandle", config.headerGradient, "border-none")}
-          icon={config.headerIcon}
+          icon={headerIcon}
           //label={label}
           isProcessing={isProcessing}
           isCompleted={isCompleted}
