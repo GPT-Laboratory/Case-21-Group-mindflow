@@ -1,9 +1,9 @@
 /** @format */
 
-import { contentNodeConfig } from './configs/contentnode-config';
-import { logicNodeConfig } from './configs/logicnode-config';
-import { restNodeConfig } from './configs/restnode-config';
-import { conditionalNodeConfig } from './configs/conditionalnode-config';
+import { contentNodeConfig } from './templates/contentnode-template';
+import { logicNodeConfig } from './templates/logicnode-template';
+import { restNodeConfig } from './templates/restnode-template';
+import { conditionalNodeConfig } from './templates/conditionalnode-template';
 import { NodeFactoryJSON } from './types';
 
 /**
