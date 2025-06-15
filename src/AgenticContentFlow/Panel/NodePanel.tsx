@@ -6,8 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { getNodeConfig, getVariantFields } from './nodeConfigs';
 import { PanelFooter } from './components/PanelFooter';
 import { PropertiesTab } from './components/tabs/PropertiesTab/PropertiesTab';
+import { ParametersTab } from './components/tabs/ParametersTab/ParametersTab';
 import { PanelHeader } from './components/PanelHeader';
-import { PositionSelector } from './components/PositionSelector';
 import { PanelToggleDragHandle } from './components/PanelToggleDragHandle';
 import { PanelContainer } from './components/PanelContainer';
 import { useResizePanel } from './hooks/useResizePanel';
@@ -16,7 +16,7 @@ import { ScrollableTabs } from './components/ScrollableTabs';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
 import { DataFlowTab } from './components/tabs/DataFlowTab/DataFlowTab';
 import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
-import { getNodeGroup, isProcessNode, isPreviewNode, isContainerNode } from './types/nodeGroups';
+import { getNodeGroup, isProcessNode, isPreviewNode } from './types/nodeGroups';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -35,11 +35,32 @@ export const NodeConfigPanel: React.FC = () => {
   const [activeNode, setActiveNode] = useState<any>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [hasDataChanges, setHasDataChanges] = useState(false);
 
   const { size, isResizing, handleResizeStart } = useResizePanel({
     position,
     defaultSizes: DEFAULT_SIZES,
   });
+
+  // Track data changes for generate button
+  useEffect(() => {
+    if (activeNode) {
+      const originalData = activeNode.data || {};
+      const currentKeys = Object.keys(formData);
+      const originalKeys = Object.keys(originalData);
+      
+      // Check if data structure has changed (keys added/removed) or values changed
+      const keysChanged = currentKeys.length !== originalKeys.length || 
+        currentKeys.some(key => !originalKeys.includes(key)) ||
+        originalKeys.some(key => !currentKeys.includes(key));
+        
+      const valuesChanged = currentKeys.some(key => 
+        JSON.stringify(formData[key]) !== JSON.stringify(originalData[key])
+      );
+      
+      setHasDataChanges(keysChanged || valuesChanged);
+    }
+  }, [formData, activeNode]);
 
   // Update active node when selection changes
   useEffect(() => {
@@ -48,8 +69,10 @@ export const NodeConfigPanel: React.FC = () => {
       setActiveNode(node);
       setFormData(node.data || {});
       setHasChanges(false);
+      setHasDataChanges(false);
     } else if (selectedNodes.length === 0) {
       setActiveNode(null);
+      setHasDataChanges(false);
     }
   }, [selectedNodes]);
 
@@ -71,6 +94,7 @@ export const NodeConfigPanel: React.FC = () => {
         }
       });
       setHasChanges(false);
+      setHasDataChanges(false);
     }
   };
 
@@ -78,6 +102,17 @@ export const NodeConfigPanel: React.FC = () => {
     if (activeNode) {
       setFormData(activeNode.data || {});
       setHasChanges(false);
+      setHasDataChanges(false);
+    }
+  };
+
+  const handleGenerate = () => {
+    // Generate/regenerate node configuration based on current data
+    if (activeNode && hasDataChanges) {
+      console.log('Generating configuration for node:', activeNode.id);
+      // This would trigger any code generation, schema updates, etc.
+      // For now, we'll just save the current state
+      handleSave();
     }
   };
 
@@ -105,15 +140,6 @@ export const NodeConfigPanel: React.FC = () => {
         isResizing={isResizing}
       >
         <div className="p-4 flex flex-col h-full">
-          {/* Position Selector */}
-          <div className="flex justify-between items-center mb-3">
-            <PositionSelector 
-              position={position} 
-              onPositionChange={setPosition} 
-            />
-          </div>
-          <Separator className="mb-4" />
-
           {/* Content */}
           {!activeNode ? (
             <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
@@ -128,13 +154,14 @@ export const NodeConfigPanel: React.FC = () => {
               <Separator className="mb-4" />
 
               {/* Tabs */}
-              <Tabs defaultValue="properties" className="flex flex-col flex-1 overflow-hidden">
+              <Tabs defaultValue="nodedata" className="flex flex-col flex-1 overflow-hidden">
                 <ScrollableTabs className="mb-4">
-                  <TabsTrigger value="properties">Properties</TabsTrigger>
+                  <TabsTrigger value="nodedata">Node Data</TabsTrigger>
+                  <TabsTrigger value="parameters">Parameters</TabsTrigger>
                   
-                  {/* Code Editor tab for ProcessNodes (restnode, logicalnode) */}
+                  {/* Code Editor tab for ProcessNodes (formerly Process tab) */}
                   {isProcessNode(activeNode.type) && (
-                    <TabsTrigger value="codeeditor">Code Editor</TabsTrigger>
+                    <TabsTrigger value="code">Code</TabsTrigger>
                   )}
                   
                   {/* Content Preview tab for PreviewNodes (contentnode) */}
@@ -142,15 +169,15 @@ export const NodeConfigPanel: React.FC = () => {
                     <TabsTrigger value="preview">Preview</TabsTrigger>
                   )}
                   
-                  {/* Data Schema tab - universal for all nodes */}
-                  <TabsTrigger value="dataschema">Data Schema</TabsTrigger>
+                  {/* Input/Output tab - universal for all nodes */}
+                  <TabsTrigger value="inputoutput">Input/Output</TabsTrigger>
                   
                   {/* Errors tab - universal for all nodes */}
                   <TabsTrigger value="errors">Errors</TabsTrigger>
                 </ScrollableTabs>
                 
                 <div className="flex-1 overflow-y-auto">
-                  <TabsContent value="properties" className="m-0">
+                  <TabsContent value="nodedata" className="m-0">
                     <PropertiesTab 
                       fields={allFields}
                       formData={formData}
@@ -158,12 +185,24 @@ export const NodeConfigPanel: React.FC = () => {
                       nodeId={activeNode.id}
                       nodeType={activeNode.type}
                       nodeGroup={getNodeGroup(activeNode.type)}
+                      nodeConfig={nodeConfig}
+                      hasChanges={hasChanges}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="parameters" className="m-0">
+                    <ParametersTab 
+                      formData={formData}
+                      onFieldChange={handleFieldChange}
+                      nodeId={activeNode.id}
+                      nodeType={activeNode.type}
+                      hasChanges={hasChanges}
                     />
                   </TabsContent>
                   
-                  {/* Code Editor Tab for ProcessNodes */}
+                  {/* Code Editor Tab for ProcessNodes (renamed from Process) */}
                   {isProcessNode(activeNode.type) && (
-                    <TabsContent value="codeeditor" className="m-0">
+                    <TabsContent value="code" className="m-0">
                       <CodeEditorTab 
                         nodeType={activeNode.type}
                         formData={formData} 
@@ -182,9 +221,14 @@ export const NodeConfigPanel: React.FC = () => {
                     </TabsContent>
                   )}
                   
-                  {/* Universal Data Schema Tab */}
-                  <TabsContent value="dataschema" className="m-0">
-                    <DataFlowTab nodeId={activeNode.id} formData={formData} />
+                  {/* Universal Input/Output Tab */}
+                  <TabsContent value="inputoutput" className="m-0">
+                    <DataFlowTab 
+                      nodeId={activeNode.id} 
+                      nodeType={activeNode.type}
+                      formData={formData} 
+                      onFieldChange={handleFieldChange}
+                    />
                   </TabsContent>
                   
                   {/* Universal Errors Tab */}
@@ -200,6 +244,10 @@ export const NodeConfigPanel: React.FC = () => {
                 hasChanges={hasChanges}
                 onSave={handleSave}
                 onReset={handleReset}
+                position={position}
+                onPositionChange={setPosition}
+                hasDataChanges={hasDataChanges}
+                onGenerate={handleGenerate}
               />
             </div>
           )}
