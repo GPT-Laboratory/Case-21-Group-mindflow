@@ -44,7 +44,7 @@ export const logicNodeConfig: NodeFactoryJSON = {
         ]
       },
       "process": {
-        "code": "async function process(incomingData, nodeData, params, targetMap, sourceMap) { /* logic processing code */ return incomingData; }",
+        "templateCode": "async function process(incomingData, nodeData, params, targetMap, sourceMap) { /* TEMPLATE: Replace with instance-specific logic processing code */ return incomingData; }",
         "metadata": {
           "generatedBy": "manual",
           "version": "1.0.0",

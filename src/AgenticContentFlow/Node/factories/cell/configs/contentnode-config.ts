@@ -42,7 +42,7 @@ export const contentNodeConfig: NodeFactoryJSON = {
       ]
     },
     "process": {
-      "code": "async function process(incomingData, nodeData, params, targetMap, sourceMap) { /* display formatting code */ return incomingData; }",
+      "templateCode": "async function process(incomingData, nodeData, params, targetMap, sourceMap) { /* TEMPLATE: Replace with instance-specific display formatting code */ return incomingData; }",
       "metadata": {
         "generatedBy": "manual",
         "version": "1.0.0",

@@ -45,39 +45,7 @@ export const restNodeConfig: NodeFactoryJSON = {
         ]
       },
       "process": {
-        "code": `async function process(incomingData, nodeData, params, targetMap, sourceMap) {
-  const { url, method, headers } = nodeData;
-        
-  if (!url) {
-    throw new Error('URL is required');
-  }
-
-  console.log('🌐 REST API call:', { method: method || 'GET', url });
-
-  const response = await fetch(url, {
-    method: method || 'GET',
-    headers: {
-      'Accept': 'application/json',
-      ...headers
-    },
-    body: method !== 'GET' && nodeData.body ? JSON.stringify(nodeData.body) : undefined,
-  });
-        
-  if (!response.ok) {
-    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-  }
-        
-  const data = await response.json();
-  
-  return {
-    data,
-    metadata: {
-      status: response.status,
-      headers: Object.fromEntries(response.headers),
-      timestamp: new Date().toISOString()
-    }
-  };
-}`,
+        "templateCode": "async function process(incomingData, nodeData, params, targetMap, sourceMap) { /* TEMPLATE: Replace with instance-specific REST API code */ const { url, method, headers } = nodeData; if (!url) { throw new Error('URL is required'); } console.log('🌐 REST API call:', { method: method || 'GET', url }); const response = await fetch(url, { method: method || 'GET', headers: { 'Accept': 'application/json', ...headers }, body: method !== 'GET' && nodeData.body ? JSON.stringify(nodeData.body) : undefined, }); if (!response.ok) { throw new Error('HTTP ' + response.status + ': ' + response.statusText); } const data = await response.json(); return { data, metadata: { status: response.status, headers: Object.fromEntries(response.headers), timestamp: new Date().toISOString() } }; }",
         "metadata": {
           "generatedBy": "manual",
           "version": "1.0.0",
