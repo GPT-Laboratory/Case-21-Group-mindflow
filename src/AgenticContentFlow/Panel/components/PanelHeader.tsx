@@ -17,9 +17,6 @@ export const PanelHeader: React.FC<PanelHeaderProps> = ({ activeNode, nodeConfig
           <h2 className="text-lg font-semibold leading-none tracking-tight">
             {nodeConfig.metadata.title}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {nodeConfig.metadata.description}
-          </p>
         </div>
       </div>
       
