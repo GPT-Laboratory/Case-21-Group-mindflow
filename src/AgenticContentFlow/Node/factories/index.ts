@@ -3,15 +3,29 @@
 // Cell factory exports (renamed from original factory)
 export * from './cell';
 
-// Container factory exports  
-export * from './container';
+// Container factory exports - with selective re-exports to avoid conflicts
+export { 
+  containerNodeFactory,
+  containerNodeRegistration,
+  initializeContainerNodes,
+  demonstrateContainerUsage
+} from './container';
+export type {
+  ContainerNodeJSON,
+  ContainerInstanceData,
+  ContainerNodeFactoryResult,
+  ContainerStyleConfig,
+  ExpandCollapseState,
+  ContainerContentConfig,
+  HandleDefinition,
+  MenuItemConfig
+} from './container';
 
-// Shared utilities
-export * from './shared/IconResolver';
+// Shared utilities - using explicit export to avoid conflicts
+export { IconResolver } from './shared/IconResolver';
 
 // Main initialization function for all factories
-import { initializeFactoryNodes } from './cell';
-import { initializeContainerNodes } from './container';
+import { initializeContainerNodes, demonstrateContainerUsage } from './container';
 
 /**
  * Initialize all node factories (both cell and container)
@@ -21,9 +35,7 @@ export async function initializeAllNodeFactories(): Promise<void> {
   console.log('🏭 Initializing all node factories...');
   
   try {
-    // Initialize cell factories (process and preview nodes)
-    await initializeFactoryNodes();
-    
+    // Note: Cell factories are initialized automatically when imported
     // Initialize container factories (data, page, statistics, invisible nodes)
     await initializeContainerNodes();
     
@@ -40,9 +52,8 @@ export async function initializeAllNodeFactories(): Promise<void> {
 export async function demonstrateAllFactories(): Promise<void> {
   console.log('🧪 Running comprehensive factory demonstration...');
   
-  const { demonstrateFactoryUsage } = await import('./cell');
-  const { demonstrateContainerUsage } = await import('./container');
+  // Note: Cell factory demonstration would need to be implemented
+  // await demonstrateCellFactoryUsage();
   
-  await demonstrateFactoryUsage();
   await demonstrateContainerUsage();
 }
