@@ -7,11 +7,6 @@ import {
 } from '../../types/handleTypes';
 import { containerNodeFactory } from '../../Node/factories/container/ContainerNodeFactory';
 
-// Import legacy handle configurations
-import { 
-  conditionalNodeConfig,
-
-} from '../../Handles/configs';
 import { nodeFactory } from '@/AgenticContentFlow/Node/factories/cell';
 
 export class HandleTypeRegistry {
@@ -24,25 +19,11 @@ export class HandleTypeRegistry {
     if (!HandleTypeRegistry.instance) {
       HandleTypeRegistry.instance = new HandleTypeRegistry();
       // Initialize legacy configurations
-      HandleTypeRegistry.instance.initializeLegacyConfigs();
     }
     return HandleTypeRegistry.instance;
   }
   
-  /**
-   * Initialize legacy handle configurations for nodes not in factory systems
-   */
-  private initializeLegacyConfigs(): void {
-    const legacyConfigs = [
-      conditionalNodeConfig,
 
-    ];
-    
-    legacyConfigs.forEach(config => {
-      this.legacyHandleConfigs.set(config.nodeType, config);
-    });
-  }
-  
   /**
    * Get all handle definitions for a node type from any source
    */
