@@ -262,8 +262,12 @@ export class NodeFactory {
         menuItems
       };
       
-      // Get node label
-      const nodeLabel = (data as any)?.label || config.defaultLabel;
+      // Get node label - check instanceData first, then fallback to old structure
+      const nodeLabel = (data as any)?.instanceData?.label || (data as any)?.label || config.defaultLabel;
+      
+      // Extract approval settings from instanceData
+      const requiresUserApproval = (data as any)?.instanceData?.requiresUserApproval || (data as any)?.requiresUserApproval || false;
+      const autoApprove = (data as any)?.instanceData?.autoApprove || (data as any)?.autoApprove || false;
       
       return (
         <CellNode
@@ -279,6 +283,8 @@ export class NodeFactory {
           loopInterval={loopInterval}
           onLoopToggle={handleLoopToggle}
           onLoopIntervalChange={handleLoopIntervalChange}
+          requiresUserApproval={requiresUserApproval}
+          autoApprove={autoApprove}
         />
       );
     };

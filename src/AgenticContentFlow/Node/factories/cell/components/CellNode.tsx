@@ -103,13 +103,18 @@ export const CellNode: React.FC<CellNodeProps> = ({
   // Create icon resolver instance
   const iconResolver = useMemo(() => new IconResolver(), []);
 
-  // Determine the header icon - use favicon if URL is present in node data
+  // Determine the header icon - use favicon if URL is present in templateData
   const headerIcon = useMemo(() => {
-    if (nodeInFlow?.data?.url && typeof nodeInFlow.data.url === 'string') {
-      return iconResolver.createFaviconIcon(nodeInFlow.data.url, { className: 'w-5 h-5' });
+    // Check templateData for URL first, then fallback to instanceData or old flat structure
+    const templateUrl = (nodeInFlow?.data as any)?.templateData?.url;
+    const fallbackUrl = (nodeInFlow?.data as any)?.url;
+    const url = templateUrl || fallbackUrl;
+    
+    if (url && typeof url === 'string') {
+      return iconResolver.createFaviconIcon(url, { className: 'w-5 h-5' });
     }
     return config.headerIcon;
-  }, [nodeInFlow?.data?.url, config.headerIcon, iconResolver]);
+  }, [nodeInFlow?.data, config.headerIcon, iconResolver]);
 
   if (!nodeInFlow) {
     console.error(`Node with id ${id} not found in store.`);
@@ -157,7 +162,6 @@ export const CellNode: React.FC<CellNodeProps> = ({
         <NodeHeader 
           className={cn("dragHandle", config.headerGradient, "border-none")}
           icon={headerIcon}
-          //label={label}
           isProcessing={isProcessing}
           isCompleted={isCompleted}
           hasError={hasError}

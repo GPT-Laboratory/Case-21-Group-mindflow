@@ -70,27 +70,39 @@ export class ProcessExecutor {
     return { targetMap, sourceMap, edgeMap, edgeMetadataMap };
   }
 
+  /**
+   * Execute a process function with the given configuration and data
+   */
   async executeProcess(
     config: NodeFactoryJSON,
     nodeData: NodeInstanceData,
-    incomingData: any,
+    incomingData?: any,
     nodeId?: string,
     getEdges?: () => Edge[],
     getNode?: (id: string) => Node | undefined,
     options: ExecutionOptions = {}
   ): Promise<any> {
-    console.log(`🔍 ProcessExecutor.executeProcess called for ${config.nodeType}:`, {
-      nodeData,
-      incomingData,
-      hasCode: !!config.process.code,
-      hasNodeContext: !!(nodeId && getEdges && getNode)
+    // Combine templateData and instanceData for the process function
+    const processNodeData = {
+      ...config.template?.defaultData,  // Start with template defaults
+      ...nodeData.templateData,         // Override with template data
+      ...nodeData.instanceData          // Override with instance data
+    };
+
+    // Use instanceCode if available, otherwise fall back to template code
+    const processCode = nodeData.instanceCode || config.process.templateCode || config.process.code;
+    
+    if (!processCode) {
+      throw new Error(`No process code available for ${config.nodeType}`);
+    }
+
+    console.log(`🚀 Executing process for ${config.nodeType}:`, {
+      hasInstanceCode: !!nodeData.instanceCode,
+      usingTemplateCode: !nodeData.instanceCode,
+      processNodeData,
+      incomingData
     });
-    
-    // Get process code
-    const processCode = nodeData.processOverrides?.customCode || config.process.code;
-    
-    console.log(`📜 Process code for ${config.nodeType}:`, processCode ? 'Found' : 'Missing');
-    
+
     // Merge and validate parameters
     const parameters = this.mergeParameters(config, nodeData);
     this.parameterValidator.validateParameters(config.process.parameters, parameters);
@@ -119,9 +131,9 @@ export class ProcessExecutor {
 
     // Setup retry options
     const retryOptions: RetryOptions = {
-      timeout: options.timeout || nodeData.processOverrides?.constraints?.timeout || config.process.constraints?.timeout || 30000,
-      maxAttempts: options.retryAttempts || parameters.retryAttempts || config.process.constraints?.maxRetries || 3,
-      delayMs: options.retryDelay || parameters.retryDelay || 1000,
+      timeout: options.timeout || config.process.constraints?.timeout || 30000,
+      maxAttempts: options.retryAttempts || config.process.constraints?.maxRetries || 3,
+      delayMs: options.retryDelay || 1000,
       signal: options.signal
     };
 
@@ -136,7 +148,7 @@ export class ProcessExecutor {
           ? await this.contextManager.executeFrontend(
               processCode, 
               incomingData, 
-              nodeData, 
+              processNodeData,  // Use the combined data
               parameters,
               targetMap,
               sourceMap,
@@ -146,7 +158,7 @@ export class ProcessExecutor {
           : await this.contextManager.executeBackend(
               processCode, 
               incomingData, 
-              nodeData, 
+              processNodeData,  // Use the combined data
               parameters,
               targetMap,
               sourceMap,
