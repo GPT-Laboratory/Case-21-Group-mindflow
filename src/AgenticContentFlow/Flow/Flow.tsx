@@ -17,6 +17,7 @@ import { ensureNodeTypesRegistered } from "../Nodes/registerBasicNodeTypes";
 import NodeConfigPanel from "../Panel/NodePanel";
 import { useNotifications } from "../Notifications";
 import { NotificationDemo } from "../Notifications/components/NotificationDemo";
+import FlowGenerationPanel from "./generation/FlowGenerationPanel";
 
 
 const defaultEdgeOptions = {
@@ -81,7 +82,54 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     onNodeDrag,
     onNodeDragStop,
     isDragging,
+    setNodes,
   } = useNodeContext();
+
+  const { setEdges } = useEdgeContext();
+
+  const filteredNodes = useMemo(() => {
+    const sourceNodes = isDragging ? localNodes : nodes;
+    const visibleNodes = sourceNodes.filter(node => !node.hidden);
+    
+    // Deduplicate nodes by ID before rendering to prevent React key collisions
+    const nodeIdMap = new Map<string, Node>();
+    visibleNodes.forEach(node => {
+      if (nodeIdMap.has(node.id)) {
+        console.warn(`[Flow] Duplicate node ID found during render: ${node.id}. Keeping the last occurrence.`);
+      }
+      nodeIdMap.set(node.id, node);
+    });
+    
+    const deduplicatedNodes = Array.from(nodeIdMap.values());
+    
+    // Log if we found duplicates
+    if (deduplicatedNodes.length !== visibleNodes.length) {
+      console.warn(`[Flow] Removed ${visibleNodes.length - deduplicatedNodes.length} duplicate nodes during render`);
+    }
+    
+    return deduplicatedNodes;
+  }, [nodes, localNodes, isDragging]);
+
+  // Check if flow is empty (no user-created nodes, only system nodes like invisible containers)
+  const isFlowEmpty = useMemo(() => {
+    const userNodes = filteredNodes.filter(node => 
+      node.type !== 'invisiblenode' && 
+      !node.data?.isContainer &&
+      !node.data?.isSystem
+    );
+    return userNodes.length === 0;
+  }, [filteredNodes]);
+
+  // Handle flow generation
+  const handleFlowGenerated = useCallback((generatedNodes: Node[], generatedEdges: Edge[]) => {
+    console.log('🎯 Flow generated:', { nodeCount: generatedNodes.length, edgeCount: generatedEdges.length });
+    
+    // Replace current flow with generated flow
+    setNodes(generatedNodes);
+    setEdges(generatedEdges);
+    
+    console.log('✅ Flow generation complete');
+  }, [setNodes, setEdges]);
 
   useEffect(() => {
     // Apply layout when nodes change
@@ -146,29 +194,6 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     onNodeDragStop(event, node as Node<any>, [node as Node<any>]);
   }, [onNodeDragStop]);
 
-
-const filteredNodes = useMemo(() => {
-  const sourceNodes = isDragging ? localNodes : nodes;
-  const visibleNodes = sourceNodes.filter(node => !node.hidden);
-  
-  // Deduplicate nodes by ID before rendering to prevent React key collisions
-  const nodeIdMap = new Map<string, Node>();
-  visibleNodes.forEach(node => {
-    if (nodeIdMap.has(node.id)) {
-      console.warn(`[Flow] Duplicate node ID found during render: ${node.id}. Keeping the last occurrence.`);
-    }
-    nodeIdMap.set(node.id, node);
-  });
-  
-  const deduplicatedNodes = Array.from(nodeIdMap.values());
-  
-  // Log if we found duplicates
-  if (deduplicatedNodes.length !== visibleNodes.length) {
-    console.warn(`[Flow] Removed ${visibleNodes.length - deduplicatedNodes.length} duplicate nodes during render`);
-  }
-  
-  return deduplicatedNodes;
-}, [nodes, localNodes, isDragging]);
 
   // 🔧 NEW: Use notification system for factory initialization
   const { showBlockingNotification, updateBlockingNotification, completeBlockingNotification } = useNotifications();
@@ -266,11 +291,16 @@ const filteredNodes = useMemo(() => {
           {children}
         </ReactFlow>
         
+        {/* Flow Generation Panel - Show when flow is empty and system is ready */}
+        {isFactorySystemReady && isFlowEmpty && (
+          <FlowGenerationPanel onFlowGenerated={handleFlowGenerated} />
+        )}
+        
         {/* Node Configuration Panel */}
         <NodeConfigPanel />
         
         {/* Temporary demo component for testing */}
-        {process.env.NODE_ENV === 'development' && <NotificationDemo />}
+        {/* {process.env.NODE_ENV === 'development' && <NotificationDemo />} */}
       </>
   );
 })
