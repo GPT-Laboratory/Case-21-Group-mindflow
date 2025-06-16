@@ -45,10 +45,8 @@ const ControlsRegistration = memo<UnifiedControlsProps>(({
     };
   }, [NavControlsWithProps]); // Only depend on the memoized component creator
 
-  // Memoize the UnifiedControlsPanel to prevent unnecessary re-renders
-  const memoizedPanel = useMemo(() => <UnifiedControlsPanel />, []);
-  
-  return memoizedPanel;
+  // Always render the UnifiedControlsPanel - this is the actual UI
+  return <UnifiedControlsPanel />;
 });
 
 ControlsRegistration.displayName = 'ControlsRegistration';

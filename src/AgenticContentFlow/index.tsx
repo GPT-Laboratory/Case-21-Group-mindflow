@@ -20,6 +20,7 @@ import Minimap from "./Minimap/Minimap";
 import TestControlsRegistration from "./test/TestControlsRegistration";
 import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
 import APISetupControlsRegistration from "./Process/Generation/controls/APISetupControlsRegistration";
+import CopyWorkflowControlsRegistration from "./Flow/controls/CopyWorkflowControlsRegistration";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
@@ -105,6 +106,7 @@ export function AgenticContentFlowContent() {
                 <TestControlsRegistration />
                 <LayoutControlsRegistration />
                 <APISetupControlsRegistration />
+                <CopyWorkflowControlsRegistration />
               </Flow>
             </FlowContainer>
           </ShortcutsManager>
