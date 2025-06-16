@@ -1,11 +1,19 @@
 import { Node, Edge } from '@xyflow/react';
 import { completeFlowExample } from '../../test/generated/completeFlowExample';
+import { GenerationOrchestrator } from '../../Process/Generation/GenerationOrchestrator';
+import { 
+  FlowValidationService, 
+  ValidationResult, 
+  VALID_NODE_TYPES, 
+  VALID_HANDLE_POSITIONS 
+} from './FlowValidationService';
 
 export interface FlowGenerationRequest {
   description: string;
   complexity?: 'simple' | 'intermediate' | 'advanced';
   nodeTypes?: string[];
   features?: string[];
+  selectedNodesContext?: string; // Add context from selected nodes
 }
 
 export interface GeneratedFlow {
@@ -26,6 +34,12 @@ export interface GeneratedFlow {
  * Generates complete flows using AI based on user descriptions
  */
 export class FlowGenerationService {
+  private orchestrator: GenerationOrchestrator;
+
+  constructor() {
+    this.orchestrator = new GenerationOrchestrator();
+  }
+
   /**
    * Generate a complete flow from a description
    */
@@ -33,19 +47,45 @@ export class FlowGenerationService {
     console.log('🎯 Generating flow from description:', request.description);
 
     try {
-      // Build the prompt for AI generation
-      const prompt = this.buildFlowGenerationPrompt(request);
+      // Build the enhanced prompt for AI generation
+      const prompt = this.buildEnhancedFlowGenerationPrompt(request);
       
-      // Call AI service (placeholder - you can integrate with OpenAI, Claude, etc.)
+      // Call AI service using the actual LLM orchestrator
       const generatedFlowData = await this.callAIService(prompt);
       
-      // Parse and validate the generated flow
-      const flow = this.parseGeneratedFlow(generatedFlowData, request);
+      // Parse the generated flow
+      let flow = this.parseGeneratedFlow(generatedFlowData, request);
+      
+      // Validate and auto-correct the generated flow
+      console.log('🔍 Validating generated flow...');
+      const validationResult = FlowValidationService.validateAndCorrect(flow, request);
+      
+      // Log validation report
+      const report = FlowValidationService.generateValidationReport(validationResult);
+      console.log(report);
+      
+      // Use corrected flow if available and valid
+      if (validationResult.correctedFlow && validationResult.isValid) {
+        flow = validationResult.correctedFlow;
+        console.log('✅ Using auto-corrected flow');
+      } else if (!validationResult.isValid) {
+        console.warn('⚠️ Generated flow has validation errors, attempting AI self-correction...');
+        
+        // Attempt AI self-correction
+        const correctedFlow = await this.attemptAISelfCorrection(flow, validationResult, request);
+        if (correctedFlow) {
+          flow = correctedFlow;
+          console.log('✅ AI self-correction successful');
+        } else {
+          console.warn('❌ AI self-correction failed, using best available flow');
+        }
+      }
       
       console.log('✅ Flow generated successfully:', {
         nodeCount: flow.nodes.length,
         edgeCount: flow.edges.length,
-        complexity: flow.metadata.complexity
+        complexity: flow.metadata.complexity,
+        validated: validationResult.isValid
       });
       
       return flow;
@@ -57,92 +97,236 @@ export class FlowGenerationService {
     }
   }
 
-  private buildFlowGenerationPrompt(request: FlowGenerationRequest): string {
-    return `Generate a UNIQUE and CREATIVE Agentic Content Flow based on this description:
+  /**
+   * Enhanced prompt with better context about valid node types and handles
+   */
+  private buildEnhancedFlowGenerationPrompt(request: FlowGenerationRequest): string {
+    const validNodeTypesString = VALID_NODE_TYPES.join(', ');
+    const validHandlesString = VALID_HANDLE_POSITIONS.join(', ');
+    
+    // Build context section if selected nodes context is provided
+    const contextSection = request.selectedNodesContext ? `
+
+**EXISTING FLOW CONTEXT**:
+You are adding to an existing flow. Here's the context from currently selected nodes and their children:
+
+${request.selectedNodesContext}
+
+Consider this existing context when generating the new flow. You may:
+- Extend or complement the existing nodes
+- Create workflows that integrate with the existing structure
+- Build upon the data and processing patterns already established
+- Reference existing node types and patterns for consistency
+
+` : '';
+    
+    return `You are a flow generation AI that creates complete Agentic Content Flow configurations. Generate a UNIQUE and CREATIVE flow based on this description:
 
 **User Request**: "${request.description}"
+${contextSection}
+**CRITICAL SYSTEM CONSTRAINTS**:
+1. VALID NODE TYPES ONLY: ${validNodeTypesString}
+2. VALID HANDLE POSITIONS ONLY: ${validHandlesString}
+3. Output ONLY valid JSON - no code blocks, no markdown, no explanations
+4. Use position-based handles (top, bottom, left, right) - NOT generic identifiers
 
-**IMPORTANT - CREATIVITY REQUIREMENTS**:
-- DO NOT copy the example structure exactly
-- CREATE UNIQUE node arrangements and flow patterns  
-- VARY the number of nodes (3-8 nodes depending on complexity)
-- USE DIFFERENT positioning and layouts
-- MIX different node types in creative ways
-- CREATE ORIGINAL data flows and processing patterns
+**NODE TYPE USAGE GUIDE**:
+- restnode: REST API calls, HTTP requests, external service integration
+- contentnode: Display content, UI components, data visualization
+- logicalnode: Data processing, filtering, transformation, calculations
+- conditionalnode: Decision making, routing, if/then logic
+- datanode: Data storage, caching, state management
+- pagenode: Page containers, layout structures
+- statisticsnode: Analytics, metrics, reporting
+- invisiblenode: Layout containers, grouping (use sparingly)
+- coursenode: Educational content containers
+- modulenode: Modular components, reusable sections
 
-**Available Node Types**:
-- **restnode**: API calls, data fetching, external integrations
-- **logicalnode**: Data processing, filtering, transformation, aggregation
-- **conditionalnode**: Decision making, routing, branching logic
-- **contentnode**: Display formatting, UI rendering, data visualization
-- **datanode**: Storage, caching, data persistence
-- **pagenode**: Web page content, document generation
+**HANDLE CONNECTION RULES**:
+- Use "right" for source handles (data flows OUT)
+- Use "left" for target handles (data flows IN) 
+- Use "top"/"bottom" for vertical layouts
+- NEVER use: "input", "output", "in", "out" or generic names
 
-**Flow Pattern Variations** (pick ONE and make it unique):
-1. **Linear Pipeline**: A→B→C→D (simple sequential processing)
-2. **Branching Tree**: A→B splits to C&D, then merge to E
-3. **Diamond Pattern**: A→B→(C|D)→E (conditional with merge)
-4. **Parallel Processing**: A splits to B&C&D, then merge to E
-5. **Feedback Loop**: A→B→C with C connecting back to A
-6. **Hub & Spoke**: Central node connected to multiple endpoints
-7. **Waterfall**: Multi-stage with validation gates between stages
-8. **Pipeline with Sidechains**: Main flow with auxiliary processing branches
+**Flow Requirements for "${request.description}"**:
+- Create 2-5 nodes for simple flows, 3-8 nodes for complex flows
+- Each node MUST have proper instanceCode for processing
+- Use realistic API endpoints (jsonplaceholder.typicode.com is good)
+- Include proper error handling in instanceCode
+- Connect nodes logically with appropriate edge types
 
-**Structural Diversity Requirements**:
-- Position nodes in VARIED layouts (not just left-to-right)
-- Use DIFFERENT container sizes (300-1500px width, 250-600px height)
-- CREATE unique node spacing and arrangements
-- RANDOMIZE which paths conditional nodes take
-- VARY the complexity of instanceCode functions
+**Required JSON Structure**:
+{
+  "nodes": [
+    {
+      "id": "unique-node-id",
+      "type": "restnode",
+      "position": { "x": 100, "y": 100 },
+      "data": {
+        "expanded": true,
+        "depth": 0,
+        "isParent": false,
+        "instanceData": {
+          "label": "Descriptive Label",
+          "details": "What this node does"
+        },
+        "templateData": {
+          "method": "GET",
+          "url": "https://jsonplaceholder.typicode.com/users",
+          "headers": { "Content-Type": "application/json" },
+          "authentication": "none"
+        },
+        "instanceCode": "async function process(incomingData, nodeData, params, targetMap, sourceMap) { try { const response = await fetch(nodeData.url, { method: nodeData.method, headers: nodeData.headers }); const data = await response.json(); return { data, metadata: { processedAt: new Date().toISOString(), nodeType: 'restnode' } }; } catch (error) { console.error('Error:', error); throw error; } }"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "source-node-id", 
+      "target": "target-node-id",
+      "type": "package",
+      "sourceHandle": "right",
+      "targetHandle": "left"
+    }
+  ],
+  "description": "Brief description of the flow",
+  "flowType": "user-management",
+  "complexity": "simple",
+  "features": ["Feature 1", "Feature 2"]
+}
 
-**Data Theme Variations** (pick a DIFFERENT one from examples):
-- Social media analytics and engagement tracking
-- Financial data processing and risk analysis
-- Healthcare patient data workflows
-- Educational content management systems
-- IoT sensor data collection and analysis
-- Supply chain and inventory management
-- Real estate property search and analysis
-- Sports statistics and performance tracking
-- Recipe and nutrition data processing
-- Travel booking and itinerary management
-- Event planning and coordination workflows
-- Customer support ticket routing
-- News aggregation and content curation
-- Scientific data analysis pipelines
-- Gaming leaderboards and achievement tracking
+**IMPORTANT VALIDATION RULES**:
+- ONLY use node types from the valid list above
+- ONLY use handle positions: top, bottom, left, right
+- Every node MUST have a unique ID
+- Every edge MUST reference existing node IDs
+- Include working instanceCode for all processing nodes
+- Use proper error handling and logging
 
-**Example Reference** (DO NOT COPY - USE FOR STRUCTURE ONLY):
-${JSON.stringify(completeFlowExample, null, 2)}
+Return ONLY the JSON object above (customized for the request) - NO markdown, NO explanations, NO additional text.`;
+  }
 
-**Key Implementation Rules**:
-1. **REST Nodes**: Use REAL, working APIs (jsonplaceholder, public APIs)
-2. **Logical Nodes**: Implement ACTUAL processing logic, not placeholders
-3. **Conditional Nodes**: Use targets array for routing: {data, targets: ['node-id'], conditionResult: boolean}
-4. **Content Nodes**: Format data for specific display types
-5. **All instanceCode**: Must be complete, executable JavaScript functions
+  /**
+   * Attempt AI self-correction of validation errors
+   */
+  private async attemptAISelfCorrection(
+    invalidFlow: GeneratedFlow, 
+    validationResult: ValidationResult, 
+    request: FlowGenerationRequest
+  ): Promise<GeneratedFlow | null> {
+    try {
+      console.log('🤖 Attempting AI self-correction...');
+      
+      // Build a self-correction prompt
+      const correctionPrompt = this.buildSelfCorrectionPrompt(invalidFlow, validationResult, request);
+      
+      // Call AI service for correction
+      const correctedFlowData = await this.callAIService(correctionPrompt);
+      const correctedFlow = this.parseGeneratedFlow(correctedFlowData, request);
+      
+      // Validate the corrected flow
+      const revalidation = FlowValidationService.validateAndCorrect(correctedFlow, request);
+      
+      if (revalidation.isValid || revalidation.correctedFlow) {
+        return revalidation.correctedFlow || correctedFlow;
+      }
+      
+    } catch (error) {
+      console.error('AI self-correction failed:', error);
+    }
+    
+    return null;
+  }
 
-**Output Format**:
-Return a JSON object with:
-- nodes: Array with UNIQUE node arrangement
-- edges: Array with CREATIVE connection patterns  
-- description: What this SPECIFIC flow accomplishes
-- flowType: Category that matches your theme
-- complexity: simple/intermediate/advanced based on actual complexity
-- features: Array of UNIQUE capabilities this flow provides
+  /**
+   * Build a self-correction prompt
+   */
+  private buildSelfCorrectionPrompt(
+    invalidFlow: GeneratedFlow, 
+    validationResult: ValidationResult, 
+    request: FlowGenerationRequest
+  ): string {
+    const errorsList = validationResult.errors.map(e => `- ${e.message}${e.suggestedFix ? ` (Fix: ${e.suggestedFix})` : ''}`).join('\n');
+    
+    return `Fix the following validation errors in this flow:
 
-**CRITICAL**: Make this flow DIFFERENT from the examples. Be creative with the data flow, node positioning, and processing logic!`;
+**Original Request**: "${request.description}"
+
+**Validation Errors**:
+${errorsList}
+
+**CRITICAL FIXES NEEDED**:
+1. Replace invalid node types with: ${VALID_NODE_TYPES.join(', ')}
+2. Use only these handle positions: ${VALID_HANDLE_POSITIONS.join(', ')}
+3. Ensure all node IDs and edge references are correct
+
+**Invalid Flow to Fix**:
+${JSON.stringify(invalidFlow, null, 2)}
+
+Return ONLY the corrected JSON flow - no explanations, no markdown, just valid JSON that fixes all the errors above.`;
   }
 
   private async callAIService(prompt: string): Promise<any> {
-    // For now, return a sample generated flow
-    // In production, this would call OpenAI/Claude/etc.
-    
-    // Simulate AI generation delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Return a sample flow based on the prompt
-    return this.generateSampleFlow(prompt);
+    try {
+      // Check if we have any configured LLM providers
+      const availableProviders = this.orchestrator.getAvailableProviders();
+      const configuredProvider = availableProviders.find(p => p.configured);
+      
+      if (!configuredProvider) {
+        console.warn('No LLM providers configured, falling back to sample flows');
+        return this.generateSampleFlow(prompt);
+      }
+
+      console.log('🤖 Calling LLM service for flow generation...');
+      
+      // BYPASS the orchestrator's prompt building system for flow generation
+      // We need to call the LLM directly with our custom JSON prompt
+      const { LLMProviderFactory } = await import('../../Process/Generation/LLMProviders');
+      const { apiKeyManager } = await import('../../Process/Generation/APIKeyManager');
+      
+      const config = apiKeyManager.getConfig(configuredProvider.provider);
+      if (!config) {
+        throw new Error(`No valid configuration for ${configuredProvider.provider}`);
+      }
+
+      // Create LLM provider instance and call directly with our JSON prompt
+      const llmProvider = LLMProviderFactory.createProvider(configuredProvider.provider);
+      const result = await llmProvider.generateCode({
+        prompt: prompt, // Our custom JSON prompt, not the JavaScript function prompt
+        nodeType: 'flow',
+        nodeId: 'flow-generation',
+        config
+      });
+
+      console.log('🎯 LLM Response for flow generation:', {
+        codeLength: result.code.length,
+        provider: result.provider,
+        confidence: result.confidence
+      });
+
+      if (result && result.code) {
+        try {
+          // Try to parse the generated code as JSON
+          const flowData = JSON.parse(result.code);
+          console.log('✅ Successfully parsed LLM response as JSON flow');
+          return flowData;
+        } catch (parseError) {
+          console.warn('Failed to parse LLM response as JSON, response was:', result.code.substring(0, 200) + '...');
+          console.warn('Parse error:', parseError);
+          console.log('Falling back to sample flow generation');
+          return this.generateSampleFlow(prompt);
+        }
+      } else {
+        console.warn('LLM generation failed, falling back to sample flow');
+        return this.generateSampleFlow(prompt);
+      }
+      
+    } catch (error) {
+      console.error('Error calling AI service:', error);
+      console.log('Falling back to sample flow generation');
+      return this.generateSampleFlow(prompt);
+    }
   }
 
   private generateSampleFlow(prompt: string): any {
@@ -150,7 +334,10 @@ Return a JSON object with:
     const description = prompt.toLowerCase();
     const randomVariation = Math.floor(Math.random() * 3); // 0, 1, or 2 for variation
     
-    if (description.includes('todo') || description.includes('task')) {
+    // Check for user-specific requests first
+    if (description.includes('user') && description.includes('two nodes')) {
+      return this.generateSimpleUserFlow();
+    } else if (description.includes('todo') || description.includes('task')) {
       return this.generateTodoFlow(randomVariation);
     } else if (description.includes('weather') || description.includes('forecast')) {
       return this.generateWeatherFlow(randomVariation);
@@ -170,9 +357,127 @@ Return a JSON object with:
     }
   }
 
+  private generateSimpleUserFlow(): any {
+    return {
+      nodes: [
+        {
+          id: 'fetch-users',
+          type: 'restnode',
+          position: { x: 100, y: 100 },
+          data: {
+            expanded: true,
+            depth: 0,
+            isParent: false,
+            instanceData: {
+              label: 'Fetch Users',
+              details: 'Get all users from API'
+            },
+            templateData: {
+              method: 'GET',
+              url: 'https://jsonplaceholder.typicode.com/users',
+              headers: { 'Content-Type': 'application/json' },
+              authentication: 'none'
+            },
+            instanceCode: `async function process(incomingData, nodeData, params, targetMap, sourceMap) {
+  console.log('🔄 fetching users');
+  try {
+    const response = await fetch(nodeData.url, { 
+      method: nodeData.method, 
+      headers: nodeData.headers 
+    });
+    const users = await response.json();
+    console.log(\`✅ Fetched \${users.length} users\`);
+    return { 
+      data: users, 
+      metadata: { 
+        count: users.length, 
+        processedAt: new Date().toISOString(), 
+        nodeType: 'restnode' 
+      } 
+    };
+  } catch (error) {
+    console.error('❌ Failed to fetch users:', error);
+    throw error;
+  }
+}`
+          }
+        },
+        {
+          id: 'display-users',
+          type: 'contentnode',
+          position: { x: 500, y: 100 },
+          data: {
+            expanded: true,
+            depth: 0,
+            isParent: false,
+            instanceData: {
+              label: 'Display Users',
+              details: 'Show users in a formatted list'
+            },
+            templateData: {
+              displayType: 'list',
+              listConfig: { 
+                itemTemplate: { 
+                  title: '{{name}}', 
+                  subtitle: '{{email}} - {{website}}' 
+                }, 
+                maxItems: 50,
+                showSearch: true
+              }
+            },
+            instanceCode: `async function process(incomingData, nodeData, params, targetMap, sourceMap) {
+  console.log('🔄 displaying users');
+  try {
+    const users = incomingData.data || incomingData;
+    const formatted = users.map(user => ({ 
+      id: user.id, 
+      name: user.name, 
+      email: user.email,
+      website: user.website,
+      company: user.company?.name
+    }));
+    console.log(\`📋 Formatted \${formatted.length} users for display\`);
+    return { 
+      data: formatted, 
+      displayConfig: { 
+        type: 'list', 
+        title: 'All Users', 
+        subtitle: \`\${formatted.length} users found\` 
+      }, 
+      metadata: { 
+        userCount: formatted.length,
+        processedAt: new Date().toISOString(), 
+        nodeType: 'contentnode' 
+      } 
+    };
+  } catch (error) {
+    console.error('❌ User display failed:', error);
+    throw error;
+  }
+}`
+          }
+        }
+      ],
+      edges: [
+        { 
+          id: 'e1', 
+          source: 'fetch-users', 
+          target: 'display-users', 
+          type: 'package', 
+          sourceHandle: 'right', 
+          targetHandle: 'left' 
+        }
+      ],
+      description: 'Simple user fetching and display flow',
+      flowType: 'user-management',
+      complexity: 'simple',
+      features: ['User API fetching', 'User display', 'Simple two-node flow']
+    };
+  }
+
   private generateTodoFlow(_: number): any {
     // Variations for todo flow
-    const baseFlow = {
+    return {
       nodes: [
         {
           id: 'invisible-container',
@@ -486,7 +791,7 @@ Return a JSON object with:
     };
   }
 
-  private generateFinanceFlow(variation: number): any {
+  private generateFinanceFlow(_: number): any {
     // Themed flow for financial data processing
     return {
       nodes: [
@@ -617,7 +922,7 @@ Return a JSON object with:
     };
   }
 
-  private generateRecipeFlow(variation: number): any {
+  private generateRecipeFlow(_: number): any {
     // Themed flow for recipe and nutrition data processing
     return {
       nodes: [
@@ -742,7 +1047,7 @@ Return a JSON object with:
     };
   }
 
-  private generateThemeBasedFlow(theme: string, variation: number, prompt: string): any {
+  private generateThemeBasedFlow(theme: string, _variation: number, prompt: string): any {
     // Generate a flow based on a random theme with slight variations
     const baseDescription = `This flow is themed around ${theme}. It should include creative data processing and API integration based on the theme.`;
     const themedPrompt = `${baseDescription} ${prompt}`;
