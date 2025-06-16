@@ -1,13 +1,48 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Loader2, Send, RefreshCw } from 'lucide-react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Send, Lightbulb } from 'lucide-react';
 import { FlowGenerationService, FlowGenerationRequest } from './FlowGenerationService';
 import { GenerationOrchestrator } from '../../Process/Generation/GenerationOrchestrator';
 import { LLMProvider } from '../../Process/Generation/types';
+import { useSelect } from '../../Select/contexts/SelectContext';
+import { useNodeContext } from '../../Node/store/useNodeContext';
+import { Node } from '@xyflow/react';
+import { NodeData } from '../../types';
+import { useInputFocusHandlers } from '../../Panel/hooks/useInputFocusHandlers';
+
+// Simple checkbox component since it's not available in the UI library
+const Checkbox: React.FC<{
+  id: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  children: React.ReactNode;
+}> = ({ id, checked, onCheckedChange, children }) => (
+  <label htmlFor={id} className="flex items-center gap-2 cursor-pointer text-xs">
+    <input
+      id={id}
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onCheckedChange(e.target.checked)}
+      className="w-3 h-3"
+    />
+    {children}
+  </label>
+);
 
 interface FlowGenerationPanelProps {
   onFlowGenerated: (nodes: any[], edges: any[]) => void;
   onClose?: () => void;
 }
+
+/**
+ * Helper function to get all child node IDs for a given parent node ID
+ */
+const getChildNodeIds = (
+  parentNodeId: string,
+  nodeParentIdMapWithChildIdSet: Map<string, Set<string>>
+): string[] => {
+  const childIdSet = nodeParentIdMapWithChildIdSet.get(parentNodeId);
+  return childIdSet ? Array.from(childIdSet) : [];
+};
 
 const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
   onFlowGenerated,
@@ -16,6 +51,7 @@ const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [complexity, _] = useState<'simple' | 'intermediate' | 'advanced'>('simple');
   const [selectedProvider, setSelectedProvider] = useState<LLMProvider>('openai');
+  const [includeSelectedContext, setIncludeSelectedContext] = useState(false);
   const [availableProviders, setAvailableProviders] = useState<Array<{
     provider: LLMProvider;
     name: string;
@@ -23,8 +59,19 @@ const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
     preferred: boolean;
   }>>([]);
   
+  // Prompt history state
+  const [promptHistory, setPromptHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [currentInput, setCurrentInput] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  
   const flowService = new FlowGenerationService();
   const orchestrator = new GenerationOrchestrator();
+  const { selectedNodes, clearSelection } = useSelect();
+  const { nodeMap, nodeParentIdMapWithChildIdSet, updateNodes } = useNodeContext();
+  
+  // Use the same focus handlers as FormField to fix macOS backspace issue
+  const { onFocus, onBlur } = useInputFocusHandlers();
 
   // Load available providers on mount
   useEffect(() => {
@@ -38,51 +85,182 @@ const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
     }
   }, []);
   
-  // Expanded collection of good prompts
-  const allExamplePrompts = [
-    "Build a REST API workflow that fetches user data and displays it in a content list",
-    "Create a data filtering system using logical nodes with conditional routing",
-    "Design a user authentication flow with REST API validation and conditional access",
-    "Build a content management system with page nodes and data storage",
-    "Create an API data pipeline with logical processing and content display",
-    "Design a conditional workflow that routes users based on their role permissions",
-    "Build a dynamic content system that fetches and displays filtered API data",
-    "Create a multi-step form workflow with data validation and conditional paths",
-    "Design a REST API integration with error handling and fallback content",
-    "Build a data transformation pipeline with logical processing and output routing",
-    "Create a content filtering system with conditional display logic",
-    "Design a user dashboard with REST data fetching and dynamic content rendering",
-    "Build a notification system with conditional routing based on user preferences",
-    "Create an API aggregation workflow that combines multiple data sources",
-    "Design a content personalization system with conditional logic and display nodes",
-    "Build a data validation workflow with logical checks and error routing",
-    "Create a REST API polling system with conditional data processing",
-    "Design a content approval workflow with conditional routing and page updates",
-    "Build a data synchronization system with logical transformations and storage",
-    "Create a dynamic API-driven content system with conditional display logic"
+  // Simple prompts for suggestions
+  const examplePrompts = [
+    "Build a REST API workflow that fetches user data and displays it",
+    "Create a data filtering system with conditional routing",
+    "Design a user authentication flow with API validation",
+    "Build a content management system with data storage",
+    "Create an API data pipeline with processing and display"
   ];
 
-  // State for currently displayed prompts
-  const [currentPrompts, setCurrentPrompts] = useState<string[]>(() => {
-    const shuffled = [...allExamplePrompts].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 2);
-  });
+  const handleSuggest = useCallback(() => {
+    const randomPrompt = examplePrompts[Math.floor(Math.random() * examplePrompts.length)];
+    setDescription(randomPrompt);
+    setHistoryIndex(-1);
+    setCurrentInput(randomPrompt);
+  }, []);
 
-  // Function to get new random prompts
-  const rerollPrompts = useCallback(() => {
-    const shuffled = [...allExamplePrompts].sort(() => 0.5 - Math.random());
-    setCurrentPrompts(shuffled.slice(0, 2));
-  }, [allExamplePrompts]);
+  /**
+   * Formats node data for context inclusion
+   */
+  const formatNodeForContext = (node: Node<NodeData>): string => {
+    const { data } = node;
+    let context = `Node "${data.label || node.id}" (${node.type || 'unknown type'})`;
+    
+    if (data.details) {
+      context += `\n  Details: ${data.details}`;
+    }
+    
+    if (data.subject) {
+      context += `\n  Subject: ${data.subject}`;
+    }
+    
+    if (data.level) {
+      context += `\n  Level: ${data.level}`;
+    }
+
+    // Add any other relevant properties
+    const otherProps = Object.entries(data)
+      .filter(([key, value]) => 
+        !['label', 'details', 'subject', 'level', 'type', 'highlighted', 'expanded', 'isParent', 'deleteOnEmpty'].includes(key) &&
+        value !== undefined && value !== null && value !== ''
+      )
+      .map(([key, value]) => `  ${key}: ${value}`)
+      .join('\n');
+      
+    if (otherProps) {
+      context += `\n${otherProps}`;
+    }
+    
+    return context;
+  };
+
+  /**
+   * Gathers context from selected nodes and their children
+   */
+  const gatherSelectedNodesContext = useCallback((): string => {
+    if (!includeSelectedContext || selectedNodes.length === 0) {
+      return '';
+    }
+
+    const allRelevantNodes = new Set<Node<NodeData>>();
+    
+    // Add selected nodes and their children
+    for (const selectedNode of selectedNodes) {
+      // Type assertion to ensure selectedNode is typed as Node<NodeData>
+      const typedSelectedNode = selectedNode as Node<NodeData>;
+      allRelevantNodes.add(typedSelectedNode);
+      
+      // Get all children of this selected node
+      const childNodeIds = getChildNodeIds(
+        selectedNode.id, 
+        nodeParentIdMapWithChildIdSet
+      );
+      
+      childNodeIds.forEach((childId: string) => {
+        const childNode = nodeMap.get(childId);
+        if (childNode) {
+          allRelevantNodes.add(childNode);
+        }
+      });
+    }
+
+    if (allRelevantNodes.size === 0) {
+      return '';
+    }
+
+    // Format the context
+    const contextLines = [
+      '\n--- Context from Selected Nodes ---',
+      `Selected ${selectedNodes.length} node(s) with ${allRelevantNodes.size - selectedNodes.length} child node(s):\n`
+    ];
+
+    // Add selected nodes first
+    contextLines.push('Selected Nodes:');
+    for (const selectedNode of selectedNodes) {
+      // Type assertion to ensure selectedNode is typed as Node<NodeData>
+      const typedSelectedNode = selectedNode as Node<NodeData>;
+      contextLines.push(formatNodeForContext(typedSelectedNode));
+    }
+
+    // Add child nodes if any
+    const childNodes = Array.from(allRelevantNodes).filter(node => 
+      !selectedNodes.some(selected => selected.id === node.id)
+    );
+    
+    if (childNodes.length > 0) {
+      contextLines.push('\nChild Nodes:');
+      for (const childNode of childNodes) {
+        contextLines.push(formatNodeForContext(childNode));
+      }
+    }
+
+    contextLines.push('--- End Context ---\n');
+    
+    return contextLines.join('\n');
+  }, [includeSelectedContext, selectedNodes, nodeMap, nodeParentIdMapWithChildIdSet]);
 
   const handleGenerate = async () => {
     if (!description.trim()) return;
     
+    // Store the actual selected nodes before clearing selection
+    const originallySelectedNodes = [...selectedNodes];
+    
+    // Get all affected nodes (selected nodes + their children)
+    const affectedNodes = new Set<Node<NodeData>>();
+    
+    // Add selected nodes (with type safety)
+    originallySelectedNodes.forEach(node => {
+      // Type assertion since we know these are our nodes with NodeData
+      const typedNode = node as Node<NodeData>;
+      affectedNodes.add(typedNode);
+    });
+    
+    // Add children of selected nodes
+    originallySelectedNodes.forEach(selectedNode => {
+      const childNodeIds = getChildNodeIds(
+        selectedNode.id, 
+        nodeParentIdMapWithChildIdSet
+      );
+      
+      childNodeIds.forEach((childId: string) => {
+        const childNode = nodeMap.get(childId);
+        if (childNode) {
+          affectedNodes.add(childNode);
+        }
+      });
+    });
+    
+    const allAffectedNodes = Array.from(affectedNodes);
+    const affectedNodeIds = allAffectedNodes.map(node => node.id);
+    
     setIsGenerating(true);
     
     try {
+      // 🎯 STEP 1: Deselect all selected nodes immediately
+      clearSelection();
+      
+      // 🎯 STEP 2: Set generation state on selected nodes AND their children
+      if (allAffectedNodes.length > 0) {
+        const nodesWithGenerationState = allAffectedNodes.map(node => ({
+          ...node,
+          data: {
+            ...node.data,
+            isGenerating: true,
+            isSelectable: false // Make unselectable during generation
+          }
+        }));
+        updateNodes(nodesWithGenerationState);
+      }
+      
+      // Gather context from selected nodes if enabled
+      const selectedNodesContext = gatherSelectedNodesContext();
+      
       const request: FlowGenerationRequest = {
         description: description.trim(),
-        complexity
+        complexity,
+        selectedNodesContext: selectedNodesContext || undefined
       };
       
       const generatedFlow = await flowService.generateFlow(request);
@@ -90,14 +268,109 @@ const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
       console.log('Generated flow:', generatedFlow);
       onFlowGenerated(generatedFlow.nodes, generatedFlow.edges);
       
-      // Clear the input
+      // Add to history if it's not already the most recent entry
+      const trimmedDescription = description.trim();
+      if (trimmedDescription && (promptHistory.length === 0 || promptHistory[0] !== trimmedDescription)) {
+        setPromptHistory(prev => [trimmedDescription, ...prev.slice(0, 19)]); // Keep last 20 prompts
+      }
+      
+      // Clear the input and reset history navigation
       setDescription('');
+      setHistoryIndex(-1);
+      setCurrentInput('');
       
     } catch (error) {
       console.error('Flow generation error:', error);
       // You could add error state/notification here
     } finally {
+      // 🎯 STEP 3: Remove generation state from affected nodes
+      if (affectedNodeIds.length > 0) {
+        // Get current nodes and remove generation state
+        const currentNodes = affectedNodeIds.map(nodeId => nodeMap.get(nodeId)).filter(Boolean);
+        const nodesWithoutGenerationState = currentNodes.map(node => ({
+          ...node!,
+          data: {
+            ...node!.data,
+            isGenerating: false,
+            isSelectable: true // Make selectable again
+          }
+        }));
+        updateNodes(nodesWithoutGenerationState);
+      }
+      
       setIsGenerating(false);
+    }
+  };
+
+  // Count total nodes that would be included in context
+  const getContextNodeCount = useCallback((): { selected: number; children: number } => {
+    if (!includeSelectedContext || selectedNodes.length === 0) {
+      return { selected: 0, children: 0 };
+    }
+
+    const allChildren = new Set<string>();
+    for (const selectedNode of selectedNodes) {
+      const childNodeIds = getChildNodeIds(
+        selectedNode.id, 
+        nodeParentIdMapWithChildIdSet
+      );
+      childNodeIds.forEach((childId: string) => allChildren.add(childId));
+    }
+
+    return {
+      selected: selectedNodes.length,
+      children: allChildren.size
+    };
+  }, [includeSelectedContext, selectedNodes, nodeParentIdMapWithChildIdSet]);
+
+  const contextCounts = getContextNodeCount();
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (promptHistory.length === 0) return;
+      
+      // Save current input when starting to navigate
+      if (historyIndex === -1) {
+        setCurrentInput(description);
+      }
+      
+      const newIndex = Math.min(historyIndex + 1, promptHistory.length - 1);
+      setHistoryIndex(newIndex);
+      setDescription(promptHistory[newIndex]);
+      
+      // Move cursor to end of text
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(
+            inputRef.current.value.length,
+            inputRef.current.value.length
+          );
+        }
+      }, 0);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex === -1) return;
+      
+      if (historyIndex === 0) {
+        // Go back to current input
+        setHistoryIndex(-1);
+        setDescription(currentInput);
+      } else {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setDescription(promptHistory[newIndex]);
+      }
+      
+      // Move cursor to end of text
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(
+            inputRef.current.value.length,
+            inputRef.current.value.length
+          );
+        }
+      }, 0);
     }
   };
 
@@ -108,77 +381,86 @@ const FlowGenerationPanel: React.FC<FlowGenerationPanelProps> = ({
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDescription(e.target.value);
+    // Reset history navigation when user types
+    if (historyIndex !== -1) {
+      setHistoryIndex(-1);
+      setCurrentInput(e.target.value);
+    }
+  };
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 w-[1200px] max-w-[95vw]">
-        {/* Input Area */}
-        <div className="relative mb-0">
-          <textarea
+    <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-3">
+      <div className="flex items-center gap-3">
+        {/* Suggest Button */}
+        <button
+          onClick={handleSuggest}
+          disabled={isGenerating}
+          className="flex items-center justify-center w-8 h-8 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Suggest a workflow idea"
+        >
+          <Lightbulb className="w-4 h-4" />
+        </button>
+        
+        {/* Main Input */}
+        <div className="flex-1 flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Describe the flow you want to generate (e.g., 'Build a REST API workflow that fetches user data')"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="Describe the workflow you want to create... (e.g., 'Create a todo management system with API integration and conditional routing')"
-            className="w-full h-16 p-3 pr-24 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+            onKeyDown={handleKeyDown}
+            onFocus={onFocus}
+            onBlur={onBlur}
             disabled={isGenerating}
+            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
           />
           
-          {/* Model Selection Dropdown */}
-          <div className="absolute bottom-3 right-12 flex items-center">
-            <select
-              value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value as LLMProvider)}
-              disabled={isGenerating}
-              className="text-xs px-0 py-0 bg-transparent border-0 border-b border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 focus:outline-none focus:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed appearance-none cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors min-w-0 w-20"
-              title="Select AI Model"
+          {/* Context Checkbox */}
+          {selectedNodes.length > 0 && (
+            <Checkbox
+              id="include-context"
+              checked={includeSelectedContext}
+              onCheckedChange={setIncludeSelectedContext}
             >
-              {availableProviders.map(({ provider, name, configured }) => (
-                <option key={provider} value={provider} disabled={!configured}>
-                  {name} {!configured ? '(not configured)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+              Include {contextCounts.selected} selected
+            </Checkbox>
+          )}
           
-          {/* Generate Button */}
-          <button
-            onClick={handleGenerate}
-            disabled={!description.trim() || isGenerating}
-            className="absolute bottom-2 right-2 flex items-center justify-center w-8 h-8 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+          {/* Model Selection */}
+          <select
+            value={selectedProvider}
+            onChange={(e) => setSelectedProvider(e.target.value as LLMProvider)}
+            disabled={isGenerating}
+            className="text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
           >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 text-white animate-spin" />
-            ) : (
-              <Send className="w-4 h-4 text-white" />
-            )}
-          </button>
+            {availableProviders.map(({ provider, name, configured }) => (
+              <option key={provider} value={provider} disabled={!configured}>
+                {name.split(' ')[0]} {!configured ? '(?)' : ''}
+              </option>
+            ))}
+          </select>
         </div>
-
-        {/* Example Prompts with Reroll Button */}
-        <div className="mb-0">
-          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 mb-2">
-            <div className="flex-1 text-xs text-gray-500 dark:text-gray-400">
-              <strong>Pro tip:</strong> Be specific about APIs, data transformations, and conditional logic. 
-              <span className="text-gray-600 dark:text-gray-300 ml-1">Example:</span>
-              <button
-                onClick={() => setDescription(currentPrompts[0])}
-                disabled={isGenerating}
-                className="ml-2 px-2 py-1 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {currentPrompts[0]?.length > 60 ? currentPrompts[0].substring(0, 57) + '...' : currentPrompts[0]}
-              </button>
-            </div>
-            {/* Reroll Button on same row */}
-            <button
-              onClick={rerollPrompts}
-              disabled={isGenerating}
-              className="flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Get new suggestion"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
+        
+        {/* Generate Button */}
+        <button
+          onClick={handleGenerate}
+          disabled={!description.trim() || isGenerating}
+          className="flex items-center justify-center w-8 h-8 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Generate Flow"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+        
+        {/* History indicator */}
+        {historyIndex !== -1 && (
+          <div className="text-xs text-gray-500 px-2">
+            {historyIndex + 1}/{promptHistory.length}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
