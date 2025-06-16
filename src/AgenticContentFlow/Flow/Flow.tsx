@@ -16,7 +16,11 @@ import { ensureEdgeTypesRegistered } from "../Edges/registerBasicEdgeTypes";
 import { ensureNodeTypesRegistered } from "../Nodes/registerBasicNodeTypes";
 import NodeConfigPanel from "../Panel/NodePanel";
 import { useNotifications } from "../Notifications";
+import FlowGenerationControlsRegistration from "./generation/FlowGenerationControlsRegistration";
 import FlowGenerationPanel from "./generation/FlowGenerationPanel";
+import { handleContainerization } from "../Node/hooks/utils/nodeUtils";
+import { isHorizontalConnection } from "../Node/hooks/utils/dragUtils";
+import { NodeData } from "../types";
 
 
 const defaultEdgeOptions = {
@@ -109,25 +113,23 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     return deduplicatedNodes;
   }, [nodes, localNodes, isDragging]);
 
-  // Check if flow is empty (no user-created nodes, only system nodes like invisible containers)
-  const isFlowEmpty = useMemo(() => {
-    const userNodes = filteredNodes.filter(node => 
-      node.type !== 'invisiblenode' && 
-      !node.data?.isContainer &&
-      !node.data?.isSystem
-    );
-    return userNodes.length === 0;
-  }, [filteredNodes]);
+
 
   // Handle flow generation
   const handleFlowGenerated = useCallback((generatedNodes: Node[], generatedEdges: Edge[]) => {
     console.log('🎯 Flow generated:', { nodeCount: generatedNodes.length, edgeCount: generatedEdges.length });
     
-    // Replace current flow with generated flow
-    setNodes(generatedNodes);
-    setEdges(generatedEdges);
+    // Type-cast the generated nodes to our NodeData interface since they come from our flow generation service
+    const typedNodes = generatedNodes as Node<NodeData>[];
     
-    console.log('✅ Flow generation complete');
+    // Apply containerization logic for horizontal connections
+    const processedResult = applyContainerizationToGeneratedFlow(typedNodes, generatedEdges);
+    
+    // Replace current flow with processed flow (includes containerization)
+    setNodes(processedResult.nodes);
+    setEdges(processedResult.edges);
+    
+    console.log('✅ Flow generation complete with containerization applied');
   }, [setNodes, setEdges]);
 
   useEffect(() => {
@@ -241,6 +243,104 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     initializeNodeTypes();
   }, [showBlockingNotification, updateBlockingNotification, completeBlockingNotification]);
 
+  /**
+   * Apply containerization logic to generated flow for horizontal connections
+   * This ensures nodes with left/right connections are properly placed in invisible containers
+   */
+  const applyContainerizationToGeneratedFlow = useCallback((generatedNodes: Node<NodeData>[], generatedEdges: Edge[]) => {
+    console.log('🔧 Applying containerization to generated flow');
+    
+    // Create maps for efficient lookups
+    const nodeMap = new Map(generatedNodes.map(n => [n.id, n]));
+    const nodeParentIdMapWithChildIdSet = new Map<string, Set<string>>();
+    
+    // Build parent-child relationship map
+    generatedNodes.forEach(node => {
+      if (node.parentId) {
+        if (!nodeParentIdMapWithChildIdSet.has(node.parentId)) {
+          nodeParentIdMapWithChildIdSet.set(node.parentId, new Set());
+        }
+        nodeParentIdMapWithChildIdSet.get(node.parentId)!.add(node.id);
+      }
+    });
+    
+    // Find horizontal connections
+    const horizontalEdges = generatedEdges.filter(edge =>
+      isHorizontalConnection(edge.sourceHandle, edge.targetHandle)
+    );
+    
+    if (horizontalEdges.length === 0) {
+      console.log('🔧 No horizontal connections found, no containerization needed');
+      return { nodes: generatedNodes, edges: generatedEdges };
+    }
+    
+    console.log(`🔧 Found ${horizontalEdges.length} horizontal connection(s), applying containerization`);
+    
+    const nodesToUpdate: Node<NodeData>[] = [...generatedNodes];
+    const containersToAdd: Node<NodeData>[] = [];
+    const processedEdges = new Set<string>();
+    
+    // Process each horizontal edge
+    horizontalEdges.forEach(edge => {
+      if (processedEdges.has(edge.id)) return;
+      
+      const sourceNode = nodeMap.get(edge.source);
+      const targetNode = nodeMap.get(edge.target);
+      
+      if (sourceNode && targetNode) {
+        const containerizationResult = handleContainerization(
+          targetNode,
+          sourceNode,
+          edge,
+          nodeMap,
+          nodeParentIdMapWithChildIdSet
+        );
+        
+        // Update nodes based on containerization result
+        if (containerizationResult.containerToAdd) {
+          containersToAdd.push(containerizationResult.containerToAdd);
+          // Update the nodeMap with the new container
+          nodeMap.set(containerizationResult.containerToAdd.id, containerizationResult.containerToAdd);
+        }
+        
+        if (containerizationResult.updatedFromNode) {
+          const index = nodesToUpdate.findIndex(n => n.id === containerizationResult.updatedFromNode!.id);
+          if (index >= 0) {
+            nodesToUpdate[index] = containerizationResult.updatedFromNode;
+            nodeMap.set(containerizationResult.updatedFromNode.id, containerizationResult.updatedFromNode);
+          }
+        }
+        
+        if (containerizationResult.updatedToNode) {
+          const index = nodesToUpdate.findIndex(n => n.id === containerizationResult.updatedToNode!.id);
+          if (index >= 0) {
+            nodesToUpdate[index] = containerizationResult.updatedToNode;
+            nodeMap.set(containerizationResult.updatedToNode.id, containerizationResult.updatedToNode);
+          }
+        }
+        
+        if (containerizationResult.updatedToNodeSiblings) {
+          containerizationResult.updatedToNodeSiblings.forEach(sibling => {
+            const index = nodesToUpdate.findIndex(n => n.id === sibling.id);
+            if (index >= 0) {
+              nodesToUpdate[index] = sibling;
+              nodeMap.set(sibling.id, sibling);
+            }
+          });
+        }
+        
+        processedEdges.add(edge.id);
+      }
+    });
+    
+    // Combine original nodes with new containers
+    const finalNodes = [...nodesToUpdate, ...containersToAdd];
+    
+    console.log(`🔧 Containerization complete: ${containersToAdd.length} containers added`);
+    
+    return { nodes: finalNodes, edges: generatedEdges };
+  }, []);
+
   return (
     <>
         {/* Register the grid controls */}
@@ -290,9 +390,16 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
           {children}
         </ReactFlow>
         
-        {/* Flow Generation Panel - Show when flow is empty and system is ready */}
-        {isFactorySystemReady && isFlowEmpty && (
-          <FlowGenerationPanel onFlowGenerated={handleFlowGenerated} />
+        {/* Flow Generation Controls - Always visible when system is ready */}
+        {isFactorySystemReady && (
+          <FlowGenerationControlsRegistration onFlowGenerated={handleFlowGenerated} />
+        )}
+        
+        {/* Flow Generation Panel - Always visible at bottom when system is ready */}
+        {isFactorySystemReady && (
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-2xl px-4">
+            <FlowGenerationPanel onFlowGenerated={handleFlowGenerated} />
+          </div>
         )}
         
         {/* Node Configuration Panel */}
