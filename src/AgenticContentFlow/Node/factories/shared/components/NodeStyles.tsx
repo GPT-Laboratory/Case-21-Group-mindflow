@@ -10,7 +10,7 @@ export interface BaseNodeProps {
   /** Whether the node is currently processing */
   processing?: boolean;
   /** Processing state for visual feedback */
-  processState?: 'idle' | 'processing' | 'completed' | 'error';
+  processState?: 'idle' | 'processing' | 'completed' | 'error' | 'generating';
   className?: string;
   children?: ReactNode;
   style?: React.CSSProperties;
@@ -44,6 +44,8 @@ export function BaseNodeContainer({
       setBorderColorAfterProcess('#04a46e');
     } else if (processState === 'error') {
       setBorderColorAfterProcess('#ef4444');
+    } else if (processState === 'generating') {
+      setBorderColorAfterProcess('#f59e0b'); // Amber color for generation
     }
     // Don't reset to black when going back to idle - persist the last process color
   }, [processState, processing]);
@@ -63,6 +65,19 @@ export function BaseNodeContainer({
           linear-gradient(var(--angle, 0deg), #ae53ba, #2a8af6, #ae53ba) border-box
         `,
         animation: 'processingRotate 2s linear infinite',
+      };
+    }
+    
+    if (processState === 'generating') {
+      return {
+        ...baseStyle,
+        border: '3px solid transparent',
+        backgroundColor: baseStyle.backgroundColor || 'var(--color-background)',
+        background: `
+          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
+          linear-gradient(var(--angle, 0deg), #f59e0b, #fbbf24, #f59e0b) border-box
+        `,
+        animation: 'processingRotate 1.5s linear infinite',
       };
     }
     

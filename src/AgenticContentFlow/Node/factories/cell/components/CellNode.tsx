@@ -103,6 +103,10 @@ export const CellNode: React.FC<CellNodeProps> = ({
   // Create icon resolver instance
   const iconResolver = useMemo(() => new IconResolver(), []);
 
+  // Check if node is in generation state
+  const isGenerating = Boolean(nodeInFlow?.data?.isGenerating) || false;
+  const isSelectable = nodeInFlow?.data?.isSelectable !== false; // Default to true, only false if explicitly set
+
   // Determine the header icon - use favicon if URL is present in templateData
   const headerIcon = useMemo(() => {
     // Check templateData for URL first, then fallback to instanceData or old flat structure
@@ -127,31 +131,44 @@ export const CellNode: React.FC<CellNodeProps> = ({
     height: 200,
   };
 
+  // Determine process state - prioritize generation over other states
+  const getProcessState = () => {
+    if (isGenerating) return 'generating';
+    if (isProcessing) return 'processing';
+    if (isCompleted) return 'completed';
+    if (hasError) return 'error';
+    return 'idle';
+  };
+
   return (
     <>
       <CornerResizer
         minHeight={nodeDimensions.height}
         minWidth={nodeDimensions.width}
         nodeToResize={nodeInFlow}
-        canResize={selected}
+        canResize={selected && isSelectable} // Can only resize if selectable
         color={color}
       />
 
       <BaseNodeContainer
         onTransitionEnd={() => updateNodeInternals(id)}
-        selected={selected}
+        selected={selected && isSelectable} // Only show as selected if selectable
         color={selected ? config.selectedColor : color}
-        processing={isProcessing}
-        processState={isProcessing ? 'processing' : isCompleted ? 'completed' : hasError ? 'error' : 'idle'}
+        processing={isProcessing || isGenerating} // Show processing visual for both states
+        processState={getProcessState()}
         className={cn(
           "w-full h-full flex flex-col select-none transition-all duration-200 ease-in-out",
           "rounded-lg shadow-lg bg-white",
           "!min-w-0 !min-h-0",
           config.headerGradient,
+          // Make unselectable during generation
+          !isSelectable && "pointer-events-none cursor-not-allowed opacity-90"
         )}
         style={{
           width: nodeInFlow?.width || nodeDimensions.width,
           height: nodeInFlow?.height || nodeDimensions.height,
+          // Add user-select: none during generation
+          userSelect: isSelectable ? 'auto' : 'none'
         }}
       >
         <ConnectionHandles 
@@ -162,7 +179,7 @@ export const CellNode: React.FC<CellNodeProps> = ({
         <NodeHeader 
           className={cn("dragHandle", config.headerGradient, "border-none")}
           icon={headerIcon}
-          isProcessing={isProcessing}
+          isProcessing={isProcessing || isGenerating} // Show processing indicator for both states
           isCompleted={isCompleted}
           hasError={hasError}
           menuItems={config.menuItems}
@@ -178,12 +195,12 @@ export const CellNode: React.FC<CellNodeProps> = ({
           
           <div className="text-center text-sm text-slate-700 leading-relaxed px-1 flex flex-row items-center">
             <Badge variant="outline" className={cn("text-xs px-2 py-1 m-1 font-mono", config.badge.colorClasses)}>
-              {config.badge.text}
+              {isGenerating ? 'GENERATING...' : config.badge.text}
             </Badge>
          
           </div>
           
-          {/* Play Controls */}
+          {/* Play Controls - disabled during generation */}
           <CellNodeProcessControls
             isProcessing={isProcessing}
             isLooping={isLooping}
@@ -191,12 +208,12 @@ export const CellNode: React.FC<CellNodeProps> = ({
             requiresUserApproval={requiresUserApproval}
             autoApprove={autoApprove}
             waitingForApproval={waitingForApproval}
-            onPlay={onPlay}
-            onStop={onStop}
-            onLoopToggle={onLoopToggle}
-            onLoopIntervalChange={onLoopIntervalChange}
-            onApprove={onApprove}
-            onAutoApproveToggle={onAutoApproveToggle}
+            onPlay={isGenerating ? undefined : onPlay} // Disable during generation
+            onStop={isGenerating ? undefined : onStop}
+            onLoopToggle={isGenerating ? undefined : onLoopToggle}
+            onLoopIntervalChange={isGenerating ? undefined : onLoopIntervalChange}
+            onApprove={isGenerating ? undefined : onApprove}
+            onAutoApproveToggle={isGenerating ? undefined : onAutoApproveToggle}
             className="mt-1"
           />
         </div>
