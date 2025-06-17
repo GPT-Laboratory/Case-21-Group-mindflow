@@ -19,11 +19,10 @@ import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
 import { getNodeGroup, isProcessNode, isPreviewNode } from './types/nodeGroups';
 
 // LLM Generation System imports
-import { GenerationOrchestrator } from '../Process/Generation/GenerationOrchestrator';
-import { APISetupDialog } from '../Process/Generation/components/APISetupDialog';
-import { apiKeyManager } from '../Process/Generation/APIKeyManager';
+import { apiKeyManager } from '../Generator/providers/management/APIKeyManager';
 import { useNotifications } from '../Notifications/hooks/useNotifications';
-import { GenerationContext, LLMGenerationResult } from '../Process/Generation/types';
+import { GeneratorOrchestrator } from '../Generator';
+import { ProcessGenerationRequest } from '../Generator/generatortypes';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -45,17 +44,14 @@ export const NodeConfigPanel: React.FC = () => {
   const [hasDataChanges, setHasDataChanges] = useState(false);
 
   // LLM Generation state
-  const [showApiSetup, setShowApiSetup] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationOrchestrator] = useState(() => new GenerationOrchestrator());
+  const [generationOrchestrator] = useState(() => new GeneratorOrchestrator());
 
   // Notifications for progress and results
   const {
-    showSuccessToast,
     showErrorToast,
     showInfoToast,
     showBlockingNotification,
-    updateBlockingNotification,
     completeBlockingNotification,
     failBlockingNotification
   } = useNotifications();
@@ -141,7 +137,6 @@ export const NodeConfigPanel: React.FC = () => {
     const configuredProviders = apiKeyManager.getConfiguredProviders();
     if (configuredProviders.length === 0) {
       console.log('📝 No LLM providers configured, showing setup dialog');
-      setShowApiSetup(true);
       return;
     }
 
@@ -155,59 +150,24 @@ export const NodeConfigPanel: React.FC = () => {
         'Preparing LLM request for node processing logic...'
       );
 
-      // Build generation context
-      const context: GenerationContext = {
+      // Build generation request
+      const request: ProcessGenerationRequest = {
+        type: 'process',
         nodeId: activeNode.id,
         nodeType: activeNode.type,
-        formData,
+        nodeData: formData,
+        strategy: 'ai',
         inputSchema: null, // TODO: Get from DataFlowTab
-        onFieldChange: handleFieldChange,
-        onGenerationComplete: (result: LLMGenerationResult) => {
-          console.log('✅ Code generation completed:', {
-            nodeId: activeNode.id,
-            provider: result.provider,
-            confidence: result.confidence,
-            codeLength: result.code.length
-          });
-
-          // Show success details
-          showSuccessToast(
-            'Code Generated!', 
-            `Generated ${result.code.length} characters of code using ${result.provider} (${Math.round(result.confidence * 100)}% confidence)`
-          );
-
-          // Show suggestions if any
-          if (result.suggestions?.length) {
-            setTimeout(() => {
-              showInfoToast(
-                'Suggestions',
-                result.suggestions!.slice(0, 2).join('. ')
-              );
-            }, 2000);
-          }
-        },
-        onGenerationError: (error: string) => {
-          console.error('❌ Code generation failed:', error);
-          showErrorToast('Generation Failed', error);
-        }
       };
 
-      // Generate code with progress tracking
-      const result = await generationOrchestrator.generateCode(context, (progress) => {
-        if (notificationId) {
-          updateBlockingNotification(notificationId, 'loading', progress.progress);
-        }
-        // Only log significant progress milestones to reduce spam
-        if (progress.progress % 25 === 0 || progress.stage === 'complete' || progress.stage === 'error') {
-          console.log('📊 Generation progress:', progress);
-        }
-      });
+      // Generate code
+      await generationOrchestrator.generate(request);
 
       // Complete the notification
       if (notificationId) {
         completeBlockingNotification(
           notificationId,
-          `Code generated successfully! ${result.warnings?.length ? `(${result.warnings.length} warnings)` : ''}`
+          'Code generated successfully!'
         );
       }
 
@@ -216,14 +176,6 @@ export const NodeConfigPanel: React.FC = () => {
         handleSave();
         showInfoToast('Auto-saved', 'Generated code has been saved to the node.');
       }, 1000);
-
-      // Show warnings if any
-      if (result.warnings?.length) {
-        setTimeout(() => {
-          const warningText = result.warnings!.slice(0, 3).join('. ');
-          showInfoToast('Code Warnings', warningText);
-        }, 3000);
-      }
 
     } catch (error) {
       console.error('💥 Code generation failed:', error);
@@ -250,23 +202,7 @@ export const NodeConfigPanel: React.FC = () => {
     }
   };
 
-  const handleApiSetupComplete = () => {
-    console.log('✅ API setup completed, configured providers:', apiKeyManager.getConfiguredProviders());
-    setShowApiSetup(false);
-    
-    // Show success and offer to generate
-    showSuccessToast(
-      'LLM Provider Configured!', 
-      'You can now use AI-powered code generation.'
-    );
-    
-    // Auto-trigger generation if user had tried to generate before
-    if (hasDataChanges) {
-      setTimeout(() => {
-        showInfoToast('Ready to Generate', 'Click the Generate button to create code with AI.');
-      }, 1500);
-    }
-  };
+
 
   const nodeConfig = activeNode ? getNodeConfig(activeNode.type, activeNode.data) : null;
   const variantFields = activeNode && nodeConfig ? getVariantFields(nodeConfig, formData, activeNode.data) : {};
@@ -274,12 +210,7 @@ export const NodeConfigPanel: React.FC = () => {
 
   return (
     <>
-      {/* API Setup Dialog */}
-      <APISetupDialog
-        open={showApiSetup}
-        onOpenChange={setShowApiSetup}
-        onComplete={handleApiSetupComplete}
-      />
+
 
       {/* Toggle/Drag Handle */}
       <PanelToggleDragHandle

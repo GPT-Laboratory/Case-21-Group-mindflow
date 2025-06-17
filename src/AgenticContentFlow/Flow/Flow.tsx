@@ -16,8 +16,8 @@ import { ensureEdgeTypesRegistered } from "../Edges/registerBasicEdgeTypes";
 import { ensureNodeTypesRegistered } from "../Nodes/registerBasicNodeTypes";
 import NodeConfigPanel from "../Panel/NodePanel";
 import { useNotifications } from "../Notifications";
-import FlowGenerationControlsRegistration from "./generation/FlowGenerationControlsRegistration";
-import FlowGenerationPanel from "./generation/FlowGenerationPanel";
+import { GenerationControl } from "../Generator/ui";
+import { GenerationResult, FlowGenerationResult } from "../Generator/generatortypes";
 import { handleContainerization } from "../Node/hooks/utils/nodeUtils";
 import { isHorizontalConnection } from "../Node/hooks/utils/dragUtils";
 import { NodeData } from "../types";
@@ -115,21 +115,27 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
 
 
 
-  // Handle flow generation
-  const handleFlowGenerated = useCallback((generatedNodes: Node[], generatedEdges: Edge[]) => {
-    console.log('🎯 Flow generated:', { nodeCount: generatedNodes.length, edgeCount: generatedEdges.length });
-    
-    // Type-cast the generated nodes to our NodeData interface since they come from our flow generation service
-    const typedNodes = generatedNodes as Node<NodeData>[];
-    
-    // Apply containerization logic for horizontal connections
-    const processedResult = applyContainerizationToGeneratedFlow(typedNodes, generatedEdges);
-    
-    // Replace current flow with processed flow (includes containerization)
-    setNodes(processedResult.nodes);
-    setEdges(processedResult.edges);
-    
-    console.log('✅ Flow generation complete with containerization applied');
+  // Handle flow generation with the new unified system
+  const handleFlowGenerated = useCallback((result: GenerationResult) => {
+    // Type guard to ensure we have a flow result
+    if (result.type === 'flow') {
+      const flowResult = result as FlowGenerationResult;
+      console.log('🎯 Flow generated:', { nodeCount: flowResult.nodes.length, edgeCount: flowResult.edges.length });
+      
+      // Type-cast the generated nodes to our NodeData interface since they come from our flow generation service
+      const typedNodes = flowResult.nodes as Node<NodeData>[];
+      
+      // Apply containerization logic for horizontal connections
+      const processedResult = applyContainerizationToGeneratedFlow(typedNodes, flowResult.edges);
+      
+      // Replace current flow with processed flow (includes containerization)
+      setNodes(processedResult.nodes);
+      setEdges(processedResult.edges);
+      
+      console.log('✅ Flow generation complete with containerization applied');
+    } else {
+      console.warn('Expected flow generation result, got:', result.type);
+    }
   }, [setNodes, setEdges]);
 
   useEffect(() => {
@@ -392,14 +398,10 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
         
         {/* Flow Generation Controls - Always visible when system is ready */}
         {isFactorySystemReady && (
-          <FlowGenerationControlsRegistration onFlowGenerated={handleFlowGenerated} />
-        )}
-        
-        {/* Flow Generation Panel - Always visible at bottom when system is ready */}
-        {isFactorySystemReady && (
-          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-2xl px-4">
-            <FlowGenerationPanel onFlowGenerated={handleFlowGenerated} />
-          </div>
+          <GenerationControl 
+            type="flow"
+            onGenerated={handleFlowGenerated}
+          />
         )}
         
         {/* Node Configuration Panel */}
