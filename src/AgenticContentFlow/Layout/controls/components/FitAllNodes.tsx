@@ -1,13 +1,15 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { Maximize2 } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import { VIEWPORT_CONSTRAINTS } from "../../../constants";
 import ControlButton from "../../../Controls/Components/ControlButton";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../../ShortCuts/registry/shortcutsRegistry";
 
 const FitAllNodes: React.FC = () => {
   const reactFlowInstance = useReactFlow();
   const { layoutInProgress } = useLayoutContext();
+
 
   const handleFitAllNodes = useCallback(() => {
     reactFlowInstance.fitView({ 
@@ -15,6 +17,16 @@ const FitAllNodes: React.FC = () => {
       duration: VIEWPORT_CONSTRAINTS.CENTER_ANIMATION_DURATION || 800 
     });
   }, [reactFlowInstance]);
+
+  useEffect(() => {
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.NAVIGATION,
+      "fit-all-nodes",
+      "f",
+      handleFitAllNodes,
+      "Fit All Nodes"
+    );
+  }, [handleFitAllNodes]);
 
   return (
     <ControlButton

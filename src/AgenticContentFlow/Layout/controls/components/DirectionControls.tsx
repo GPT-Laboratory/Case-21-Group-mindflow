@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { LayoutDirection, useLayoutContext } from "@jalez/react-flow-automated-layout";
 import ControlDropdown from "../../../Controls/Components/ControlDropdown";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../../ShortCuts/registry/shortcutsRegistry";
 
 const DirectionControls: React.FC = () => {
   const { direction, setDirection } = useLayoutContext();
@@ -9,6 +10,37 @@ const DirectionControls: React.FC = () => {
   const handleDirectionSelect = (newDirection: LayoutDirection) => {
     setDirection(newDirection);
   };
+
+  useEffect(() => {
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.TOOLS,
+      "direction-down",
+      "ctrl+arrowdown",
+      () => setDirection("DOWN"),
+      "Set Layout Direction: Top to Bottom (Ctrl+↓)"
+    );
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.TOOLS,
+      "direction-up",
+      "ctrl+arrowup",
+      () => setDirection("UP"),
+      "Set Layout Direction: Bottom to Top (Ctrl+↑)"
+    );
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.TOOLS,
+      "direction-left",
+      "ctrl+arrowleft",
+      () => setDirection("LEFT"),
+      "Set Layout Direction: Right to Left (Ctrl+←)"
+    );
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.TOOLS,
+      "direction-right",
+      "ctrl+arrowright",
+      () => setDirection("RIGHT"),
+      "Set Layout Direction: Left to Right (Ctrl+→)"
+    );
+  }, [setDirection]);
 
   const directionItems = [
     {

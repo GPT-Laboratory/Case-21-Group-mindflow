@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../../ShortCuts/registry/shortcutsRegistry";
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import ControlButton from "../../../Controls/Components/ControlButton";
 import {
@@ -9,6 +10,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Move } from "lucide-react";
+
 
 const SpacingControls: React.FC = () => {
   const { 
@@ -23,6 +25,16 @@ const SpacingControls: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [localNodeSpacing, setLocalNodeSpacing] = useState(nodeSpacing);
   const [localLayerSpacing, setLocalLayerSpacing] = useState(layerSpacing);
+
+  useEffect(() => {
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.TOOLS,
+      "open-spacing-controls",
+      "s",
+      () => setOpen((prev) => !prev),
+      "Open Spacing Controls"
+    );
+  }, [setOpen]);
 
   // Update local state when context values change or dropdown opens
   useEffect(() => {
