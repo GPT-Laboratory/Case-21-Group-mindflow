@@ -56,7 +56,7 @@ export class ProviderInfoService {
       openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'],
       gemini: ['gemini-pro', 'gemini-pro-vision'],
       claude: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
-      ollama: ['gemma3:1b', 'llama2', 'codellama', 'mistral', 'neural-chat'],
+      ollama: [],
       custom: ['custom-model']
     };
     return models[provider] || [];
@@ -65,15 +65,15 @@ export class ProviderInfoService {
   /**
    * Get default model for provider
    */
-  getProviderDefaultModel(provider: LLMProvider): string {
+  getProviderDefaultModel(provider: LLMProvider): string | undefined {
     const defaults = {
       openai: 'gpt-4o-mini',
       gemini: 'gemini-pro',
       claude: 'claude-3-sonnet-20240229',
-      ollama: 'gemma3:1b',
+      ollama: undefined,
       custom: 'custom-model'
     };
-    return defaults[provider] || '';
+    return defaults[provider] || undefined;
   }
 
   /**
