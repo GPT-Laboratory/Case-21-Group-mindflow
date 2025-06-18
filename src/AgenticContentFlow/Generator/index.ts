@@ -25,7 +25,6 @@ export { ProcessCodeValidator as ProcessValidator } from './core/validation/Proc
 
 // Template exports
 export { FlowTemplateRegistry, flowTemplateRegistry } from './core/templates/FlowTemplateRegistry';
-export { userManagementTemplate } from './core/templates/flow/UserManagementTemplate';
 
 // Prompt builders - unified in Generator
 export { FlowPromptBuilder } from './core/prompts/FlowPromptBuilder';

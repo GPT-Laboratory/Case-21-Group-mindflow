@@ -21,7 +21,7 @@ export interface LLMProviderConfig {
 
 export interface LLMResponse {
   content: string;
-  confidence: number;
+  confidence?: number;
   provider: LLMProvider;
   model: string;
   usage?: {

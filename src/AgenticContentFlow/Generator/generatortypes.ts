@@ -221,13 +221,14 @@ export interface LLMProviderInfo {
   configured: boolean;
   preferred: boolean;
   models: string[];
-  defaultModel: string;
+  defaultModel?: string;
 }
 
 export interface LLMRequest {
   prompt: string;
   type: GenerationType;
   context: string;
+  provider?: LLMProvider;
   config?: Partial<LLMAPIConfig>;
 }
 

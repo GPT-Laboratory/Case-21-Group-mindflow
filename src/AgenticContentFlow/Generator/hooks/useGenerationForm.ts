@@ -4,7 +4,8 @@ import {
   GenerationResult, 
   LLMProvider 
 } from '../generatortypes';
-import { GenerationOrchestrator } from '../core/LegacyProcessGenerationOrchestrator';
+import { GeneratorOrchestrator } from '../core/GeneratorOrchestrator';
+import { apiKeyManager } from '../providers/management/APIKeyManager';
 
 export interface GenerationFormState {
   description: string;
@@ -36,127 +37,79 @@ export function useGenerationForm(
   type: GenerationType,
   selectedNodes: any[],
   onGenerated: (result: GenerationResult) => void,
-  _defaultRequest?: any // Prefixed with underscore to indicate unused parameter
+  _defaultRequest?: any, // Prefixed with underscore to indicate unused parameter
+  notifyError?: (title: string, message?: string) => void
 ): GenerationFormState {
   const [description, setDescription] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<LLMProvider>('openai');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [promptHistory, setPromptHistory] = useState<string[]>([]);
+  const [promptHistory, setPromptHistory] = useState<string[]>(() => {
+    const savedHistory = localStorage.getItem('agentic_prompt_history');
+    return savedHistory ? JSON.parse(savedHistory) : [];
+  });
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const orchestrator = new GenerationOrchestrator();
+  const orchestrator = new GeneratorOrchestrator(notifyError);
 
-  // Load available providers
-  const availableProviders = orchestrator.getAvailableProviders();
+  // Provider loading logic
+  const [availableProviders, setAvailableProviders] = useState<Array<{
+    provider: LLMProvider;
+    name: string;
+    configured: boolean;
+    preferred: boolean;
+    models?: string[];
+    defaultModel?: string;
+  }>>([]);
+  const [providersLoading, setProvidersLoading] = useState(false);
 
-  // Set preferred provider on mount
+  // Load providers on mount (async)
   useEffect(() => {
-    const preferred = availableProviders.find(p => p.preferred);
+    let mounted = true;
+    setProvidersLoading(true);
+    (async () => {
+      const providers = await apiKeyManager.getProviderInfo();
+      if (mounted) {
+        setAvailableProviders(providers);
+        setProvidersLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // Set preferred provider on availableProviders change
+  useEffect(() => {
+    const preferred = availableProviders.find((p: any) => p.preferred);
     if (preferred) {
       setSelectedProvider(preferred.provider);
     }
-  }, []);
+  }, [availableProviders]);
 
-  const handleGenerate = useCallback(async () => {
-    if (!description.trim() || isGenerating) return;
-
-    setIsGenerating(true);
-    try {
-      if (type === 'process' && selectedNodes.length === 1) {
-        // Process generation for single node
-        const node = selectedNodes[0];
-        const context = {
-          nodeId: node.id,
-          nodeType: node.type,
-          formData: node.data || {},
-          onFieldChange: (field: string, value: any) => {
-            // Handle field changes if needed
-            console.log(`Field ${field} changed to:`, value);
-          },
-          onGenerationComplete: (result: any) => {
-            onGenerated({
-              type: 'process',
-              code: result.code,
-              nodeId: node.id,
-              validation: result.validation || {},
-              metadata: result.metadata || {},
-              generatedAt: new Date().toISOString(),
-              strategy: 'ai',
-              confidence: result.confidence || 0.8
-            } as GenerationResult);
-          },
-          onGenerationError: (error: string) => {
-            console.error('Process generation error:', error);
-          }
-        };
-
-        await orchestrator.generateCode(context);
-      } else {
-        // Flow generation
-        // For now, delegate to existing flow generation system
-        console.log('Flow generation with description:', description);
-        
-        // Create a mock flow result for now
-        const mockResult: GenerationResult = {
-          type: 'flow',
-          nodes: [],
-          edges: [],
-          description,
-          validation: { 
-            isValid: true, 
-            errors: [], 
-            warnings: [],
-            nodeTypeValidation: true,
-            handleValidation: true,
-            structureValidation: true,
-            circularDependencies: false
-          },
-          metadata: { 
-            nodeCount: 0, 
-            edgeCount: 0, 
-            flowType: 'workflow',
-            features: [],
-            autoCorrections: 0,
-            requestId: 'mock',
-            timestamp: Date.now(),
-            version: '1.0.0'
-          },
-          generatedAt: new Date().toISOString(),
-          strategy: 'ai',
-          confidence: 0.8
-        };
-        
-        onGenerated(mockResult);
-      }
-
-      // Add to history
-      setPromptHistory(prev => [description, ...prev.slice(0, 9)]);
-      setDescription('');
-      resetHistory();
-
-    } catch (error) {
-      console.error('Generation failed:', error);
-    } finally {
-      setIsGenerating(false);
+  // Load initial state from localStorage
+  useEffect(() => {
+    const savedProvider = localStorage.getItem('agentic_selected_provider');
+    if (savedProvider) {
+      setSelectedProvider(savedProvider as LLMProvider);
     }
-  }, [description, type, selectedNodes, isGenerating, onGenerated, orchestrator]);
-
-  const handleSuggest = useCallback(() => {
-    const suggestions = [
-      "Build a REST API workflow that fetches user data and displays it",
-      "Create a data filtering system with conditional routing", 
-      "Design a user authentication flow with API validation",
-      "Build a content management system with data storage",
-      "Create an API data pipeline with processing and display",
-      "Generate a form submission handler with validation",
-      "Build a real-time data dashboard with live updates",
-      "Create a file processing workflow with error handling"
-    ];
-    
-    const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
-    setDescription(randomSuggestion);
-    resetHistory();
+    const savedInput = localStorage.getItem('agentic_generation_input');
+    if (savedInput) {
+      setDescription(savedInput);
+    }
   }, []);
+
+  // Save selectedProvider to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('agentic_selected_provider', selectedProvider);
+  }, [selectedProvider]);
+
+  // Save description (input value) to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('agentic_generation_input', description);
+  }, [description]);
+
+  // Save prompt history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('agentic_prompt_history', JSON.stringify(promptHistory));
+  }, [promptHistory]);
 
   const navigateHistory = useCallback((direction: 'up' | 'down', currentValue: string) => {
     if (promptHistory.length === 0) return currentValue;
@@ -174,6 +127,87 @@ export function useGenerationForm(
 
   const resetHistory = useCallback(() => {
     setHistoryIndex(-1);
+  }, []);
+
+  const handleGenerate = useCallback(async () => {
+    if (!description.trim() || isGenerating) return;
+
+    setIsGenerating(true);
+    try {
+      if (type === 'process' && selectedNodes.length === 1) {
+        // Process generation for single node
+        const node = selectedNodes[0];
+        // Build ProcessGenerationRequest
+        const request = {
+          type: 'process' as const,
+          nodeId: node.id,
+          nodeType: node.type,
+          nodeData: node.data || {},
+          provider: selectedProvider,
+          // Add more fields as needed
+        };
+        const result = await orchestrator.generate(request);
+        onGenerated(result);
+      } else {
+        // Flow generation: use orchestrator and retry if result is empty/invalid
+        let attempts = 0;
+        let result: GenerationResult | null = null;
+        let lastError: any = null;
+        while (attempts < 3) {
+          try {
+            const flowRequest = {
+              type: 'flow' as const,
+              description,
+              provider: selectedProvider,
+              // Optionally: nodeTypes, features, etc.
+            };
+            result = await orchestrator.generate(flowRequest);
+            // Check if result is valid (has nodes and edges)
+            if (result && result.type === 'flow' && Array.isArray(result.nodes) && result.nodes.length > 0 && Array.isArray(result.edges)) {
+              break;
+            }
+            lastError = 'Empty or invalid flow result';
+          } catch (err) {
+            lastError = err;
+          }
+          attempts++;
+        }
+        if (result && result.type === 'flow' && Array.isArray(result.nodes) && result.nodes.length > 0) {
+          onGenerated(result);
+        } else {
+          console.error('Flow generation failed after retries:', lastError);
+          // Optionally, show a notification or error to the user
+        }
+      }
+
+      // Add to history and persist
+      const newHistory = [description, ...promptHistory.slice(0, 9)];
+      setPromptHistory(newHistory);
+      setDescription('');
+      resetHistory();
+
+    } catch (error) {
+      console.error('Generation failed:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [description, type, selectedNodes, isGenerating, onGenerated, orchestrator, selectedProvider, resetHistory, promptHistory]);
+
+  const handleSuggest = useCallback(() => {
+    const suggestions = [
+      "Build a REST API workflow that fetches user data and displays it",
+      "Create a data filtering system with conditional routing", 
+      "Design a user authentication flow with API validation",
+      "Build a content management system with data storage",
+      "Create an API data pipeline with processing and display",
+      "Generate a form submission handler with validation",
+      "Build a real-time data dashboard with live updates",
+      "Create a file processing workflow with error handling"
+    ];
+    
+    const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+    setDescription(randomSuggestion);
+    resetHistory();
   }, []);
 
   return {
