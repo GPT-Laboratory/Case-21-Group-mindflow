@@ -19,7 +19,6 @@ import SelectLogic from "./Select/SelectLogic";
 import Minimap from "./Minimap/Minimap";
 import TestControlsRegistration from "./test/TestControlsRegistration";
 import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
-import APISetupControlsRegistration from "./Process/Generation/controls/APISetupControlsRegistration";
 import CopyWorkflowControlsRegistration from "./Flow/controls/CopyWorkflowControlsRegistration";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
@@ -30,6 +29,7 @@ import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React 
 import ReactStateHistory from "./History/ReactStateHistory";
 import { LayoutProvider } from "@jalez/react-flow-automated-layout";
 import ShortcutsManager from "./ShortCuts/ShortcutsManager";
+import { APISetupControlsRegistration } from "./Generator";
 
 // Register edge types before any rendering occurs
 ensureEdgeTypesRegistered();
@@ -105,8 +105,8 @@ export function AgenticContentFlowContent() {
                 {/* Register available controls here */}
                 <TestControlsRegistration />
                 <LayoutControlsRegistration />
-                <APISetupControlsRegistration />
                 <CopyWorkflowControlsRegistration />
+                <APISetupControlsRegistration />
               </Flow>
             </FlowContainer>
           </ShortcutsManager>
