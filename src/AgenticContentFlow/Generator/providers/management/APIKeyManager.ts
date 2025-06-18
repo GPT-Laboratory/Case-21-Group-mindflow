@@ -14,6 +14,7 @@ import { ProviderInfoService } from '../modules/info/ProviderInfoService';
 import { SecurityService } from '../modules/security/SecurityService';
 import { ConfigurationStorage } from '../modules/storage/ConfigurationStorage';
 import { UsageTracker } from '../modules/storage/UsageTracker';
+import { OllamaProvider } from '../implementations/OllamaProvider';
 
 
 /**
@@ -90,11 +91,55 @@ export class APIKeyManager {
   }
 
   /**
-   * Get provider information with status
+   * Get provider information with status (async, fetches dynamic models for Ollama)
    */
-  getProviderInfo(): LLMProviderInfo[] {
+  async getProviderInfo(): Promise<LLMProviderInfo[]> {
     const configured = this.getConfiguredProviders();
-    return this.providerInfo.getProviderInfo(configured);
+    // Get static info for all providers except Ollama
+    const staticProviders = this.providerInfo.getProviderInfo(configured).filter(p => p.provider !== 'ollama');
+    // For Ollama, fetch dynamic models if configured
+    let ollamaInfo: LLMProviderInfo[] = [];
+    if (configured.includes('ollama')) {
+      try {
+        const ollamaConfig = this.getConfig('ollama');
+        const ollamaProvider = new OllamaProvider(ollamaConfig || {});
+        await ollamaProvider.initialize();
+        const info = ollamaProvider.getProviderInfo();
+        ollamaInfo = [{
+          provider: 'ollama',
+          name: info.name,
+          configured: true,
+          preferred: this.providerInfo.getPreferredProvider() === 'ollama',
+          models: info.models,
+          defaultModel: info.defaultModel
+        }];
+      } catch (err) {
+        // Fallback to static info if Ollama is not running
+        ollamaInfo = [
+          {
+            provider: 'ollama',
+            name: 'Ollama (Local)',
+            configured: true,
+            preferred: this.providerInfo.getPreferredProvider() === 'ollama',
+            models: [],
+            defaultModel: undefined
+          }
+        ];
+      }
+    } else {
+      // Not configured
+      ollamaInfo = [
+        {
+          provider: 'ollama',
+          name: 'Ollama (Local)',
+          configured: false,
+          preferred: false,
+          models: ['llama2'],
+          defaultModel: 'llama2'
+        }
+      ];
+    }
+    return [...staticProviders, ...ollamaInfo];
   }
 
   /**
