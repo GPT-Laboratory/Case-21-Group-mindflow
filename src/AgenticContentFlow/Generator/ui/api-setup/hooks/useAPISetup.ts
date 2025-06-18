@@ -7,83 +7,49 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LLMProvider, LLMAPIConfig } from '../../../generatortypes';
 import { apiKeyManager } from '../../../providers/management/APIKeyManager';
+import { LLMProviderFactory } from '../../../providers/factory/LLMProviderFactory';
 
-const PROVIDER_INFO = {
-  openai: {
-    name: 'OpenAI',
-    description: 'GPT-4 and GPT-3.5 models',
-    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-    defaultModel: 'gpt-4o-mini',
-    keyLabel: 'API Key',
-    keyPlaceholder: 'sk-...',
-    helpUrl: 'https://platform.openai.com/api-keys'
-  },
-  gemini: {
-    name: 'Google Gemini',
-    description: 'Google\'s Gemini Pro models',
-    models: ['gemini-pro', 'gemini-pro-vision'],
-    defaultModel: 'gemini-pro',
-    keyLabel: 'API Key',
-    keyPlaceholder: 'AI...',
-    helpUrl: 'https://makersuite.google.com/app/apikey'
-  },
-  claude: {
-    name: 'Anthropic Claude',
-    description: 'Claude 3 family models',
-    models: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
-    defaultModel: 'claude-3-sonnet-20240229',
-    keyLabel: 'API Key',
-    keyPlaceholder: 'sk-ant-...',
-    helpUrl: 'https://console.anthropic.com/account/keys'
-  },
-  ollama: {
-    name: 'Ollama (Local)',
-    description: 'Local LLM models via Ollama',
-    models: ['gemma3:1b', 'llama2', 'codellama', 'llama2:13b', 'llama2:70b', 'codellama:7b', 'codellama:13b', 'mistral', 'neural-chat'],
-    defaultModel: 'gemma3:1b',
-    keyLabel: 'API Key (not required)',
-    keyPlaceholder: 'Leave empty for local use',
-    helpUrl: 'https://ollama.com'
-  },
-  custom: {
-    name: 'Custom Provider',
-    description: 'Self-hosted or other compatible APIs',
-    models: ['custom-model'],
-    defaultModel: 'custom-model',
-    keyLabel: 'API Key (optional)',
-    keyPlaceholder: 'your-api-key',
-    helpUrl: '#'
-  }
-};
-
-export const useAPISetup = () => {
-  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>('openai');
+export const useAPISetup = (initialProvider?: LLMProvider) => {
+  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(initialProvider || 'openai');
   const [config, setConfig] = useState<Partial<LLMAPIConfig>>({});
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{ success: boolean; error?: string } | null>(null);
   const [existingConfigs, setExistingConfigs] = useState<LLMProvider[]>([]);
+  const [providerInfo, setProviderInfo] = useState<Record<LLMProvider, any>>({} as Record<LLMProvider, any>);
 
-  // Load existing configurations when hook initializes
+  // Load existing configurations and provider info when hook initializes
   useEffect(() => {
-    const configured = apiKeyManager.getConfiguredProviders();
-    setExistingConfigs(configured);
-    
-    // Load existing config if available
-    const existingConfig = apiKeyManager.getConfig(selectedProvider);
-    const providerInfo = PROVIDER_INFO[selectedProvider];
-    
-    if (existingConfig) {
-      setConfig(existingConfig);
-    } else {
-      setConfig({
-        provider: selectedProvider,
-        model: providerInfo.defaultModel,
-        temperature: 0.3,
-        maxTokens: 2048
-      });
-    }
-    setValidationResult(null);
+    const loadProviderInfo = async () => {
+      const configured = apiKeyManager.getConfiguredProviders();
+      setExistingConfigs(configured);
+      
+      // Load existing config if available
+      const existingConfig = apiKeyManager.getConfig(selectedProvider);
+      const info = await apiKeyManager.getProviderInfo();
+      const providerInfoRecord = info.reduce((acc, p) => ({ ...acc, [p.provider]: p }), {}) as Record<LLMProvider, any>;
+      setProviderInfo(providerInfoRecord);
+      
+      if (existingConfig) {
+        setConfig(existingConfig);
+      } else {
+        setConfig({
+          provider: selectedProvider,
+          model: providerInfoRecord[selectedProvider]?.defaultModel,
+          temperature: 0.3,
+          maxTokens: 2048
+        });
+      }
+      setValidationResult(null);
+    };
+    loadProviderInfo();
   }, [selectedProvider]);
+
+  // Update selected provider when initialProvider changes
+  useEffect(() => {
+    if (initialProvider) {
+      setSelectedProvider(initialProvider);
+    }
+  }, [initialProvider]);
 
   const handleProviderChange = useCallback((provider: LLMProvider) => {
     setSelectedProvider(provider);
@@ -91,18 +57,23 @@ export const useAPISetup = () => {
     
     // Load existing config or set defaults
     const existingConfig = apiKeyManager.getConfig(provider);
-    const newProviderInfo = PROVIDER_INFO[provider];
-    
-    if (existingConfig) {
-      setConfig(existingConfig);
-    } else {
-      setConfig({
-        provider,
-        model: newProviderInfo.defaultModel,
-        temperature: 0.3,
-        maxTokens: 2048
-      });
-    }
+    const loadProviderInfo = async () => {
+      const info = await apiKeyManager.getProviderInfo();
+      const providerInfoRecord = info.reduce((acc, p) => ({ ...acc, [p.provider]: p }), {}) as Record<LLMProvider, any>;
+      setProviderInfo(providerInfoRecord);
+      
+      if (existingConfig) {
+        setConfig(existingConfig);
+      } else {
+        setConfig({
+          provider,
+          model: providerInfoRecord[provider]?.defaultModel,
+          temperature: 0.3,
+          maxTokens: 2048
+        });
+      }
+    };
+    loadProviderInfo();
   }, []);
 
   const handleConfigChange = useCallback((field: keyof LLMAPIConfig, value: any) => {
@@ -124,16 +95,11 @@ export const useAPISetup = () => {
       // Save the config temporarily for testing
       const testConfig = config as LLMAPIConfig;
       apiKeyManager.saveConfig(selectedProvider, testConfig);
-      
-      // Test the connection by trying to make a simple API call
-      // For now, we'll just validate the configuration format
-      const isValidConfig = await validateConfiguration(selectedProvider, testConfig);
-      
-      if (isValidConfig) {
-        setValidationResult({ success: true });
-      } else {
-        setValidationResult({ success: false, error: 'Invalid configuration' });
-      }
+
+      // Use the provider's real testConnection method
+      const providerInstance = LLMProviderFactory.createProvider(selectedProvider);
+      const result = await providerInstance.testConnection(testConfig);
+      setValidationResult(result);
     } catch (error) {
       setValidationResult({ 
         success: false, 
@@ -170,8 +136,8 @@ export const useAPISetup = () => {
     existingConfigs,
     
     // Provider info
-    providerInfo: PROVIDER_INFO,
-    currentProviderInfo: PROVIDER_INFO[selectedProvider],
+    providerInfo,
+    currentProviderInfo: providerInfo[selectedProvider],
     
     // Actions
     handleProviderChange,
