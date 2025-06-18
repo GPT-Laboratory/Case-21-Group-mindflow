@@ -18,6 +18,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { Redo2, Save, Undo2 } from "lucide-react";
 import { useEffect } from "react";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../ShortCuts/registry/shortcutsRegistry";
 import { CONTROL_TYPES } from "../constants";
 import { registerControl, unregisterControl } from "../Controls";
 import ControlButton from "../Controls/Components/ControlButton";
@@ -69,21 +70,49 @@ function ReactStateHistoryControls() {
   );
 }
 
-// Wrapper component that provides StateHistory context
-export default function ReactStateHistory({
-  children,
-}: {
-  children?: React.ReactNode;
-}) {
-  //Register <ReactStateHistoryControls /> to the controls panel
+// Register undo/redo shortcuts inside the provider
+function HistoryShortcutsRegistration() {
+  const { canUndo, canRedo, undo, redo } = useHistoryStateContext();
   useEffect(() => {
+    // Register the history controls in the controls panel
     registerControl(
-      "history", // Use the tools section
+      "history",
       CONTROL_TYPES.MINDMAP,
       "REACT_STATE_HISTORY_CONTROLS",
       ReactStateHistoryControls,
-      {}, // No props needed
-      10 // Priority (lower numbers appear first)
+      {},
+      10
+    );
+
+    // Register Undo (Ctrl+Z / Cmd+Z)
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.EDITING,
+      "undo",
+      "ctrl+z",
+      () => { if (canUndo) undo(); },
+      "Undo last action"
+    );
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.EDITING,
+      "undo-mac",
+      "meta+z",
+      () => { if (canUndo) undo(); },
+      "Undo last action (Mac)"
+    );
+    // Register Redo (Ctrl+Y / Cmd+Shift+Z)
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.EDITING,
+      "redo",
+      "ctrl+y",
+      () => { if (canRedo) redo(); },
+      "Redo last action"
+    );
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.EDITING,
+      "redo-mac",
+      "meta+shift+z",
+      () => { if (canRedo) redo(); },
+      "Redo last action (Mac)"
     );
 
     // Cleanup when unmounted
@@ -93,14 +122,24 @@ export default function ReactStateHistory({
         CONTROL_TYPES.MINDMAP,
         "REACT_STATE_HISTORY_CONTROLS"
       );
+      // No need to unregister shortcuts, registry handles duplicates
     };
-  }, []); // Empty dependency array ensures this runs only once
+  }, [canUndo, canRedo, undo, redo]);
+  return null;
+}
 
+// Wrapper component that provides StateHistory context
+export default function ReactStateHistory({
+  children,
+}: {
+  children?: React.ReactNode;
+}) {
   return (
     <StateHistoryProvider
       storageKey="react-flow-example"
       defaultPersistent={true}
     >
+      <HistoryShortcutsRegistration />
       {children}
     </StateHistoryProvider>
   );

@@ -53,54 +53,42 @@ export function BaseNodeContainer({
   // Generate gradient border styles based on processing state
   const getProcessingStyles = () => {
     const baseStyle = style || {};
-    
+
     if (processState === 'processing' || processing) {
       return {
         ...baseStyle,
         border: '3px solid transparent',
-        backgroundColor: baseStyle.backgroundColor || 'var(--color-background)',
-
-        background: `
-          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
-          linear-gradient(var(--angle, 0deg), #ae53ba, #2a8af6, #ae53ba) border-box
-        `,
+      
+        borderImage: 'linear-gradient(var(--angle, 0deg), #ae53ba, #2a8af6, #ae53ba) 1',
+        borderRadius: '8px',
         animation: 'processingRotate 2s linear infinite',
       };
     }
-    
+
     if (processState === 'generating') {
       return {
         ...baseStyle,
         border: '3px solid transparent',
-        backgroundColor: baseStyle.backgroundColor || 'var(--color-background)',
-        background: `
-          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
-          linear-gradient(var(--angle, 0deg), #f59e0b, #fbbf24, #f59e0b) border-box
-        `,
+        borderImage: 'linear-gradient(var(--angle, 0deg), #f59e0b, #fbbf24, #f59e0b) 1',
         animation: 'processingRotate 1.5s linear infinite',
       };
     }
     
     if (processState === 'completed') {
       return {
-        ...baseStyle,
         border: '3px solid transparent',
-        background: `
-          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
-          linear-gradient(var(--angle, 0deg), #04a46e, rgb(212, 223, 87),rgb(56, 161, 177)) border-box
-        `,
+        ...baseStyle,
+        borderImage: 'linear-gradient(var(--angle, 0deg), #04a46e, #34d399, #04a46e) 1',
+        
         animation: 'processingRotate 2s linear infinite',
       };
     }
     
     if (processState === 'error') {
       return {
-        ...baseStyle,
         border: '3px solid transparent',
-        background: `
-          linear-gradient(${baseStyle.backgroundColor || 'var(--color-background)'}, ${baseStyle.backgroundColor || 'var(--color-background)'}) padding-box,
-          linear-gradient(45deg, #ef4444, #f87171) border-box
-        `,
+        ...baseStyle,
+        borderImage: 'linear-gradient(var(--angle, 0deg), #ef4444, #f87171, #ef4444) 1',
         animation: 'errorPulse 1s ease-out',
       };
     }
@@ -109,7 +97,6 @@ export function BaseNodeContainer({
     return {
       border: `3px solid ${borderColorAfterProcess}`,
       ...baseStyle,
-      backgroundColor: baseStyle.backgroundColor || 'var(--color-background)',
       // Add glow effect when selected
       ...(selected && {
         boxShadow: `0 0 15px 3px ${borderColorAfterProcess}40, 0 0 25px 6px ${borderColorAfterProcess}20`
