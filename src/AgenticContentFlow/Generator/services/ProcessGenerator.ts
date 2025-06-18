@@ -31,8 +31,8 @@ export class ProcessGenerator {
   private aiService: UnifiedAIService;
   private config: Partial<GeneratorConfig> = {};
 
-  constructor() {
-    this.aiService = new UnifiedAIService();
+  constructor(notifyError?: (title: string, message?: string) => void) {
+    this.aiService = new UnifiedAIService({}, notifyError);
   }
 
   configure(config: Partial<GeneratorConfig>): void {
@@ -65,6 +65,7 @@ export class ProcessGenerator {
       prompt,
       type: 'process',
       context: `Generating code for ${request.nodeType} node`,
+      provider: request.provider,
       config: undefined // Will be set by AI service
     };
 

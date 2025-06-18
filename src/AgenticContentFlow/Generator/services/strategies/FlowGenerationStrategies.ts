@@ -43,6 +43,7 @@ export class AIFlowStrategy {
       prompt,
       type: 'flow',
       context: `Generating flow for: ${request.description}`,
+      provider: request.provider,
       config: undefined
     };
 

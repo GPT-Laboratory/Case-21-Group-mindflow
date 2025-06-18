@@ -32,8 +32,8 @@ export class FlowGenerator {
   // Strategy instances
   private aiStrategy: AIFlowStrategy;
 
-  constructor() {
-    this.aiService = new UnifiedAIService();
+  constructor(notifyError?: (title: string, message?: string) => void) {
+    this.aiService = new UnifiedAIService({}, notifyError);
     
     // Initialize strategies
     this.aiStrategy = new AIFlowStrategy(this.aiService);
