@@ -27,6 +27,12 @@ export class UnifiedAIService {
   private responseCache = new Map<string, LLMResponse>();
   private requestQueue: (() => Promise<void>)[] = [];
   private processing = false;
+  private notifyError?: (title: string, message?: string) => void;
+
+  constructor(config: Partial<GeneratorConfig>, notifyError?: (title: string, message?: string) => void) {
+    this.config = config;
+    this.notifyError = notifyError;
+  }
 
   /**
    * Configure the AI service
@@ -61,55 +67,30 @@ export class UnifiedAIService {
   }
 
   /**
-   * Process individual request with fallback logic
+   * Process individual request with NO fallback logic
    */
   private async processRequest(request: LLMRequest): Promise<LLMResponse> {
-    const provider = this.config.defaultProvider || 'openai';
-    
+    // Use the provider from the request instead of config
+    const provider = request.provider || this.config.defaultProvider || 'openai';
     try {
       if (!provider) {
         throw new Error('No LLM provider configured');
       }
-
       const providerInstance = LLMProviderFactory.createProvider(provider);
       const response = await providerInstance.generateContent({
         prompt: request.prompt,
         context: request.context,
-        type: request.type
+        type: request.type,
+        provider // Pass the provider to the provider instance
       });
-
       return response;
     } catch (error) {
-      console.warn(`Primary provider ${provider} failed:`, error);
-      return await this.attemptFallback(request, provider);
-    }
-  }
-
-  /**
-   * Attempt fallback to other providers
-   */
-  private async attemptFallback(request: LLMRequest, failedProvider: LLMProvider): Promise<LLMResponse> {
-    const fallbackProviders: LLMProvider[] = (['openai', 'gemini', 'claude', 'ollama'] as LLMProvider[])
-      .filter(p => p !== failedProvider);
-
-    for (const provider of fallbackProviders) {
-      try {
-        const providerInstance = LLMProviderFactory.createProvider(provider);
-        const response = await providerInstance.generateContent({
-          prompt: request.prompt,
-          context: request.context,
-          type: request.type
-        });
-
-        console.log(`✅ Fallback to ${provider} succeeded`);
-        return response;
-      } catch (error) {
-        console.warn(`Fallback provider ${provider} failed:`, error);
-        continue;
+      console.error(`Provider ${provider} failed:`, error);
+      if (this.notifyError) {
+        this.notifyError('Generation failed', error instanceof Error ? error.message : String(error));
       }
+      throw error;
     }
-
-    throw new Error('All LLM providers failed');
   }
 
   /**

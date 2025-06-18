@@ -1,4 +1,4 @@
-import { GenerationRequest } from '../types';
+import { GenerationRequest } from '../../../generatortypes';
 import { BaseProcessTemplate } from './base';
 
 /**

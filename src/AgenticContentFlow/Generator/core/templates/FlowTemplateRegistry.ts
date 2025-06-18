@@ -1,5 +1,4 @@
 import { FlowTemplate, TemplateRegistry, Template } from '../../generatortypes';
-import { userManagementTemplate } from './flow/UserManagementTemplate';
 
 /**
  * Unified Flow Template Registry
@@ -21,7 +20,6 @@ export class FlowTemplateRegistry implements TemplateRegistry {
    * Register default templates
    */
   private registerDefaults(): void {
-    this.register(userManagementTemplate);
     // Additional templates will be registered here as they're created
   }
 

@@ -33,11 +33,11 @@ export class GeneratorOrchestrator {
   private flowGenerator: FlowGenerator;
   private config: Partial<GeneratorConfig> = {};
 
-  constructor() {
+  constructor(notifyError?: (title: string, message?: string) => void) {
     this.promptBuilder = new UnifiedPromptBuilder();
     this.validationService = new ValidationService();
-    this.processGenerator = new ProcessGenerator();
-    this.flowGenerator = new FlowGenerator();
+    this.processGenerator = new ProcessGenerator(notifyError);
+    this.flowGenerator = new FlowGenerator(notifyError);
   }
 
   /**
@@ -71,24 +71,12 @@ export class GeneratorOrchestrator {
    */
   async generateFlow(request: FlowGenerationRequest): Promise<GenerationResult> {
     const prompt = await this.promptBuilder.buildFlowPrompt(request);
-    const strategy = (this.config.generationStrategy || request.strategy) || 'hybrid';
-
-    // Only support 'ai' and 'hybrid' strategies for flows
-    if (strategy === 'template') {
-      console.warn('Template strategy not supported for flows, using hybrid instead');
-      return await this.flowGenerator.generate(request, {
-        strategy: 'hybrid',
-        prompt
-      });
-    }
-
+    // Always use 'ai' for flow generation
     return await this.flowGenerator.generate(request, {
-      strategy,
+      strategy: 'ai',
       prompt
     });
   }
-
-
 
   /**
    * Generate content based on request type
