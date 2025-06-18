@@ -27,7 +27,7 @@ export const GenerationInput: React.FC<GenerationInputProps> = ({
   onFocus,
   onBlur
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey && !disabled) {
@@ -39,9 +39,8 @@ export const GenerationInput: React.FC<GenerationInputProps> = ({
   return (
     <div className="flex items-center gap-2 flex-1 ml-2">
       {/* Main Input */}
-      <input
+      <textarea
         ref={inputRef}
-        type="text"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -50,7 +49,9 @@ export const GenerationInput: React.FC<GenerationInputProps> = ({
         onFocus={onFocus}
         onBlur={onBlur}
         disabled={disabled}
-        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+        rows={1}
+        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none"
+        style={{ minHeight: '36px', maxHeight: '120px' }}
       />
       
       {/* Generate Button */}

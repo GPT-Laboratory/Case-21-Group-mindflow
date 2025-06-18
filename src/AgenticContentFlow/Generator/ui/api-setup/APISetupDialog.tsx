@@ -13,24 +13,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Key } from 'lucide-react';
-
-// Import the new smaller components
-
 import { useAPISetup } from './hooks/useAPISetup';
 import { ProviderSelector } from './APIProviderSelector';
 import { APIConfigForm } from './APIConfigForm';
 import { ConnectionTest } from './APIConnectionTest';
+import { LLMProvider } from '../../generatortypes';
 
 interface APISetupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
+  initialProvider?: LLMProvider;
 }
 
 export const APISetupDialog: React.FC<APISetupDialogProps> = ({
   open,
   onOpenChange,
-  onComplete
+  onComplete,
+  initialProvider
 }) => {
   const {
     selectedProvider,
@@ -46,7 +46,7 @@ export const APISetupDialog: React.FC<APISetupDialogProps> = ({
     handleSave,
     hasApiKey,
     canSave
-  } = useAPISetup();
+  } = useAPISetup(initialProvider);
 
   const handleSaveAndClose = () => {
     const success = handleSave();

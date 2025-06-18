@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { GenerationResult, GenerationType } from "../../generatortypes";
 import GenerationPanel from "./GenerationPanel";
 
@@ -13,30 +12,22 @@ export interface GenerationControlProps {
  * Unified control for all generation types - replaces the separate Flow generation control
  * and can handle process, flow, and hybrid generation.
  */
-const GenerationControl: React.FC<GenerationControlProps> = ({ 
-  type = 'flow', 
-  onGenerated 
+const GenerationControl: React.FC<GenerationControlProps> = ({
+  type = 'flow',
+  onGenerated
 }) => {
-  const [showPanel, setShowPanel] = useState(true);
-
   const handleGenerated = (result: GenerationResult) => {
     onGenerated(result);
-    setShowPanel(false); // Close panel after generation
   };
 
-
   return (
-    <>
-     
-      {showPanel && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-2xl">
-            <GenerationPanel 
-              type={type}
-              onGenerated={handleGenerated}
-            />
-        </div>
-      )}
-    </>
+
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-2xl">
+      <GenerationPanel
+        type={type}
+        onGenerated={handleGenerated}
+      />
+    </div>
   );
 };
 
