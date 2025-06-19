@@ -1,6 +1,6 @@
 import { Node, useReactFlow } from "@xyflow/react";
 import { useCallback } from "react";
-import { useNodeContext } from "../../store/useNodeContext";
+import { useNodeContext } from "../../context/useNodeContext";
 import { useEdgeContext } from "../../../Edge/store/useEdgeContext";
 import { getCumulativeParentOffset } from "../utils/positionUtils";
 import { createConnectionNode, handleContainerization } from "../utils/nodeUtils";

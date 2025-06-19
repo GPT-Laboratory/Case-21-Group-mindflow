@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Node } from '@xyflow/react';
-import { getOrganizedNodeParents } from '@/AgenticContentFlow/Node/store/utils/getOrganizedNodeParents';
+import { getOrganizedNodeParents } from '@/AgenticContentFlow/Node/context/utils/getOrganizedNodeParents';
 
 // Helper to create a node
 const createNode = (

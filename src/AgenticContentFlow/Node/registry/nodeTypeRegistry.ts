@@ -97,7 +97,7 @@ export function registerNodeType(
   defaultDimensions: {
     width: number;
     height: number;
-  } = { width: 300, height: 200 },
+  } = { width: 200, height: 200 },
   forceImmediate: boolean = false
 ) {
   nodeTypeRegistry.set(type, { Component, createTemplate, isParent, defaultDimensions });

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Node, useReactFlow } from "@xyflow/react";
 import { NodeData } from "../../types";
-import { useNodeContext } from "../store/useNodeContext";
+import { useNodeContext } from "../context/useNodeContext";
 import { useSelect } from "../../Select/contexts/SelectContext";
 
 interface UseNodeSelectionProps {

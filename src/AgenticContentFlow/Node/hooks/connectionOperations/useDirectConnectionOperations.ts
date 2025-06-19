@@ -2,7 +2,7 @@ import { Connection } from "@xyflow/react";
 import { useCallback } from "react";
 import { withErrorHandler } from "../../../utils/withErrorHandler";
 import { useEdgeContext } from "../../../Edge/store/useEdgeContext";
-import { useNodeContext } from "../../store/useNodeContext";
+import { useNodeContext } from "../../context/useNodeContext";
 import { createConnectionWithTargetHandle, validateConnection, createEdge } from "../../../Edge/hooks/utils/edgeUtils";
 import { useTransaction } from "@jalez/react-state-history";
 import { handleContainerization } from "../utils/nodeUtils";

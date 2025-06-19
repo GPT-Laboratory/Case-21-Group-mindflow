@@ -32,7 +32,7 @@ vi.mock('../../../utils/withErrorHandler', () => ({
 // Import the mocked modules for type checking
 import { useReactFlow } from '@xyflow/react';
 import { createNodeFromTemplate } from '../../registry/nodeTypeRegistry';
-import { useNodeContext } from '../../store/useNodeContext';
+import { useNodeContext } from '../../context/useNodeContext';
 import { useEdgeContext } from '../../../Edge/store/useEdgeContext';
 import { useTransaction } from '@jalez/react-state-history';
 

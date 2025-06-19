@@ -3,7 +3,7 @@ import { useReactFlow } from "@xyflow/react";
 import { PlusCircle } from "lucide-react";
 import ControlDropdown from "../../Controls/Components/ControlDropdown";
 import { createNodeFromTemplate } from "../registry/nodeTypeRegistry";
-import { useNodeContext } from "../store/useNodeContext";
+import { useNodeContext } from "../context/useNodeContext";
 import { useSelect } from "../../Select/contexts/SelectContext";
 import { useEdgeContext } from "../../Edge/store/useEdgeContext";
 import { useTransaction } from "@jalez/react-state-history";

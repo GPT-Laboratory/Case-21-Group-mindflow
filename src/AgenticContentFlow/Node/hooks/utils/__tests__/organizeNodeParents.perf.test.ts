@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Node } from '@xyflow/react';
 import { NodeData } from '../../../../types';
-import { getOrganizedNodeParents } from '../../../store/utils/getOrganizedNodeParents';
+import { getOrganizedNodeParents } from '../../../context/utils/getOrganizedNodeParents';
 
 /**
  * Original implementation of getOrganizedNodeParents without optimization

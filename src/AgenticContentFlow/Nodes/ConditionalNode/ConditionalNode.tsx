@@ -1,8 +1,8 @@
 import React from 'react';
 import { NodeProps, useReactFlow } from '@xyflow/react';
 import { GitFork } from 'lucide-react';
-import { colorByDepth } from '../../Node/factories/shared/utils/colorByDepth';
-import ConnectionHandles from '../../Node/factories/shared/components/ConnectionHandles';
+import { colorByDepth } from '../../Node/factory//utils/colorByDepth';
+import ConnectionHandles from '../../Node/factory//components/NodeHandles';
 
 /**
  * ConditionalNode Component

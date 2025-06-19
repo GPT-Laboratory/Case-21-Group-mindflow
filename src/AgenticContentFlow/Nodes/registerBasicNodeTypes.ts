@@ -3,9 +3,15 @@
 import { registerControl } from "../Controls/registry/controlsRegistry";
 import NodeCreationControl from "../Node/controls/NodeCreationControl";
 
-// Import factory systems
-import { containerNodeRegistration } from "../Node/factories/container/ContainerNodeRegistration";
-import { factoryNodeRegistration } from "../Node/factories/cell/FactoryNodeRegistration";
+// Import unified factory system
+import { 
+  initializeUnifiedNodeTypeStore, 
+  getAvailableNodeTypes,
+  isUnifiedNodeTypeStoreInitialized 
+} from "../Node/store/unifiedNodeTypeStoreInitializer";
+
+// Import unified node registration
+import { initializeUnifiedNodes } from "../Node/factory//UnifiedNodeRegistration";
 
 // Track initialization state
 let registered = false;
@@ -17,46 +23,40 @@ export async function ensureNodeTypesRegistered(): Promise<void> {
   if (registered) return;
   registered = true;
 
-  // Initialize cell factory system for process nodes (RestNode, LogicalNode, ContentNode, ConditionalNode)
+  // Step 1: Initialize the unified node type store with built-in templates
   try {
-    await factoryNodeRegistration.initializeFactoryNodes();
-    console.log("✅ Cell factory nodes (RestNode, LogicalNode, ContentNode, ConditionalNode) registered successfully");
+    initializeUnifiedNodeTypeStore();
+    console.log("✅ Unified node type store initialized successfully");
   } catch (error) {
-    console.error("❌ Failed to register cell factory nodes:", error);
-    // Factory system is the primary method now - if it fails, we have a real issue
-    throw new Error(`Cell factory system failed to initialize: ${error}`);
+    console.error("❌ Failed to initialize unified node type store:", error);
+    throw new Error(`Unified node type store initialization failed: ${error}`);
   }
 
-  // Initialize container factory system for container nodes (DataNode, PageNode, StatisticsNode, InvisibleNode)
-  try {
-    await containerNodeRegistration.initializeContainerNodes();
-    console.log("✅ Container factory nodes (DataNode, PageNode, StatisticsNode, InvisibleNode) registered successfully");
-  } catch (error) {
-    console.error("❌ Failed to register container factory nodes:", error);
-    // Factory system is the primary method now - if it fails, we have a real issue
-    throw new Error(`Container factory system failed to initialize: ${error}`);
+  // Step 2: Verify store initialization was successful
+  if (!isUnifiedNodeTypeStoreInitialized()) {
+    throw new Error("Unified node type store failed to initialize properly");
   }
 
-  // Register the node creation control with all available node types
+  // Step 3: Initialize and register unified nodes with React Flow
+  try {
+    await initializeUnifiedNodes();
+    console.log("✅ Unified nodes registered with React Flow successfully");
+  } catch (error) {
+    console.error("❌ Failed to register unified nodes with React Flow:", error);
+    throw new Error(`Unified node registration failed: ${error}`);
+  }
+
+  // Step 4: Register the node creation control with all available node types from the store
+  const availableNodeTypes = getAvailableNodeTypes();
+  console.log(`✅ Registered ${availableNodeTypes.length} node types:`, availableNodeTypes);
+  
   registerControl(
     "viewSettings",
     "mindmap",
     "node-creation",
     NodeCreationControl,
     { 
-      availableNodeTypes: [
-        "cellnode", 
-        "coursenode", 
-        "modulenode", 
-        "datanode", 
-        "pagenode", 
-        "contentnode", 
-        "conditionalnode",
-        "invisiblenode",
-        "statisticsnode",
-        "restnode",
-        "logicalnode"
-      ] 
+      availableNodeTypes
     }
   );
 }

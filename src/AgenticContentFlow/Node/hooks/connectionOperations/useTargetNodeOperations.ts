@@ -3,7 +3,7 @@ import { NodeData } from "../../../types";
 import { useCallback } from "react";
 import { withErrorHandler } from "../../../utils/withErrorHandler";
 import { createNodeFromTemplate } from "../../registry/nodeTypeRegistry";
-import { useNodeContext } from "../../store/useNodeContext";
+import { useNodeContext } from "../../context/useNodeContext";
 import { useEdgeContext } from "../../../Edge/store/useEdgeContext";
 import { useTransaction } from "@jalez/react-state-history";
 import { calculateTargetNodePosition } from "../utils/positionUtils";
