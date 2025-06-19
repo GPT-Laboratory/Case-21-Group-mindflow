@@ -71,6 +71,11 @@ export class GeneratorOrchestrator {
    */
   async generateFlow(request: FlowGenerationRequest): Promise<GenerationResult> {
     const prompt = await this.promptBuilder.buildFlowPrompt(request);
+    
+    // Debug: Log the prompt being sent
+    console.log('📝 Flow generation prompt:', prompt);
+    console.log('📝 Prompt length:', prompt.length);
+    
     // Always use 'ai' for flow generation
     return await this.flowGenerator.generate(request, {
       strategy: 'ai',

@@ -88,7 +88,7 @@ export abstract class BaseProcessTemplate implements ProcessTemplate {
   private getNodeEmoji(nodeType: string): string {
     switch (nodeType) {
       case 'restnode': return '🌐';
-      case 'logicalnode': return '🧠';
+      case 'logicnode': return '🧠';
       case 'conditionalnode': return '🔀';
       case 'contentnode': return '👁️';
       default: return '🔄';

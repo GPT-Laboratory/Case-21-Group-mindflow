@@ -34,44 +34,46 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      {/* API Key */}
-      <div className="space-y-2">
-        <Label htmlFor="apiKey" className="flex items-center gap-2">
-          {providerInfo.keyLabel}
-          {provider !== 'custom' && provider !== 'ollama' && <span className="text-red-500">*</span>}
-        </Label>
-        <div className="flex gap-2">
-          <Input
-            id="apiKey"
-            type="password"
-            placeholder={providerInfo.keyPlaceholder}
-            value={config.apiKey || ''}
-            onChange={(e) => onConfigChange('apiKey', e.target.value)}
-            className="flex-1"
-          />
-          {providerInfo.helpUrl !== '#' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(providerInfo.helpUrl, '_blank')}
-            >
-              <Globe className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Custom Provider URL */}
-      {provider === 'custom' && (
+      {/* API Key - Hide for Ollama */}
+      {provider !== 'ollama' && (
         <div className="space-y-2">
-          <Label htmlFor="baseUrl">
-            Base URL <span className="text-red-500">*</span>
+          <Label htmlFor="apiKey" className="flex items-center gap-2">
+            {providerInfo.keyLabel}
+            {provider !== 'custom' && <span className="text-red-500">*</span>}
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="apiKey"
+              type="password"
+              placeholder={providerInfo.keyPlaceholder}
+              value={config.apiKey || ''}
+              onChange={(e) => onConfigChange('apiKey', e.target.value)}
+              className="flex-1"
+            />
+            {providerInfo.helpUrl !== '#' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(providerInfo.helpUrl, '_blank')}
+              >
+                <Globe className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Base URL - Show for custom and Ollama */}
+      {(provider === 'custom' || provider === 'ollama') && (
+        <div className="space-y-2">
+          <Label htmlFor="baseURL">
+            Base URL {provider === 'custom' && <span className="text-red-500">*</span>}
           </Label>
           <Input
-            id="baseUrl"
-            placeholder="https://your-api.example.com/v1"
-            value={config.baseUrl || ''}
-            onChange={(e) => onConfigChange('baseUrl', e.target.value)}
+            id="baseURL"
+            placeholder={provider === 'ollama' ? 'http://localhost:11434' : 'https://your-api.example.com/v1'}
+            value={config.baseURL || ''}
+            onChange={(e) => onConfigChange('baseURL', e.target.value)}
           />
         </div>
       )}

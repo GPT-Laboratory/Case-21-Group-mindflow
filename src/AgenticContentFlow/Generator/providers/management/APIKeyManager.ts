@@ -45,6 +45,14 @@ export class APIKeyManager {
    */
   saveConfig(provider: LLMProvider, config: LLMAPIConfig): void {
     try {
+      // Ensure provider is set in the config
+      config.provider = provider;
+      
+      // Add default baseURL if not provided
+      if (!config.baseURL) {
+        config.baseURL = this.getDefaultBaseURL(provider);
+      }
+      
       // Validate configuration
       const validation = this.security.validateConfig(config);
       if (!validation.valid) {
@@ -111,7 +119,8 @@ export class APIKeyManager {
           configured: true,
           preferred: this.providerInfo.getPreferredProvider() === 'ollama',
           models: info.models,
-          defaultModel: info.defaultModel
+          defaultModel: info.defaultModel,
+          baseURL: info.baseURL
         }];
       } catch (err) {
         // Fallback to static info if Ollama is not running
@@ -122,7 +131,8 @@ export class APIKeyManager {
             configured: true,
             preferred: this.providerInfo.getPreferredProvider() === 'ollama',
             models: [],
-            defaultModel: undefined
+            defaultModel: undefined,
+            baseURL: 'http://localhost:11434'
           }
         ];
       }
@@ -134,8 +144,9 @@ export class APIKeyManager {
           name: 'Ollama (Local)',
           configured: false,
           preferred: false,
-          models: ['llama2'],
-          defaultModel: 'llama2'
+          models: [],
+          defaultModel: undefined,
+          baseURL: 'http://localhost:11434'
         }
       ];
     }
@@ -246,6 +257,22 @@ export class APIKeyManager {
 
   private loadConfigurations(): void {
     this.configs = this.storage.loadConfigurations();
+  }
+
+  // Add default API URLs for providers
+  private getDefaultBaseURL(provider: LLMProvider): string {
+    switch (provider) {
+      case 'openai':
+        return 'https://api.openai.com/v1';
+      case 'gemini':
+        return 'https://generativelanguage.googleapis.com/v1';
+      case 'claude':
+        return 'https://api.anthropic.com/v1';
+      case 'ollama':
+        return 'http://localhost:11434';
+      default:
+        return '';
+    }
   }
 }
 

@@ -81,7 +81,8 @@ export class UnifiedAIService {
         prompt: request.prompt,
         context: request.context,
         type: request.type,
-        provider // Pass the provider to the provider instance
+        provider, // Pass the provider to the provider instance
+        config: request.config // Pass the config that contains the model
       });
       return response;
     } catch (error) {

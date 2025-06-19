@@ -44,13 +44,34 @@ export class AIFlowStrategy {
       type: 'flow',
       context: `Generating flow for: ${request.description}`,
       provider: request.provider,
-      config: undefined
+      config: {
+        model: request.model,
+        temperature: 0.7,
+        maxTokens: 4000
+      }
     };
 
     const response = await this.aiService.generateContent(llmRequest);
 
+    // Debug: Log the AI response
+    console.log('🤖 AI Response:', response.content);
+    console.log('📝 Response length:', response.content.length);
+
     try {
-      const flowData = JSON.parse(response.content);
+      // Extract JSON from markdown code blocks if present
+      let jsonContent = response.content.trim();
+      
+      // Remove markdown code block wrappers
+      if (jsonContent.startsWith('```json')) {
+        jsonContent = jsonContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (jsonContent.startsWith('```')) {
+        jsonContent = jsonContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      console.log('🧹 Cleaned JSON content:', jsonContent);
+      
+      const flowData = JSON.parse(jsonContent);
+      console.log('✅ Parsed flow data:', flowData);
       
       const metadata: FlowMetadata = {
         requestId: generateRequestId(),
@@ -84,6 +105,8 @@ export class AIFlowStrategy {
         metadata
       };
     } catch (error) {
+      console.error('❌ JSON Parse Error:', error);
+      console.error('🔍 Raw content that failed to parse:', response.content);
       throw new Error('Failed to parse AI-generated flow structure');
     }
   }

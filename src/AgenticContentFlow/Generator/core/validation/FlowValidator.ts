@@ -18,28 +18,29 @@ import {
 // Enhanced constants for validation and correction
 export const VALID_NODE_TYPES = [
   'restnode',
+  'logicnode',
   'contentnode', 
-  'logicalnode',
   'conditionalnode',
   'datanode',
   'pagenode',
   'statisticsnode',
   'invisiblenode',
   'coursenode',
-  'modulenode'
+  'modulenode',
+  'cellnode'
 ] as const;
 
 export const VALID_HANDLE_POSITIONS = ['top', 'bottom', 'left', 'right'] as const;
 
 // Auto-correction mappings from the original FlowValidationService
 export const NODE_TYPE_CORRECTIONS: Record<string, string> = {
-  'filternode': 'logicalnode',
+  'filternode': 'logicnode',
   'apinode': 'restnode',
   'displaynode': 'contentnode',
   'routernode': 'conditionalnode',
   'storagenode': 'datanode',
   'viewnode': 'contentnode',
-  'processnode': 'logicalnode',
+  'processnode': 'logicnode',
   'servicenode': 'restnode'
 };
 
@@ -52,6 +53,12 @@ export const HANDLE_ID_CORRECTIONS: Record<string, string> = {
   'output': 'right',
   'in': 'left',
   'out': 'right'
+};
+
+// Node type aliases for backward compatibility
+const nodeTypeAliases: Record<string, string> = {
+  'filternode': 'logicnode',
+  'processnode': 'logicnode',
 };
 
 /**

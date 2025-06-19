@@ -5,4 +5,3 @@
  */
 
 export * from './FlowTemplateRegistry';
-export * from './flow/UserManagementExampleFlow';

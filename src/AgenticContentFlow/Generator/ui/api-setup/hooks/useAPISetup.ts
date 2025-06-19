@@ -92,15 +92,39 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
 
     setIsValidating(true);
     try {
-      // Save the config temporarily for testing
-      const testConfig = config as LLMAPIConfig;
-      apiKeyManager.saveConfig(selectedProvider, testConfig);
+      console.log('Testing connection for provider:', selectedProvider);
+      console.log('Initial config:', config);
 
-      // Use the provider's real testConnection method
+      // For Ollama, ensure baseURL is set
+      if (selectedProvider === 'ollama') {
+        config.baseURL = config.baseURL || 'http://localhost:11434';
+      }
+
+      // Create test configuration
+      const testConfig = {
+        ...config,
+        provider: selectedProvider,
+        apiKey: selectedProvider === 'ollama' ? '' : config.apiKey
+      } as LLMAPIConfig;
+
+      console.log('Test config:', testConfig);
+
+      // Create provider instance without config (will be passed to testConnection)
       const providerInstance = LLMProviderFactory.createProvider(selectedProvider);
+      console.log('Provider instance created:', providerInstance);
+      
       const result = await providerInstance.testConnection(testConfig);
+      console.log('Test result:', result);
+      
       setValidationResult(result);
+
+      // Only save the config if the test was successful
+      if (result.success) {
+        console.log('Saving successful configuration');
+        apiKeyManager.saveConfig(selectedProvider, testConfig);
+      }
     } catch (error) {
+      console.error('Test connection error:', error);
       setValidationResult({ 
         success: false, 
         error: error instanceof Error ? error.message : 'Test failed' 
@@ -116,8 +140,19 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
       return false;
     }
 
+    // For Ollama, ensure baseURL is set
+    if (selectedProvider === 'ollama') {
+      config.baseURL = config.baseURL || 'http://localhost:11434';
+    }
+
     // Save configuration
-    apiKeyManager.saveConfig(selectedProvider, config as LLMAPIConfig);
+    const saveConfig = {
+      ...config,
+      provider: selectedProvider,
+      apiKey: selectedProvider === 'ollama' ? '' : config.apiKey
+    } as LLMAPIConfig;
+
+    apiKeyManager.saveConfig(selectedProvider, saveConfig);
     
     // Set as preferred if it's the first one
     if (existingConfigs.length === 0) {
@@ -151,29 +186,3 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
   };
 };
 
-/**
- * Validate API configuration format
- */
-async function validateConfiguration(provider: LLMProvider, config: LLMAPIConfig): Promise<boolean> {
-  try {
-    // Basic validation checks
-    switch (provider) {
-      case 'openai':
-        return config.apiKey?.startsWith('sk-') || false;
-      case 'gemini':
-        return config.apiKey?.startsWith('AI') || false;
-      case 'claude':
-        return config.apiKey?.startsWith('sk-ant-') || false;
-      case 'ollama':
-        // For Ollama, just check if baseUrl is valid or use default
-        return true;
-      case 'custom':
-        return !!config.baseUrl;
-      default:
-        return false;
-    }
-  } catch (error) {
-    console.error('Configuration validation failed:', error);
-    return false;
-  }
-}

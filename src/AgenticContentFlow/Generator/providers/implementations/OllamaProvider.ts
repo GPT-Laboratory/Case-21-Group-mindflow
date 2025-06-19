@@ -16,6 +16,8 @@ import {
   GenerationType 
 } from '../../generatortypes';
 import { LLMProviderInterface, LLMProvider, LLMProviderConfig } from '../types';
+import { OllamaAPI } from './api';
+import { OllamaConfig, OllamaModel } from './types';
 
 
 export class OllamaProvider implements LLMProviderInterface {
@@ -44,7 +46,7 @@ export class OllamaProvider implements LLMProviderInterface {
     }
   }
 
-  async generateContent(request: LLMRequest): Promise<LLMResponse> {
+  async generateContent(request: any): Promise<LLMResponse> {
     const config = request.config || {};
     const model = config.model;
     if (!model) {
@@ -78,8 +80,13 @@ export class OllamaProvider implements LLMProviderInterface {
     }
   }
 
-  async testConnection(): Promise<{ success: boolean; error?: string }> {
+  async testConnection(config?: LLMProviderConfig): Promise<{ success: boolean; error?: string }> {
     try {
+      // Update API with new config if provided
+      if (config) {
+        this.api = new OllamaAPI(config as OllamaConfig);
+      }
+
       // First check if Ollama is running
       const isRunning = await this.api.isRunning();
       if (!isRunning) {
@@ -115,13 +122,13 @@ export class OllamaProvider implements LLMProviderInterface {
       name: 'Ollama',
       description: 'Local models for content generation',
       models: this.availableModels,
-      defaultModel: this.availableModels.length > 0 ? this.availableModels[0] : undefined,
+      defaultModel: this.availableModels.length > 0 ? this.availableModels[0] : '',
       requiresAPIKey: false,
       baseURL: this.api.getBaseURL()
     };
   }
 
-  getUsageEstimate(request: LLMRequest): { estimatedTokens: number; estimatedCost: number } {
+  getUsageEstimate(request: any): { estimatedTokens: number; estimatedCost: number } {
     // Rough estimate: 1 token ≈ 4 characters
     const estimatedTokens = Math.ceil(request.prompt.length / 4);
     return { estimatedTokens, estimatedCost: 0 }; // Local models are free

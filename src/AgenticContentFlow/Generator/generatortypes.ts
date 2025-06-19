@@ -36,6 +36,7 @@ export interface BaseGenerationRequest {
   type: GenerationType;
   strategy?: GenerationStrategy;
   provider?: LLMProvider;
+  model?: string;
   fallbackToTemplates?: boolean;
 }
 
@@ -207,7 +208,7 @@ export interface FlowMetadata extends GenerationMetadata {
 export interface LLMAPIConfig {
   provider: LLMProvider;
   apiKey: string;
-  baseUrl?: string;
+  baseURL?: string;
   model?: string;
   maxTokens?: number;
   temperature?: number;
@@ -222,6 +223,7 @@ export interface LLMProviderInfo {
   preferred: boolean;
   models: string[];
   defaultModel?: string;
+  baseURL?: string;
 }
 
 export interface LLMRequest {
@@ -398,28 +400,28 @@ export type GenerationState = 'idle' | 'generating' | 'completed' | 'error';
 // Provider configuration and defaults
 export const PROVIDER_DEFAULTS: Record<LLMProvider, Partial<LLMProviderDefaults>> = {
   openai: {
-    baseUrl: 'https://api.openai.com/v1',
+    baseURL: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini',
     maxTokens: 4000,
     temperature: 0.3,
     timeout: 30000
   },
   gemini: {
-    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta',
     model: 'gemini-pro',
     maxTokens: 2048,
     temperature: 0.3,
     timeout: 30000
   },
   claude: {
-    baseUrl: 'https://api.anthropic.com/v1',
+    baseURL: 'https://api.anthropic.com/v1',
     model: 'claude-3-sonnet-20240229',
     maxTokens: 4000,
     temperature: 0.3,
     timeout: 30000
   },
   ollama: {
-    baseUrl: 'http://localhost:11434',
+    baseURL: 'http://localhost:11434',
     model: 'llama2',
     maxTokens: 2048,
     temperature: 0.3,
@@ -433,7 +435,7 @@ export const PROVIDER_DEFAULTS: Record<LLMProvider, Partial<LLMProviderDefaults>
 };
 
 export interface LLMProviderDefaults {
-  baseUrl: string;
+  baseURL: string;
   model: string;
   maxTokens: number;
   temperature: number;

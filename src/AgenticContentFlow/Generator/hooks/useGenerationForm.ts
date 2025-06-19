@@ -134,6 +134,9 @@ export function useGenerationForm(
 
     setIsGenerating(true);
     try {
+      // Get selected model from localStorage for Ollama
+      const selectedModel = localStorage.getItem('agentic_selected_model') || undefined;
+      
       if (type === 'process' && selectedNodes.length === 1) {
         // Process generation for single node
         const node = selectedNodes[0];
@@ -144,6 +147,7 @@ export function useGenerationForm(
           nodeType: node.type,
           nodeData: node.data || {},
           provider: selectedProvider,
+          model: selectedModel, // Include model
           // Add more fields as needed
         };
         const result = await orchestrator.generate(request);
@@ -159,6 +163,7 @@ export function useGenerationForm(
               type: 'flow' as const,
               description,
               provider: selectedProvider,
+              model: selectedModel, // Include model
               // Optionally: nodeTypes, features, etc.
             };
             result = await orchestrator.generate(flowRequest);

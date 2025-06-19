@@ -66,7 +66,11 @@ export class ProcessGenerator {
       type: 'process',
       context: `Generating code for ${request.nodeType} node`,
       provider: request.provider,
-      config: undefined // Will be set by AI service
+      config: {
+        model: request.model,
+        temperature: 0.7,
+        maxTokens: 4000
+      }
     };
 
     const response = await this.aiService.generateContent(llmRequest);
@@ -191,7 +195,7 @@ export class ProcessGenerator {
   }
 }`,
 
-      logicalnode: `async function process(incomingData, nodeData, params, targetMap, sourceMap, edgeMap) {
+      logicnode: `async function process(incomingData, nodeData, params, targetMap, sourceMap, edgeMap) {
   console.log('🔄 Logical Node processing:', { incomingData, nodeData });
   
   try {

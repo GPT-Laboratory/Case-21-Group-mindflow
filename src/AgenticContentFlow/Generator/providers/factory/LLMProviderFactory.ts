@@ -43,7 +43,7 @@ export class LLMProviderFactory {
     ['openai', () => new OpenAIProvider()],
     ['gemini', () => new GeminiProvider()],
     ['claude', () => new ClaudeProvider()],
-    ['ollama', () => new OllamaProvider()],
+    ['ollama', () => new OllamaProvider({})],
     ['custom', () => new CustomProvider()],
   ]);
 

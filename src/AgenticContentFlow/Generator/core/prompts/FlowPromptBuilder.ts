@@ -32,7 +32,7 @@ export class FlowPromptBuilder {
    * Build flow generation prompt
    */
   async buildFlowPrompt(request: FlowGenerationRequest): Promise<string> {
-    const validNodeTypes = ['datanode', 'logicalnode', 'restnode', 'contentnode', 'conditionalnode', 'pagenode', 'statisticsnode', 'invisiblenode', 'coursenode', 'modulenode'];
+    const validNodeTypes = ['datanode', 'logicnode', 'restnode', 'contentnode', 'conditionalnode', 'pagenode', 'statisticsnode', 'invisiblenode', 'coursenode', 'modulenode'];
     const validHandles = ['top', 'bottom', 'left', 'right'];
     
     const contextSection = request.selectedNodesContext ? `
@@ -62,7 +62,7 @@ ${contextSection}
 **NODE TYPE USAGE GUIDE**:
 - restnode: REST API calls, HTTP requests, external service integration
 - contentnode: Display content, UI components, data visualization
-- logicalnode: Data processing, filtering, transformation, calculations
+- logicnode: Data processing, filtering, transformation, calculations
 - conditionalnode: Decision making, routing, if/then logic
 - datanode: Data storage, caching, state management
 - pagenode: Page containers, layout structures
@@ -146,7 +146,7 @@ Return ONLY the JSON object above (customized for the request) - NO markdown, NO
     errors: Array<{ message: string; suggestedFix?: string }>,
     originalRequest: FlowGenerationRequest
   ): string {
-    const validNodeTypes = ['datanode', 'logicalnode', 'restnode', 'contentnode', 'conditionalnode', 'pagenode', 'statisticsnode', 'invisiblenode', 'coursenode', 'modulenode'];
+    const validNodeTypes = ['datanode', 'logicnode', 'restnode', 'contentnode', 'conditionalnode', 'pagenode', 'statisticsnode', 'invisiblenode', 'coursenode', 'modulenode'];
     const validHandles = ['top', 'bottom', 'left', 'right'];
     
     const errorsList = errors.map(e => 
