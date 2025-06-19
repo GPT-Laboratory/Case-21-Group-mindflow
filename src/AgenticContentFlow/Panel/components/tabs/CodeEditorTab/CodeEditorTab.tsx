@@ -8,8 +8,7 @@ import {
   InfoCard,
   Badge
 } from '../../shared';
-import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/cell/FactoryNodeRegistration';
-import { CodeValidator } from '@/AgenticContentFlow/Node/factories/cell/process/ProcessContextManager';
+import { ProcessCodeValidator } from '@/AgenticContentFlow/Generator/core/validation/ProcessValidator';
 
 interface CodeEditorTabProps {
   nodeType: string;
@@ -93,8 +92,8 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
   useEffect(() => {
     const loadFactoryConfig = async () => {
       try {
-        const configLoader = factoryNodeRegistration.getConfigurationLoader();
-        const config = configLoader.getConfiguration(nodeType);
+        const { getNodeType } = await import('@/AgenticContentFlow/Node/store/unifiedNodeTypeStoreInitializer');
+        const config = getNodeType(nodeType);
         setFactoryConfig(config);
         
         // Initialize with instance code if available, otherwise fall back to template code
@@ -119,8 +118,8 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
 
     setIsValidating(true);
     try {
-      const validator = new CodeValidator();
-      const result = validator.validateProcessCode(editedCode);
+      const validator = new ProcessCodeValidator();
+      const result = validator.validateCode(editedCode);
       setValidationResult(result);
     } catch (error) {
       setValidationResult({ 

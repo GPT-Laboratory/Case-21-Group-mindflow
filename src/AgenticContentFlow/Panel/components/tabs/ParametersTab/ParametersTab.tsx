@@ -6,7 +6,7 @@ import {
   Badge,
   InfoCard
 } from '../../shared';
-import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/cell/FactoryNodeRegistration';
+import { getNodeType } from '@/AgenticContentFlow/Node/store';
 
 interface ParametersTabProps {
   formData: Record<string, any>;
@@ -31,10 +31,9 @@ export const ParametersTab: React.FC<ParametersTabProps> = ({
     const loadConfiguration = async () => {
       if (nodeType) {
         try {
-          const configLoader = factoryNodeRegistration.getConfigurationLoader();
-          const config = configLoader.getConfiguration(nodeType);
+          const config = getNodeType(nodeType);
           
-          setTemplateParameters(config?.template?.defaultParameters || {});
+          setTemplateParameters(config?.process?.parameters || {});
           setParameterConfigs(config?.process?.parameters || {});
         } catch (error) {
           console.warn('Could not load factory configuration:', error);

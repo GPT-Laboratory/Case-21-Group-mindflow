@@ -1,6 +1,6 @@
-import { ProcessParameter } from '../Node/factories/cell';
-import { factoryNodeRegistration } from '../Node/factories/cell/FactoryNodeRegistration';
+import { getNodeType } from '../Node/store/unifiedNodeTypeStoreInitializer';
 import { NodeConfig, FieldConfig } from './types';
+import { ProcessParameter } from '../Node/factory//types/UnifiedFrameJSON';
 import { 
   Database, 
   Globe, 
@@ -54,73 +54,33 @@ const convertProcessParameterToFieldConfig = (param: ProcessParameter): FieldCon
 // Get factory node configuration with process parameters
 export const getFactoryNodeConfig = (nodeType: string): NodeConfig | null => {
   try {
-    const configLoader = factoryNodeRegistration.getConfigurationLoader();
-    const factoryConfig = configLoader.getConfiguration(nodeType);
-    
-    if (!factoryConfig) {
+    const config = getNodeType(nodeType);
+    if (!config) {
       return null;
     }
 
     // Convert factory config to NodeConfig format
     const nodeConfig: NodeConfig = {
-      nodeType: factoryConfig.nodeType,
+      nodeType: config.nodeType,
       metadata: {
-        title: factoryConfig.defaultLabel,
-        description: factoryConfig.description,
-        icon: 'settings', // Could map from factoryConfig.visual.icon
-        category: factoryConfig.category
+        title: config.defaultLabel,
+        description: config.description,
+        icon: 'settings', // Could map from config.visual.icon
+        category: config.category
       },
       configFields: {}
     };
 
-    // Add basic node data fields from template.defaultData
-    const defaultData = factoryConfig.template.defaultData;
-    Object.entries(defaultData).forEach(([key, value]) => {
-      if (typeof value === 'string') {
-        nodeConfig.configFields[key] = {
-          fieldType: key === 'url' ? 'text' : 
-                     key === 'method' ? 'select' : 
-                     key.includes('body') || key.includes('headers') ? 'textarea' : 'text',
-          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
-          defaultValue: value,
-          required: key === 'url' || key === 'method',
-          ...(key === 'method' && {
-            options: [
-              { value: 'GET', label: 'GET' },
-              { value: 'POST', label: 'POST' },
-              { value: 'PUT', label: 'PUT' },
-              { value: 'DELETE', label: 'DELETE' },
-              { value: 'PATCH', label: 'PATCH' }
-            ]
-          })
-        };
-      } else if (typeof value === 'number') {
-        nodeConfig.configFields[key] = {
-          fieldType: 'number',
-          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
-          defaultValue: value,
-          required: false
-        };
-      } else if (typeof value === 'boolean') {
-        nodeConfig.configFields[key] = {
-          fieldType: 'boolean',
-          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
-          defaultValue: value,
-          required: false
-        };
-      }
-    });
-
     // Add process parameters as configurable fields
-    if (factoryConfig.process.parameters) {
-      Object.entries(factoryConfig.process.parameters).forEach(([paramKey, param]) => {
+    if (config.process?.parameters) {
+      Object.entries(config.process.parameters).forEach(([paramKey, param]) => {
         nodeConfig.configFields[paramKey] = convertProcessParameterToFieldConfig(param);
       });
     }
 
     return nodeConfig;
   } catch (error) {
-    console.warn(`Failed to get factory config for ${nodeType}:`, error);
+    console.warn('Could not get factory node config:', error);
     return null;
   }
 };
@@ -203,8 +163,8 @@ export const mockConfigurations: Record<string, NodeConfig> = {
       }
     }
   },
-  logicalnode: {
-    nodeType: 'logicalnode',
+  logicnode: {
+    nodeType: 'logicnode',
     metadata: {
       title: 'Logical Node',
       description: 'Process data with logical operations like filtering, transforming, and conditional routing',
@@ -412,7 +372,7 @@ export const getNodeIcon = (nodeType: string) => {
 
 // Utility function to get node configuration - now factory-aware
 export const getNodeConfig = (nodeType: string, nodeData: any): NodeConfig => {
-  // First try to get factory configuration (for restnode, logicalnode, contentnode)
+  // First try to get factory configuration (for restnode, logicnode, contentnode)
   const factoryConfig = getFactoryNodeConfig(nodeType);
   if (factoryConfig) {
     return factoryConfig;

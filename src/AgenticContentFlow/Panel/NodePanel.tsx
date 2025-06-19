@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelect } from '../Select/contexts/SelectContext';
-import { useNodeContext } from '../Node/store/useNodeContext';
+import { useNodeContext } from '../Node/context/useNodeContext';
 import { Tabs, TabsContent, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { getNodeConfig, getVariantFields } from './nodeConfigs';
@@ -16,7 +16,7 @@ import { ScrollableTabs } from './components/ScrollableTabs';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
 import { DataFlowTab } from './components/tabs/DataFlowTab/DataFlowTab';
 import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
-import { getNodeGroup, isProcessNode, isPreviewNode } from './types/nodeGroups';
+import { getNodeGroup } from './types/nodeGroups';
 
 // LLM Generation System imports
 import { apiKeyManager } from '../Generator/providers/management/APIKeyManager';
@@ -249,15 +249,11 @@ export const NodeConfigPanel: React.FC = () => {
                   <TabsTrigger value="nodedata">Node Data</TabsTrigger>
                   <TabsTrigger value="parameters">Parameters</TabsTrigger>
                   
-                  {/* Code Editor tab for ProcessNodes (formerly Process tab) */}
-                  {isProcessNode(activeNode.type) && (
-                    <TabsTrigger value="code">Code</TabsTrigger>
-                  )}
+                  {/* Code Editor tab - available for all nodes */}
+                  <TabsTrigger value="code">Code</TabsTrigger>
                   
-                  {/* Content Preview tab for PreviewNodes (contentnode) */}
-                  {isPreviewNode(activeNode.type) && (
-                    <TabsTrigger value="preview">Preview</TabsTrigger>
-                  )}
+                  {/* Content Preview tab - available for all nodes */}
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
                   
                   {/* Input/Output tab - universal for all nodes */}
                   <TabsTrigger value="inputoutput">Input/Output</TabsTrigger>
@@ -290,26 +286,22 @@ export const NodeConfigPanel: React.FC = () => {
                     />
                   </TabsContent>
                   
-                  {/* Code Editor Tab for ProcessNodes (renamed from Process) */}
-                  {isProcessNode(activeNode.type) && (
-                    <TabsContent value="code" className="m-0">
-                      <CodeEditorTab 
-                        nodeType={activeNode.type}
-                        formData={formData} 
-                        onFieldChange={handleFieldChange} 
-                      />
-                    </TabsContent>
-                  )}
+                  {/* Code Editor Tab - available for all nodes */}
+                  <TabsContent value="code" className="m-0">
+                    <CodeEditorTab 
+                      nodeType={activeNode.type}
+                      formData={formData} 
+                      onFieldChange={handleFieldChange} 
+                    />
+                  </TabsContent>
                   
-                  {/* Content Preview Tab for PreviewNodes */}
-                  {isPreviewNode(activeNode.type) && (
-                    <TabsContent value="preview" className="m-0">
-                      <ContentPreviewTab 
-                        nodeId={activeNode.id} 
-                        formData={formData} 
-                      />
-                    </TabsContent>
-                  )}
+                  {/* Content Preview Tab - available for all nodes */}
+                  <TabsContent value="preview" className="m-0">
+                    <ContentPreviewTab 
+                      nodeId={activeNode.id} 
+                      formData={formData} 
+                    />
+                  </TabsContent>
                   
                   {/* Universal Input/Output Tab */}
                   <TabsContent value="inputoutput" className="m-0">

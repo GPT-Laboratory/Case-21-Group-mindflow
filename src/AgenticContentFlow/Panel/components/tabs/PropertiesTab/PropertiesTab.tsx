@@ -6,10 +6,8 @@ import {
   ConfigurationSection,
   Badge
 } from '../../shared';
-import { factoryNodeRegistration } from '@/AgenticContentFlow/Node/factories/cell/FactoryNodeRegistration';
-
-// Define NodeGroup type locally since we removed the separate file
-export type NodeGroup = 'process' | 'preview' | 'container';
+import { unifiedNodeRegistration } from '@/AgenticContentFlow/Node/factory//UnifiedNodeRegistration';
+import { NodeGroup } from '../../../types/nodeGroups';
 
 // Track logged combinations to prevent spam
 const loggedCombinations = new Set<string>();
@@ -40,10 +38,10 @@ export const PropertiesTab: React.FC<PropertiesTabProps> = ({
     const loadConfiguration = async () => {
       if (nodeType) {
         try {
-          const configLoader = factoryNodeRegistration.getConfigurationLoader();
-          const config = configLoader.getConfiguration(nodeType);
+          const { getNodeType } = await import('@/AgenticContentFlow/Node/store/unifiedNodeTypeStoreInitializer');
+          const config = getNodeType(nodeType);
           
-          setTemplateDefaults(config?.template?.defaultData || {});
+          setTemplateDefaults(config?.process?.parameters || {});
         } catch (error) {
           console.warn('Could not load factory configuration:', error);
         }

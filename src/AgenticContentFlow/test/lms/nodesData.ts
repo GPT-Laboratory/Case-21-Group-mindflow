@@ -12,9 +12,7 @@ export const lmsParentNodesData: Array<Node> = [
       layoutDirection: 'LR', // Your getContainerLayoutDirection helper should look for this
       isContainer: true, // Or use a type check in isContainer
       expanded: true
-
     },
-    style: { width: 250, height: 100 }, // Container needs initial dimensions for rendering
   },
   {
     id: "course-0-lms",
@@ -60,7 +58,6 @@ export const lmsParentNodesData: Array<Node> = [
       expanded: true,
       depth: 1,
       isParent: true // Explicitly mark this node as a parent
-
     },
     position: { x: 900, y: 200 },
     parentId: "course-0-lms",
@@ -112,7 +109,6 @@ export const lmsParentNodesData: Array<Node> = [
       isParent: true // Explicitly mark this node as a parent
 
     },
-    style: { width: 250, height: 100 }, // Container needs initial dimensions for rendering
     parentId: "module-1-instance-0", // Set the parentId to the course node
     extent: "parent",
   },
@@ -130,7 +126,6 @@ export const lmsParentNodesData: Array<Node> = [
       isParent: true // Explicitly mark this node as a parent
 
     },
-    style: { width: 250, height: 100 }, // Container needs initial dimensions for rendering
     parentId: "module-2-instance-0", // Set the parentId to the course node
     extent: "parent",
   },

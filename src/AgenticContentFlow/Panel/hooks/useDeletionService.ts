@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNodeContext } from '../../Node/store/useNodeContext';
+import { useNodeContext } from '../../Node/context/useNodeContext';
 import { useEdgeContext } from '../../Edge/store/useEdgeContext';
 import { useTransaction } from '@jalez/react-state-history';
 

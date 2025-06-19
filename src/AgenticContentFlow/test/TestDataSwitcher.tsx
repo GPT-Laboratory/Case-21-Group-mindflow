@@ -4,7 +4,7 @@ import ControlDropdown from "../Controls/Components/ControlDropdown";
 
 // Import context hooks for managing nodes and edges
 import { useEdgeContext } from "../Edge/store/useEdgeContext";
-import { useNodeContext } from "../Node/store/useNodeContext";
+import { useNodeContext } from "../Node/context/useNodeContext";
 
 // Import test data sets
 import { childNodesData, parentNodesData } from "./default/nodesData";
@@ -22,7 +22,6 @@ import { lmsEdgesData } from "./lms/edgeData";
 import { apiFlowNodesData, apiFlowEdgesData } from "./rest/apiFlowNodesEdges";
 
 // Import generated flow example data
-import { completeFlowExampleNodes, completeFlowExampleEdges } from "./generated/completeFlowExample";
 
 /**
  * @description Switcher for loading different test data sets
@@ -45,26 +44,15 @@ export const TestDataSwitcher = () => {
       case "lms":
         setNodes(lmsNodesData.map((node) => ({
           ...node,
-          style: {
-            width: node.type === "conditionalnode" ? 100: 300,
-            height: node.type === "conditionalnode" ? 100: 200,
-          }
+
         })));
         setEdges([...lmsEdgesData])
         break;
       case "rest-api":
         setNodes(apiFlowNodesData.map((node) => ({
           ...node,
-          style: {
-            width: node.type === "restnode" ? 200 : 200,
-            height: node.type === "restnode" ? 200 : 200,
-          }
         })));
         setEdges(apiFlowEdgesData);
-        break;
-      case "generated-flow":
-        setNodes(completeFlowExampleNodes);
-        setEdges(completeFlowExampleEdges);
         break;
       case "empty":
         setNodes([]);
