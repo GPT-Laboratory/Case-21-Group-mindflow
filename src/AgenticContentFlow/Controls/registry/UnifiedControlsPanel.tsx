@@ -49,7 +49,7 @@ const UnifiedControlsPanel: React.FC<UnifiedControlsPanelProps> = memo(({
   const controlsPanel = useMemo(() => (
     <div className={cn("fixed z-50 w-full", positionClasses)}>
       <div className={cn(
-        "flex p-1 bg-background/95 backdrop-blur-sm rounded-lg border border-border",
+        "flex p-1 bg-background/95 backdrop-blur-sm border border-border",
         "flex-cel justify-center items-center",
       )}>
         {controlTypes.map((type, index) => (

@@ -31,31 +31,21 @@ const ControlButton: React.FC<ControlButtonProps> = ({
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            size="icon"
-            variant={active ? "default" : "secondary"}
-            onClick={handleClick}
-            disabled={disabled}
-            //no background color, no border, no padding, no shadow
-            className={`flex items-center justify-center, 
-               shadow-none rounded-full text-gray-500 hover:bg-gray-100
-               
-               ${
-              active ? "bg-gray-200" : "bg-transparent"
-            } ${disabled ? "cursor-not-allowed" : ""}`}
-          >
-            {icon}
-            <span className="sr-only">{tooltip}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Button
+      size="icon"
+      variant={active ? "default" : "secondary"}
+      onClick={handleClick}
+      disabled={disabled}
+      className={`flex items-center justify-center w-6 h-6 p-0
+         shadow-none rounded-full text-gray-500 hover:bg-gray-100
+         ${active ? "bg-gray-200" : "bg-transparent"}
+         ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+      style={{ minWidth: '24px', minHeight: '24px' }}
+      title={tooltip}
+    >
+      {icon}
+      <span className="sr-only">{tooltip}</span>
+    </Button>
   );
 };
 

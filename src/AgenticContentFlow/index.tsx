@@ -6,9 +6,9 @@ import {
   ReactFlowProvider,
 } from "@xyflow/react";
 import { SelectProvider } from "./Select/contexts/SelectContext";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useViewPreferencesStore } from "./stores";
-import { NodeProvider, useNodeContext } from "./Node/store/useNodeContext";
+import { NodeProvider, useNodeContext } from "./Node/context/useNodeContext";
 import { EdgeProvider, useEdgeContext } from "./Edge/store/useEdgeContext";
 import { useViewportManager } from "./Flow/hooks/useViewportManager";
 import { GRID_SETTINGS } from "./constants";
@@ -21,6 +21,7 @@ import TestControlsRegistration from "./test/TestControlsRegistration";
 import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
 import CopyWorkflowControlsRegistration from "./Flow/controls/CopyWorkflowControlsRegistration";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
+import { ensureNodeTypesRegistered } from "./Nodes/registerBasicNodeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
 import { NotificationProvider } from "./Notifications";
@@ -30,6 +31,7 @@ import ReactStateHistory from "./History/ReactStateHistory";
 import { LayoutProvider } from "@jalez/react-flow-automated-layout";
 import ShortcutsManager from "./ShortCuts/ShortcutsManager";
 import { APISetupControlsRegistration } from "./Generator";
+import GridControlsRegistration from "./Flow/controls/GridControlsRegistration";
 
 // Register edge types before any rendering occurs
 ensureEdgeTypesRegistered();
@@ -39,6 +41,11 @@ export function AgenticContentFlowContent() {
   const { showGrid, gridVariant } = useViewPreferencesStore();
   const { updateNodes } = useNodeContext();
   const { updateEdges } = useEdgeContext();
+
+  // Initialize node types on component mount
+  useEffect(() => {
+    ensureNodeTypesRegistered().catch(console.error);
+  }, []);
 
   // Use custom hooks for functionality
   const { handleWheel } = useViewportManager(flowWrapper);
@@ -82,7 +89,7 @@ export function AgenticContentFlowContent() {
             minHeight: 100,
           }}
           initialNodeDimensions={{
-            width: 300,
+            width: 200,
             height: 200,
           }}
           updateNodes={handleNodeUpdate}
@@ -102,7 +109,9 @@ export function AgenticContentFlowContent() {
                 )}
                 <SelectLogic />
                 <Minimap />
+
                 {/* Register available controls here */}
+                <GridControlsRegistration />
                 <TestControlsRegistration />
                 <LayoutControlsRegistration />
                 <CopyWorkflowControlsRegistration />
