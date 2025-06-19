@@ -6,10 +6,9 @@ import { VIEWPORT_CONSTRAINTS } from "../constants";
 import { useConnectionOperations } from "../Node/hooks/useConnectionOperations";
 import { useNodeTypeRegistry } from "../Node/registry/nodeTypeRegistry";
 import { useSelect } from "../Select/contexts/SelectContext";
-import { useNodeContext } from "../Node/store/useNodeContext";
+import { useNodeContext } from "../Node/context/useNodeContext";
 import { useEdgeContext } from "../Edge/store/useEdgeContext";
 // Import the grid controls registration
-import GridControlsRegistration from "./controls/GridControlsRegistration";
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import { useEdgeTypeRegistry } from "../Edge/registry/edgeTypeRegistry";
 import { ensureEdgeTypesRegistered } from "../Edges/registerBasicEdgeTypes";
@@ -350,7 +349,6 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
   return (
     <>
         {/* Register the grid controls */}
-        <GridControlsRegistration />
         
         {/* Always render ReactFlow with background visible */}
         <ReactFlow
@@ -397,13 +395,11 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
         </ReactFlow>
         
         {/* Flow Generation Controls - Always visible when system is ready */}
-        {isFactorySystemReady && (
           <GenerationControl 
             type="flow"
             onGenerated={handleFlowGenerated}
           />
-        )}
-        
+       
         {/* Node Configuration Panel */}
         <NodeConfigPanel />
         

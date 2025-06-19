@@ -1,6 +1,6 @@
 import { Edge, Node, Panel, useOnSelectionChange } from "@xyflow/react";
 import { useCallback, useState } from "react";
-import { useNodeContext } from "../Node/store/useNodeContext";
+import { useNodeContext } from "../Node/context/useNodeContext";
 
 function SelectionDisplay() {
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
