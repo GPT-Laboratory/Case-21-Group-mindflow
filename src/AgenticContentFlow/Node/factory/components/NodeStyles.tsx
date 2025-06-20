@@ -57,8 +57,9 @@ export function BaseNodeContainer({
     if (processState === 'processing' || processing) {
       return {
         ...baseStyle,
-        border: '3px solid transparent',
-      
+        borderWidth: '3px',
+        borderStyle: 'solid',
+        borderColor: 'transparent',
         borderImage: 'linear-gradient(var(--angle, 0deg), #ae53ba, #2a8af6, #ae53ba) 1',
         borderRadius: '8px',
         animation: 'processingRotate 2s linear infinite',
@@ -68,7 +69,9 @@ export function BaseNodeContainer({
     if (processState === 'generating') {
       return {
         ...baseStyle,
-        border: '3px solid transparent',
+        borderWidth: '3px',
+        borderStyle: 'solid',
+        borderColor: 'transparent',
         borderImage: 'linear-gradient(var(--angle, 0deg), #f59e0b, #fbbf24, #f59e0b) 1',
         animation: 'processingRotate 1.5s linear infinite',
       };
@@ -76,17 +79,20 @@ export function BaseNodeContainer({
     
     if (processState === 'completed') {
       return {
-        border: '3px solid transparent',
+        borderWidth: '3px',
+        borderStyle: 'solid',
+        borderColor: 'transparent',
         ...baseStyle,
         borderImage: 'linear-gradient(var(--angle, 0deg), #04a46e, #34d399, #04a46e) 1',
-        
         animation: 'processingRotate 2s linear infinite',
       };
     }
     
     if (processState === 'error') {
       return {
-        border: '3px solid transparent',
+        borderWidth: '3px',
+        borderStyle: 'solid',
+        borderColor: 'transparent',
         ...baseStyle,
         borderImage: 'linear-gradient(var(--angle, 0deg), #ef4444, #f87171, #ef4444) 1',
         animation: 'errorPulse 1s ease-out',
@@ -95,7 +101,9 @@ export function BaseNodeContainer({
     
     // Default state - use persisted border color (starts as black, then persists last process color)
     return {
-      border: `3px solid ${borderColorAfterProcess}`,
+      borderWidth: '3px',
+      borderStyle: 'solid',
+      borderColor: borderColorAfterProcess,
       ...baseStyle,
       // Add glow effect when selected
       ...(selected && {
@@ -148,8 +156,8 @@ export function StyledHandle({
   return (
     <Handle
       className={cn(
-        // Base handle styles
-        "w-[20px] h-[20px] border border-black rounded-full overflow-hidden flex items-center justify-center transition-all duration-300",
+        // Base handle styles - removed border classes to avoid conflicts
+        "w-[20px] h-[20px] rounded-full overflow-hidden flex items-center justify-center transition-all duration-300",
         // Positioning and transform styles
         positionClass,
         // Apply transform with CSS variables
@@ -158,6 +166,11 @@ export function StyledHandle({
         "hover:[--scale:1.6] hover:z-[1000] hover:shadow-md",
         className
       )}
+      style={{
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'black'
+      }}
       position={position}
       {...props}
     >
