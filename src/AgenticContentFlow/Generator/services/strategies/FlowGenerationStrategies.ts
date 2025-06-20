@@ -15,6 +15,7 @@ import {
   FlowMetadata
 } from '../../generatortypes';
 import { UnifiedAIService } from '../../core/AIService';
+import { apiKeyManager } from '../../providers/management/APIKeyManager';
 
 export interface FlowGenerationOptions {
   strategy: 'ai' | 'hybrid';
@@ -39,13 +40,40 @@ export class AIFlowStrategy {
   }
 
   async generate(request: FlowGenerationRequest, prompt: string): Promise<GenerationResult> {
+    // Get API configuration for the provider using the singleton instance
+    if (!request.provider) {
+      throw new Error('No provider specified in request');
+    }
+    
+    console.log('🔍 Retrieving API config for provider:', request.provider);
+    const apiConfig = apiKeyManager.getConfig(request.provider);
+    console.log('📋 Retrieved API config:', apiConfig ? { 
+      provider: apiConfig.provider, 
+      hasApiKey: !!apiConfig.apiKey, 
+      baseURL: apiConfig.baseURL,
+      model: apiConfig.model 
+    } : 'null');
+    
+    if (!apiConfig) {
+      throw new Error(`No API configuration found for provider: ${request.provider}`);
+    }
+
+    if (!apiConfig.apiKey && request.provider !== 'ollama' && request.provider !== 'custom') {
+      throw new Error(`API key is required for provider: ${request.provider}`);
+    }
+
+    // Use the model from API configuration, with fallback to request model
+    const modelToUse = apiConfig.model || request.model;
+    console.log('🤖 Using model:', modelToUse);
+
     const llmRequest: LLMRequest = {
       prompt,
       type: 'flow',
       context: `Generating flow for: ${request.description}`,
       provider: request.provider,
       config: {
-        model: request.model,
+        ...apiConfig, // Include the full API config (apiKey, baseURL, etc.)
+        model: modelToUse, // Use the selected model
         temperature: 0.7,
         maxTokens: 4000
       }
