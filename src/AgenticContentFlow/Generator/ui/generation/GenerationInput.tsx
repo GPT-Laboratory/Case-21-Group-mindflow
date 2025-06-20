@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { Send } from 'lucide-react';
 
 interface GenerationInputProps {
   value: string;
@@ -15,7 +14,7 @@ interface GenerationInputProps {
 /**
  * Generation Input
  * 
- * Handles the main text input with suggest and submit buttons
+ * Handles the main text input with keyboard shortcuts
  */
 export const GenerationInput: React.FC<GenerationInputProps> = ({
   value,
@@ -37,7 +36,7 @@ export const GenerationInput: React.FC<GenerationInputProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-2 flex-1 ml-2">
+    <div className="flex-1 min-w-0">
       {/* Main Input */}
       <textarea
         ref={inputRef}
@@ -50,19 +49,9 @@ export const GenerationInput: React.FC<GenerationInputProps> = ({
         onBlur={onBlur}
         disabled={disabled}
         rows={1}
-        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none"
+        className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none min-w-0"
         style={{ minHeight: '36px', maxHeight: '120px' }}
       />
-      
-      {/* Generate Button */}
-      <button
-        onClick={onSubmit}
-        disabled={!value.trim() || disabled}
-        className="flex items-center justify-center w-8 h-8 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Generate"
-      >
-        <Send className="w-4 h-4" />
-      </button>
     </div>
   );
 };
