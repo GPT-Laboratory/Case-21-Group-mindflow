@@ -1,5 +1,8 @@
 import { Node } from "@xyflow/react";
 import { NodeData } from "../../../types";
+import { calculateParentCandidate } from "./sharedDragUtils";
+
+
 
 /**
  * Gets the most suitable potential parent ID from a list of candidates.
@@ -32,122 +35,11 @@ export const getPotentialParentId = (
     poolOfAllNodes: Map<string, Node<NodeData>>,
     rootIndicator: string
 ): string => {
-    // Helper function to check if a node is a descendant
-    const isDescendant = (potentialChildId: string, ancestorId: string, visited = new Set<string>()): boolean => {
-        if (potentialChildId === ancestorId) return true;
-        if (visited.has(potentialChildId)) return false;
-        visited.add(potentialChildId);
-
-        const nodeParentId = poolOfAllNodes.get(potentialChildId)?.parentId;
-        if (!nodeParentId) return false;
-        
-        return isDescendant(nodeParentId, ancestorId, visited);
-    };
-
-    // Helper function to check if nodes are siblings
-    const areSiblings = (nodeA: Node, nodeB: Node): boolean => {
-        return nodeA.parentId != null && nodeA.parentId === nodeB.parentId;
-    };
-
-    // Helper function to calculate overlap area between two nodes
-    const getOverlapArea = (nodeA: Node, nodeB: Node): number => {
-        const aWidth = nodeA.width || nodeA.measured?.width || 0;
-        const aHeight = nodeA.height || nodeA.measured?.height || 0;
-        const bWidth = nodeB.width || nodeB.measured?.width || 0;
-        const bHeight = nodeB.height || nodeB.measured?.height || 0;
-
-        const left = Math.max(nodeA.position.x, nodeB.position.x);
-        const right = Math.min(nodeA.position.x + aWidth, nodeB.position.x + bWidth);
-        const top = Math.max(nodeA.position.y, nodeB.position.y);
-        const bottom = Math.min(nodeA.position.y + aHeight, nodeB.position.y + bHeight);
-
-        if (right < left || bottom < top) return 0;
-        return (right - left) * (bottom - top);
-    };
-
-    // Helper function to get the center-to-center distance between nodes
-    const getDistance = (nodeA: Node, nodeB: Node): number => {
-        const aWidth = nodeA.width || nodeA.measured?.width || 0;
-        const aHeight = nodeA.height || nodeA.measured?.height || 0;
-        const bWidth = nodeB.width || nodeB.measured?.width || 0;
-        const bHeight = nodeB.height || nodeB.measured?.height || 0;
-
-        const aCenterX = nodeA.position.x + aWidth / 2;
-        const aCenterY = nodeA.position.y + aHeight / 2;
-        const bCenterX = nodeB.position.x + bWidth / 2;
-        const bCenterY = nodeB.position.y + bHeight / 2;
-
-        return Math.sqrt(
-            Math.pow(bCenterX - aCenterX, 2) + 
-            Math.pow(bCenterY - aCenterY, 2)
-        );
-    };
-
-    // Filter out descendants and self, and only allow existing parents or current parent
-    const validCandidates = potentialParentCandidates.filter(
-        candidate => !isDescendant(candidate.id, node.id) && 
-                    candidate.id !== node.id &&
-                    (nodeParentIdMapWithChildIdSet.has(candidate.id) || // is already a parent
-                     candidate.id === node.parentId) // or is the current parent
+    return calculateParentCandidate(
+        node,
+        potentialParentCandidates,
+        nodeParentIdMapWithChildIdSet,
+        poolOfAllNodes,
+        rootIndicator
     );
-
-    // Only return rootIndicator when there are no valid candidates
-    if (validCandidates.length === 0) return rootIndicator;
-
-    // First check for siblings
-    const siblings = validCandidates.filter(candidate => areSiblings(candidate, node));
-    if (siblings.length > 0) {
-        return siblings.sort((a, b) => {
-            // For siblings, prefer by overlap then distance then age
-            const aOverlap = getOverlapArea(node, a);
-            const bOverlap = getOverlapArea(node, b);
-            if (aOverlap !== bOverlap) {
-                return bOverlap - aOverlap;
-            }
-
-            if (aOverlap === 0 && bOverlap === 0) {
-                const aDist = getDistance(node, a);
-                const bDist = getDistance(node, b);
-                if (Math.abs(aDist - bDist) > 0.001) {
-                    return aDist - bDist;
-                }
-            }
-
-            const aNum = parseInt(a.id.match(/\d+/)?.[0] || '0');
-            const bNum = parseInt(b.id.match(/\d+/)?.[0] || '0');
-            return bNum - aNum;
-        })[0].id;
-    }
-
-    // Then check if current parent is among valid candidates
-    if (node.parentId) {
-        const currentParentCandidate = validCandidates.find(
-            candidate => candidate.id === node.parentId
-        );
-        if (currentParentCandidate) {
-            return currentParentCandidate.id;
-        }
-    }
-
-    // If no siblings or current parent, sort remaining candidates by overlap/distance/age
-    return validCandidates.sort((a, b) => {
-        // Same sorting logic for remaining candidates
-        const aOverlap = getOverlapArea(node, a);
-        const bOverlap = getOverlapArea(node, b);
-        if (aOverlap !== bOverlap) {
-            return bOverlap - aOverlap;
-        }
-
-        if (aOverlap === 0 && bOverlap === 0) {
-            const aDist = getDistance(node, a);
-            const bDist = getDistance(node, b);
-            if (Math.abs(aDist - bDist) > 0.001) {
-                return aDist - bDist;
-            }
-        }
-
-        const aNum = parseInt(a.id.match(/\d+/)?.[0] || '0');
-        const bNum = parseInt(b.id.match(/\d+/)?.[0] || '0');
-        return bNum - aNum;
-    })[0].id;
 };
