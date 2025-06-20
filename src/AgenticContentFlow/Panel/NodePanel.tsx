@@ -3,26 +3,24 @@ import { useSelect } from '../Select/contexts/SelectContext';
 import { useNodeContext } from '../Node/context/useNodeContext';
 import { Tabs, TabsContent, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { getNodeConfig, getVariantFields } from './nodeConfigs';
+import { getNodeConfig } from './nodeConfigs';
 import { PanelFooter } from './components/PanelFooter';
-import { PropertiesTab } from './components/tabs/PropertiesTab/PropertiesTab';
-import { ParametersTab } from './components/tabs/ParametersTab/ParametersTab';
+import { DataTab } from './components/tabs/DataTab/DataTab';
 import { PanelHeader } from './components/PanelHeader';
-import { PanelToggleDragHandle } from './components/PanelToggleDragHandle';
+import { PanelToggleDragHandle } from './components/PanelHandle';
 import { PanelContainer } from './components/PanelContainer';
 import { useResizePanel } from './hooks/useResizePanel';
 import { ErrorsTab } from './components/tabs/ErrorsTab/ErrorsTab';
 import { ScrollableTabs } from './components/ScrollableTabs';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
-import { DataFlowTab } from './components/tabs/DataFlowTab/DataFlowTab';
 import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
-import { getNodeGroup } from './types/nodeGroups';
 
 // LLM Generation System imports
 import { apiKeyManager } from '../Generator/providers/management/APIKeyManager';
 import { useNotifications } from '../Notifications/hooks/useNotifications';
 import { GeneratorOrchestrator } from '../Generator';
 import { ProcessGenerationRequest } from '../Generator/generatortypes';
+import { InputOutputTab } from './components/tabs/InputOutput/InputOutputTab';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -202,15 +200,10 @@ export const NodeConfigPanel: React.FC = () => {
     }
   };
 
-
-
   const nodeConfig = activeNode ? getNodeConfig(activeNode.type, activeNode.data) : null;
-  const variantFields = activeNode && nodeConfig ? getVariantFields(nodeConfig, formData, activeNode.data) : {};
-  const allFields = nodeConfig ? { ...nodeConfig.configFields, ...variantFields } : {};
 
   return (
     <>
-
 
       {/* Toggle/Drag Handle */}
       <PanelToggleDragHandle
@@ -244,10 +237,9 @@ export const NodeConfigPanel: React.FC = () => {
               <Separator className="mb-4" />
 
               {/* Tabs */}
-              <Tabs defaultValue="nodedata" className="flex flex-col flex-1 overflow-hidden">
+              <Tabs defaultValue="data" className="flex flex-col flex-1 overflow-hidden">
                 <ScrollableTabs className="mb-4">
-                  <TabsTrigger value="nodedata">Node Data</TabsTrigger>
-                  <TabsTrigger value="parameters">Parameters</TabsTrigger>
+                  <TabsTrigger value="data">Data</TabsTrigger>
                   
                   {/* Code Editor tab - available for all nodes */}
                   <TabsTrigger value="code">Code</TabsTrigger>
@@ -263,21 +255,8 @@ export const NodeConfigPanel: React.FC = () => {
                 </ScrollableTabs>
                 
                 <div className="flex-1 overflow-y-auto">
-                  <TabsContent value="nodedata" className="m-0">
-                    <PropertiesTab 
-                      fields={allFields}
-                      formData={formData}
-                      onFieldChange={handleFieldChange}
-                      nodeId={activeNode.id}
-                      nodeType={activeNode.type}
-                      nodeGroup={getNodeGroup(activeNode.type)}
-                      nodeConfig={nodeConfig}
-                      hasChanges={hasChanges}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="parameters" className="m-0">
-                    <ParametersTab 
+                  <TabsContent value="data" className="m-0">
+                    <DataTab 
                       formData={formData}
                       onFieldChange={handleFieldChange}
                       nodeId={activeNode.id}
@@ -305,7 +284,7 @@ export const NodeConfigPanel: React.FC = () => {
                   
                   {/* Universal Input/Output Tab */}
                   <TabsContent value="inputoutput" className="m-0">
-                    <DataFlowTab 
+                    <InputOutputTab 
                       nodeId={activeNode.id} 
                       nodeType={activeNode.type}
                       formData={formData} 

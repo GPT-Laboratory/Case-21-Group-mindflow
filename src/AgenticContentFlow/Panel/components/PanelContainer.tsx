@@ -22,7 +22,7 @@ export const PanelContainer: React.FC<PanelContainerProps> = ({
       position: 'fixed' as const,
       backgroundColor: 'var(--background)',
       borderColor: 'var(--border)',
-      zIndex: 40,
+      zIndex: 100,
       transition: isResizing ? 'none' : 'all 0.3s ease-in-out',
       boxShadow: isExpanded ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none',
     };
@@ -59,7 +59,7 @@ export const PanelContainer: React.FC<PanelContainerProps> = ({
       default:
         return {
           ...baseStyle,
-          top: 40,
+          top: 30,
           right: 0,
           bottom: 0,
           width: isExpanded ? `${size.width}px` : '0px',
