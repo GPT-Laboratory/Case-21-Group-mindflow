@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+No god functions are allowed, we must follow single responsibility principle. If you see a component or file growing too big (over 300 lines) then its time to separate concerns and restructure it. 

@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+AKA DRY Principle
+
+If you need to repeat logic, dont, always think of ways to reuse existing logic and files. And when I say reuse; I mean reference, import, etc. 

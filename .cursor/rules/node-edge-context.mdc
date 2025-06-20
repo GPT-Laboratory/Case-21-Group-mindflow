@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+useNodeContext and useEdgeContext for quick access to stuff like map  (key is id of edge or node) or map set (parent id with set of child ids)
+
+
+src/AgenticContentFlow/Node/context/useNodeContext.tsx:
+
+  nodeMap: Map<string, Node<any>>;
+  nodeParentIdMapWithChildIdSet: Map<string, Set<string>>;
+  pureChildIdSet: Set<string>;
+
+
+src/AgenticContentFlow/Edge/store/useEdgeContext.tsx:
+
+  edgeMap: Map<string, Edge>;
+  edgeSourceMap: Map<string, Edge[]>;
+
