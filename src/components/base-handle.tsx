@@ -11,6 +11,8 @@ const handleBaseStyles = {
   '--handle-size': '30px',
   width: 'var(--handle-size)',
   height: 'var(--handle-size)',
+  borderWidth: '1px',
+  borderStyle: 'solid',
   borderColor: 'var(--handle-color)',
 };
 
@@ -28,8 +30,8 @@ export const BaseHandle = forwardRef<HTMLDivElement, BaseHandleProps>(
         // Merge the base styles with any custom styles passed in
         style={{ ...handleBaseStyles, ...style }}
         className={cn(
-
-          "rounded-full border border-slate-300 bg-slate-100 transition dark:border-secondary dark:bg-secondary flex items-center justify-center  shadow-[1px_-1px_black]",
+          "rounded-full bg-slate-100 transition dark:bg-secondary flex items-center justify-center shadow-[1px_-1px_black]",
+          // Removed "border border-slate-300" to avoid conflicts with borderColor
           className,
         )}
       >
