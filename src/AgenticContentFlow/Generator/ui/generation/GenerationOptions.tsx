@@ -24,13 +24,13 @@ export const GenerationOptions: React.FC<GenerationOptionsProps> = ({
   availableProviders,
   disabled = false
 }) => (
-  <div className="flex items-center gap-2">
-    <label className="text-xs text-gray-600">Provider:</label>
+  <div className="flex items-center gap-2 min-w-0">
+    <label className="text-xs text-gray-600 flex-shrink-0">Provider:</label>
     <select
       value={selectedProvider}
       onChange={(e) => onProviderChange(e.target.value as LLMProvider)}
       disabled={disabled}
-      className="text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
+      className="text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50 min-w-0 flex-1"
     >
       {availableProviders.map(({ provider, name, configured }) => (
         <option key={provider} value={provider} disabled={!configured}>

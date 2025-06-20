@@ -1,84 +1,64 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  GenerationType, 
-  GenerationResult,
-  LLMProvider 
-} from '../../generatortypes';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
+import { Button } from '../../../../components/ui/button';
+import { GenerationInput } from './GenerationInput';
+import { GenerationOptions } from './GenerationOptions';
+import { ProviderDropdown } from './ProviderDropdown';
+import { GenerationStatus } from './GenerationStatus';
+import { APISetupDialog } from '../api-setup/APISetupDialog';
+import { ConnectionStatus } from '../shared/ConnectionStatus';
+import { ProviderIcon } from '../shared/ProviderIcon';
+import { LLMProvider } from '../../generatortypes';
+import { useGenerator } from '../../context/GeneratorContext';
+import { useGenerationForm } from '../../hooks/useGenerationForm';
 import { useSelect } from '../../../Select/contexts/SelectContext';
 import { useInputFocusHandlers } from '../../../Panel/hooks/useInputFocusHandlers';
-import { useGenerationForm } from '../../hooks/useGenerationForm';
-import { MoreHorizontal, Lightbulb, CheckCircle2, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import { useNotifications } from '../../../Notifications/hooks/useNotifications';
+import { MoreHorizontal, Lightbulb, Send } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../../../components/ui/dropdown-menu';
-import { GenerationInput } from './GenerationInput';
-import { GenerationStatus } from './GenerationStatus';
-import { ProviderDropdown } from './ProviderDropdown';
-import { APISetupDialog } from '../api-setup/APISetupDialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { apiKeyManager } from '../../providers/management/APIKeyManager';
-import { LLMProviderFactory } from '../../providers/factory/LLMProviderFactory';
-import { useNotifications } from '../../../Notifications/hooks/useNotifications';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../../components/ui/tooltip';
 
-export interface GenerationPanelProps {
-  type?: GenerationType;
-  onGenerated: (result: GenerationResult) => void;
-  onClose?: () => void;
+interface GenerationPanelProps {
+  type: 'flow' | 'process';
+  selectedNodes: any[];
+  onGenerated: (result: any) => void;
   defaultRequest?: any;
+  notifyError?: (title: string, message?: string) => void;
 }
 
-const statusIcon = (status: string, error: string | null, onRetry: () => void, loading: boolean) => {
-  if (loading || status === 'loading') {
-    return <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />;
-  }
-  if (status === 'success') {
-    return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-  }
-  if (status === 'error') {
-    return (
-      <button onClick={onRetry} className="p-0.5 hover:bg-gray-100 rounded-full" tabIndex={-1}>
-        <XCircle className="w-4 h-4 text-red-500" />
-      </button>
-    );
-  }
-  // unknown or default
-  return (
-    <button onClick={onRetry} className="p-0.5 hover:bg-gray-100 rounded-full" tabIndex={-1}>
-      <RefreshCw className="w-4 h-4 text-gray-400" />
-    </button>
-  );
-};
-
-/**
- * Generation Panel
- * 
- * Clean, focused panel for AI generation with smart type detection.
- * Automatically determines generation type based on selection context.
- */
-const GenerationPanel: React.FC<GenerationPanelProps> = ({
+export const GenerationPanel: React.FC<GenerationPanelProps> = ({
   type,
+  selectedNodes,
   onGenerated,
-  defaultRequest
+  defaultRequest,
+  notifyError
 }) => {
-  const { selectedNodes } = useSelect();
-  const { onFocus, onBlur } = useInputFocusHandlers();
   const [showAPISetup, setShowAPISetup] = useState(false);
-  const [providerToConfigure, setProviderToConfigure] = useState<LLMProvider | undefined>(undefined);
-  
-  // Connection status state
+  const [providerToConfigure, setProviderToConfigure] = useState<LLMProvider | undefined>();
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'loading' | 'success' | 'error'>('unknown');
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [connectionLoading, setConnectionLoading] = useState(false);
-  
-  // Smart type detection: single node = process, multiple/none = flow
-  const smartGenerationType: GenerationType = selectedNodes.length === 1 ? 'process' : 'flow';
-  const actualType = type || smartGenerationType;
-  
-  // All form logic is now in a custom hook
+  const [selectedModel, setSelectedModel] = useState<string>('');
+
+  const { selectedNodes: selectNodes } = useSelect();
+  const { onFocus, onBlur } = useInputFocusHandlers();
   const { showErrorToast } = useNotifications();
+  const { availableProviders, providersLoading } = useGenerator();
+
+  const handleAPISetupComplete = () => {
+    setShowAPISetup(false);
+    setProviderToConfigure(undefined);
+  };
+
+  const handleConfigureProvider = (provider: LLMProvider) => {
+    setProviderToConfigure(provider);
+    setShowAPISetup(true);
+  };
+
+  // Use the generation form hook
   const {
     description,
     setDescription,
@@ -87,98 +67,62 @@ const GenerationPanel: React.FC<GenerationPanelProps> = ({
     handleGenerate,
     handleSuggest,
     isGenerating,
-    availableProviders,
     promptHistory,
     historyIndex,
     navigateHistory,
     resetHistory
-  } = useGenerationForm(actualType, selectedNodes as any[], onGenerated, defaultRequest, showErrorToast);
+  } = useGenerationForm(type, selectNodes as any[], onGenerated, defaultRequest, showErrorToast);
 
-  // Update the type of availableProviders
-  const typedAvailableProviders: Array<{
-    provider: LLMProvider;
-    name: string;
-    configured: boolean;
-    preferred: boolean;
-    models?: string[];
-    defaultModel?: string;
-  }> = availableProviders;
+  // Check if current provider is configured
+  const currentProviderInfo = availableProviders.find(p => p.provider === selectedProvider);
+  const isProviderConfigured = currentProviderInfo?.configured || false;
 
-  const [selectedModel, setSelectedModel] = useState<string>('');
-  const [providersLoading, setProvidersLoading] = useState(false);
-
-  // When availableProviders changes, set selectedModel to default for Ollama
+  // Handle model selection for all providers
   useEffect(() => {
-    const ollama = typedAvailableProviders.find(p => p.provider === 'ollama');
-    if (selectedProvider === 'ollama' && ollama && ollama.models && ollama.models.length > 0) {
-      if (ollama.defaultModel) {
-        setSelectedModel(ollama.defaultModel);
-      } else if (ollama.models && ollama.models.length > 0) {
-        setSelectedModel(ollama.models[0]);
+    const currentProvider = availableProviders.find(p => p.provider === selectedProvider);
+    if (currentProvider && currentProvider.models && currentProvider.models.length > 0) {
+      // Set default model if none selected
+      if (!selectedModel && currentProvider.defaultModel) {
+        setSelectedModel(currentProvider.defaultModel);
+        localStorage.setItem('agentic_selected_model', currentProvider.defaultModel);
+      } else if (!selectedModel && currentProvider.models.length > 0) {
+        setSelectedModel(currentProvider.models[0]);
+        localStorage.setItem('agentic_selected_model', currentProvider.models[0]);
       }
     }
-  }, [selectedProvider, typedAvailableProviders]);
+  }, [selectedProvider, availableProviders, selectedModel]);
 
-  // Pass selectedModel to generation requests if Ollama is selected
-  const handleGenerateWithModel = async () => {
-    if (selectedProvider === 'ollama' && selectedModel) {
-      // Use selectedModel in the request
-      // You may need to update handleGenerate in useGenerationForm to accept a model
-      // For now, just set it in localStorage or context as a workaround
+  // Load selected model from localStorage on mount
+  useEffect(() => {
+    const savedModel = localStorage.getItem('agentic_selected_model');
+    if (savedModel) {
+      setSelectedModel(savedModel);
+    }
+  }, []);
+
+  // Save selected model to localStorage when it changes
+  useEffect(() => {
+    if (selectedModel) {
       localStorage.setItem('agentic_selected_model', selectedModel);
     }
-    await handleGenerate();
+  }, [selectedModel]);
+
+  // Smart placeholder based on type and selection
+  const getSmartPlaceholder = () => {
+    if (type === 'process' && selectNodes.length === 1) {
+      const nodeType = selectNodes[0].type;
+      return `Describe how this ${nodeType} should process data...`;
+    } else {
+      return `Describe the ${type === 'flow' ? 'workflow' : 'process'} you want to generate...`;
+    }
   };
 
-  // Test connection for selected provider
-  const testConnection = useCallback(async () => {
-    setConnectionLoading(true);
-    setConnectionStatus('loading');
-    setConnectionError(null);
-    const minDuration = 500;
-    const start = Date.now();
-    try {
-      const config = apiKeyManager.getConfig(selectedProvider);
-      if (!config) {
-        const elapsed = Date.now() - start;
-        if (elapsed < minDuration) await new Promise(res => setTimeout(res, minDuration - elapsed));
-        setConnectionStatus('error');
-        setConnectionError('No configuration found for this provider');
-        setConnectionLoading(false);
-        return;
-      }
-      const providerInstance = LLMProviderFactory.createProvider(selectedProvider);
-      const result = await providerInstance.testConnection(config);
-      const elapsed = Date.now() - start;
-      if (elapsed < minDuration) await new Promise(res => setTimeout(res, minDuration - elapsed));
-      if (result.success) {
-        setConnectionStatus('success');
-        setConnectionError(null);
-      } else {
-        setConnectionStatus('error');
-        setConnectionError(result.error || 'Unknown error');
-      }
-    } catch (err: any) {
-      const elapsed = Date.now() - start;
-      if (elapsed < minDuration) await new Promise(res => setTimeout(res, minDuration - elapsed));
-      setConnectionStatus('error');
-      setConnectionError(err?.message || 'Test failed');
-    } finally {
-      setConnectionLoading(false);
-    }
-  }, [selectedProvider]);
+  const handleInputChange = (value: string) => {
+    setDescription(value);
+  };
 
-  // Test connection on mount and when selectedProvider changes
-  useEffect(() => {
-    setConnectionStatus('unknown');
-    setConnectionError(null);
-    if (typedAvailableProviders.find(p => p.provider === selectedProvider)?.configured) {
-      testConnection();
-    }
-  }, [selectedProvider, typedAvailableProviders, testConnection]);
-
-  // History navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Allow arrow key navigation through prompt history
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       const newValue = navigateHistory('up', description);
@@ -190,35 +134,30 @@ const GenerationPanel: React.FC<GenerationPanelProps> = ({
     }
   };
 
-  const handleInputChange = (value: string) => {
-    setDescription(value);
-    resetHistory();
+  const handleConnectionChange = (status: 'unknown' | 'loading' | 'success' | 'error', error?: string) => {
+    setConnectionStatus(status);
   };
 
-  const handleConfigureProvider = (provider: LLMProvider) => {
-    setProviderToConfigure(provider);
-    setShowAPISetup(true);
-  };
+  // Custom generate function that includes model selection
+  const handleGenerateWithModel = async () => {
+    if (!description.trim() || isGenerating) return;
 
-  const handleAPISetupComplete = () => {
-    setShowAPISetup(false);
-    setProviderToConfigure(undefined);
-  };
-
-  // Smart placeholder based on type and selection
-  const getSmartPlaceholder = () => {
-    if (actualType === 'process' && selectedNodes.length === 1) {
-      const nodeType = selectedNodes[0].type;
-      return `Describe how this ${nodeType} should process data...`;
-    } else {
-      return `Describe the ${actualType === 'flow' ? 'workflow' : 'process'} you want to generate...`;
+    // For all providers, ensure we have a model selected if models are available
+    const currentProvider = availableProviders.find(p => p.provider === selectedProvider);
+    if (currentProvider && currentProvider.models && currentProvider.models.length > 0 && !selectedModel) {
+      const defaultModel = currentProvider.defaultModel || currentProvider.models[0];
+      setSelectedModel(defaultModel);
+      localStorage.setItem('agentic_selected_model', defaultModel);
     }
+
+    // Call the original handleGenerate
+    await handleGenerate();
   };
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-2">
+    <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-0 sm:p-2">
       {/* Main input and options row */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         <GenerationInput
           value={description}
           onChange={handleInputChange}
@@ -229,34 +168,48 @@ const GenerationPanel: React.FC<GenerationPanelProps> = ({
           onFocus={onFocus}
           onBlur={onBlur}
         />
-        {/* Provider status icon and dropdown */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                {statusIcon(connectionStatus, connectionError, testConnection, connectionLoading)}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              {connectionStatus === 'success' && 'Connection successful'}
-              {connectionStatus === 'loading' && 'Testing connection...'}
-              {connectionStatus === 'error' && (connectionError || 'Connection failed')}
-              {connectionStatus === 'unknown' && 'Test connection'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        {/* Triple dot menu for advanced options */}
+
+        {/* Connection status or generate button */}
+        {isProviderConfigured ? (
+          connectionStatus === 'success' ? (
+            <button
+              onClick={handleGenerateWithModel}
+              disabled={!description.trim() || isGenerating}
+              className="flex items-center justify-center w-8 h-8 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              title="Generate"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          ) : (
+            <ConnectionStatus
+              provider={selectedProvider}
+              size="sm"
+              onConnectionChange={handleConnectionChange}
+            />
+          )
+        ) : (
+          <button
+            onClick={() => handleConfigureProvider(selectedProvider)}
+            disabled={isGenerating}
+            className="flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            title="Configure provider"
+          >
+            <span className="text-xs font-medium">!</span>
+          </button>
+        )}
+
+        {/* Provider icon as dropdown trigger */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               disabled={isGenerating}
-              className="flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="More options"
+              className="flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              title={`Provider: ${currentProviderInfo?.name || selectedProvider}`}
             >
-              <MoreHorizontal className="w-4 h-4" />
+              <ProviderIcon provider={selectedProvider} size="sm" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-48 sm:w-56">
             <DropdownMenuItem
               onClick={handleSuggest}
               disabled={isGenerating}
@@ -265,39 +218,37 @@ const GenerationPanel: React.FC<GenerationPanelProps> = ({
               <Lightbulb className="w-4 h-4" />
               Suggest idea
             </DropdownMenuItem>
-            
+
             {/* Provider selection dropdown */}
             <ProviderDropdown
               selectedProvider={selectedProvider}
               setSelectedProvider={setSelectedProvider}
-              availableProviders={typedAvailableProviders}
+              availableProviders={availableProviders}
               isGenerating={isGenerating}
               onConfigureProvider={handleConfigureProvider}
+              providersLoading={providersLoading}
               selectedModel={selectedModel}
               setSelectedModel={setSelectedModel}
-              providersLoading={providersLoading}
             />
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-      
-      {/* Status indicator */}
-      <GenerationStatus
-        isGenerating={isGenerating}
-        generationType={actualType}
-        historyIndex={historyIndex}
-        historyLength={promptHistory.length}
-      />
 
+        {/* Status indicator */}
+        <GenerationStatus
+          isGenerating={isGenerating}
+          generationType={type}
+          historyIndex={historyIndex}
+          historyLength={promptHistory.length}
+        />
+
+      </div>
       {/* API Setup Dialog */}
       <APISetupDialog
         open={showAPISetup}
         onOpenChange={setShowAPISetup}
-        onComplete={handleAPISetupComplete}
         initialProvider={providerToConfigure}
+        onComplete={handleAPISetupComplete}
       />
     </div>
   );
 };
-
-export default GenerationPanel;
