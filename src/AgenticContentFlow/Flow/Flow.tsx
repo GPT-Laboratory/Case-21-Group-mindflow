@@ -92,27 +92,129 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
   const filteredNodes = useMemo(() => {
     const sourceNodes = isDragging ? localNodes : nodes;
     const visibleNodes = sourceNodes.filter(node => !node.hidden);
+    console.log("sourceNodes", sourceNodes);
     
     // Deduplicate nodes by ID before rendering to prevent React key collisions
-    const nodeIdMap = new Map<string, Node>();
-    visibleNodes.forEach(node => {
+ 
+    return visibleNodes;
+  }, [nodes, localNodes, isDragging]);
+
+  /**
+   * Apply containerization logic to generated flow for horizontal connections
+   * This ensures nodes with left/right connections are properly placed in invisible containers
+   */
+  const applyContainerizationToGeneratedFlow = useCallback((generatedNodes: Node<NodeData>[], generatedEdges: Edge[]) => {
+    console.log('🔧 Applying containerization to generated flow');
+    
+    // Deduplicate generated nodes by ID before processing
+    const nodeIdMap = new Map<string, Node<NodeData>>();
+    const duplicateIds = new Set<string>();
+    
+    generatedNodes.forEach(node => {
       if (nodeIdMap.has(node.id)) {
-        console.warn(`[Flow] Duplicate node ID found during render: ${node.id}. Keeping the last occurrence.`);
+        duplicateIds.add(node.id);
+        console.warn(`[Containerization] Duplicate node ID found in generated flow: ${node.id}. Keeping the last occurrence.`);
       }
       nodeIdMap.set(node.id, node);
     });
     
-    const deduplicatedNodes = Array.from(nodeIdMap.values());
-    
     // Log if we found duplicates
-    if (deduplicatedNodes.length !== visibleNodes.length) {
-      console.warn(`[Flow] Removed ${visibleNodes.length - deduplicatedNodes.length} duplicate nodes during render`);
+    if (duplicateIds.size > 0) {
+      console.warn(`[Containerization] Removed ${duplicateIds.size} duplicate nodes from generated flow`);
     }
     
-    return deduplicatedNodes;
-  }, [nodes, localNodes, isDragging]);
-
-
+    const deduplicatedNodes = Array.from(nodeIdMap.values());
+    
+    // Create maps for efficient lookups
+    const nodeMap = new Map(deduplicatedNodes.map(n => [n.id, n]));
+    const nodeParentIdMapWithChildIdSet = new Map<string, Set<string>>();
+    
+    // Build parent-child relationship map
+    deduplicatedNodes.forEach(node => {
+      if (node.parentId) {
+        if (!nodeParentIdMapWithChildIdSet.has(node.parentId)) {
+          nodeParentIdMapWithChildIdSet.set(node.parentId, new Set());
+        }
+        nodeParentIdMapWithChildIdSet.get(node.parentId)!.add(node.id);
+      }
+    });
+    
+    // Find horizontal connections
+    const horizontalEdges = generatedEdges.filter(edge =>
+      isHorizontalConnection(edge.sourceHandle, edge.targetHandle)
+    );
+    
+    if (horizontalEdges.length === 0) {
+      console.log('🔧 No horizontal connections found, no containerization needed');
+      return { nodes: deduplicatedNodes, edges: generatedEdges };
+    }
+    
+    console.log(`🔧 Found ${horizontalEdges.length} horizontal connection(s), applying containerization`);
+    
+    const nodesToUpdate: Node<NodeData>[] = [...deduplicatedNodes];
+    const containersToAdd: Node<NodeData>[] = [];
+    const processedEdges = new Set<string>();
+    
+    // Process each horizontal edge
+    horizontalEdges.forEach(edge => {
+      if (processedEdges.has(edge.id)) return;
+      
+      const sourceNode = nodeMap.get(edge.source);
+      const targetNode = nodeMap.get(edge.target);
+      
+      if (sourceNode && targetNode) {
+        const containerizationResult = handleContainerization(
+          targetNode,
+          sourceNode,
+          edge,
+          nodeMap,
+          nodeParentIdMapWithChildIdSet
+        );
+        
+        // Update nodes based on containerization result
+        if (containerizationResult.containerToAdd) {
+          containersToAdd.push(containerizationResult.containerToAdd);
+          // Update the nodeMap with the new container
+          nodeMap.set(containerizationResult.containerToAdd.id, containerizationResult.containerToAdd);
+        }
+        
+        if (containerizationResult.updatedFromNode) {
+          const index = nodesToUpdate.findIndex(n => n.id === containerizationResult.updatedFromNode!.id);
+          if (index >= 0) {
+            nodesToUpdate[index] = containerizationResult.updatedFromNode;
+            nodeMap.set(containerizationResult.updatedFromNode.id, containerizationResult.updatedFromNode);
+          }
+        }
+        
+        if (containerizationResult.updatedToNode) {
+          const index = nodesToUpdate.findIndex(n => n.id === containerizationResult.updatedToNode!.id);
+          if (index >= 0) {
+            nodesToUpdate[index] = containerizationResult.updatedToNode;
+            nodeMap.set(containerizationResult.updatedToNode.id, containerizationResult.updatedToNode);
+          }
+        }
+        
+        if (containerizationResult.updatedToNodeSiblings) {
+          containerizationResult.updatedToNodeSiblings.forEach(sibling => {
+            const index = nodesToUpdate.findIndex(n => n.id === sibling.id);
+            if (index >= 0) {
+              nodesToUpdate[index] = sibling;
+              nodeMap.set(sibling.id, sibling);
+            }
+          });
+        }
+        
+        processedEdges.add(edge.id);
+      }
+    });
+    
+    // Combine original nodes with new containers
+    const finalNodes = [...nodesToUpdate, ...containersToAdd];
+    
+    console.log(`🔧 Containerization complete: ${containersToAdd.length} containers added`);
+    
+    return { nodes: finalNodes, edges: generatedEdges };
+  }, []);
 
   // Handle flow generation with the new unified system
   const handleFlowGenerated = useCallback((result: GenerationResult) => {
@@ -127,15 +229,34 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
       // Apply containerization logic for horizontal connections
       const processedResult = applyContainerizationToGeneratedFlow(typedNodes, flowResult.edges);
       
+      // Final deduplication check before setting nodes
+      const finalNodeIdMap = new Map<string, Node<NodeData>>();
+      const finalDuplicateIds = new Set<string>();
+      
+      processedResult.nodes.forEach(node => {
+        if (finalNodeIdMap.has(node.id)) {
+          finalDuplicateIds.add(node.id);
+          console.warn(`[Final] Duplicate node ID found before setting flow: ${node.id}. Keeping the last occurrence.`);
+        }
+        finalNodeIdMap.set(node.id, node);
+      });
+      
+      // Log if we found duplicates
+      if (finalDuplicateIds.size > 0) {
+        console.warn(`[Final] Removed ${finalDuplicateIds.size} duplicate nodes before setting flow`);
+      }
+      
+      const finalDeduplicatedNodes = Array.from(finalNodeIdMap.values());
+      
       // Replace current flow with processed flow (includes containerization)
-      setNodes(processedResult.nodes);
+      setNodes(finalDeduplicatedNodes);
       setEdges(processedResult.edges);
       
       console.log('✅ Flow generation complete with containerization applied');
     } else {
       console.warn('Expected flow generation result, got:', result.type);
     }
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, applyContainerizationToGeneratedFlow]);
 
   useEffect(() => {
     // Apply layout when nodes change
@@ -247,104 +368,6 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     
     initializeNodeTypes();
   }, [showBlockingNotification, updateBlockingNotification, completeBlockingNotification]);
-
-  /**
-   * Apply containerization logic to generated flow for horizontal connections
-   * This ensures nodes with left/right connections are properly placed in invisible containers
-   */
-  const applyContainerizationToGeneratedFlow = useCallback((generatedNodes: Node<NodeData>[], generatedEdges: Edge[]) => {
-    console.log('🔧 Applying containerization to generated flow');
-    
-    // Create maps for efficient lookups
-    const nodeMap = new Map(generatedNodes.map(n => [n.id, n]));
-    const nodeParentIdMapWithChildIdSet = new Map<string, Set<string>>();
-    
-    // Build parent-child relationship map
-    generatedNodes.forEach(node => {
-      if (node.parentId) {
-        if (!nodeParentIdMapWithChildIdSet.has(node.parentId)) {
-          nodeParentIdMapWithChildIdSet.set(node.parentId, new Set());
-        }
-        nodeParentIdMapWithChildIdSet.get(node.parentId)!.add(node.id);
-      }
-    });
-    
-    // Find horizontal connections
-    const horizontalEdges = generatedEdges.filter(edge =>
-      isHorizontalConnection(edge.sourceHandle, edge.targetHandle)
-    );
-    
-    if (horizontalEdges.length === 0) {
-      console.log('🔧 No horizontal connections found, no containerization needed');
-      return { nodes: generatedNodes, edges: generatedEdges };
-    }
-    
-    console.log(`🔧 Found ${horizontalEdges.length} horizontal connection(s), applying containerization`);
-    
-    const nodesToUpdate: Node<NodeData>[] = [...generatedNodes];
-    const containersToAdd: Node<NodeData>[] = [];
-    const processedEdges = new Set<string>();
-    
-    // Process each horizontal edge
-    horizontalEdges.forEach(edge => {
-      if (processedEdges.has(edge.id)) return;
-      
-      const sourceNode = nodeMap.get(edge.source);
-      const targetNode = nodeMap.get(edge.target);
-      
-      if (sourceNode && targetNode) {
-        const containerizationResult = handleContainerization(
-          targetNode,
-          sourceNode,
-          edge,
-          nodeMap,
-          nodeParentIdMapWithChildIdSet
-        );
-        
-        // Update nodes based on containerization result
-        if (containerizationResult.containerToAdd) {
-          containersToAdd.push(containerizationResult.containerToAdd);
-          // Update the nodeMap with the new container
-          nodeMap.set(containerizationResult.containerToAdd.id, containerizationResult.containerToAdd);
-        }
-        
-        if (containerizationResult.updatedFromNode) {
-          const index = nodesToUpdate.findIndex(n => n.id === containerizationResult.updatedFromNode!.id);
-          if (index >= 0) {
-            nodesToUpdate[index] = containerizationResult.updatedFromNode;
-            nodeMap.set(containerizationResult.updatedFromNode.id, containerizationResult.updatedFromNode);
-          }
-        }
-        
-        if (containerizationResult.updatedToNode) {
-          const index = nodesToUpdate.findIndex(n => n.id === containerizationResult.updatedToNode!.id);
-          if (index >= 0) {
-            nodesToUpdate[index] = containerizationResult.updatedToNode;
-            nodeMap.set(containerizationResult.updatedToNode.id, containerizationResult.updatedToNode);
-          }
-        }
-        
-        if (containerizationResult.updatedToNodeSiblings) {
-          containerizationResult.updatedToNodeSiblings.forEach(sibling => {
-            const index = nodesToUpdate.findIndex(n => n.id === sibling.id);
-            if (index >= 0) {
-              nodesToUpdate[index] = sibling;
-              nodeMap.set(sibling.id, sibling);
-            }
-          });
-        }
-        
-        processedEdges.add(edge.id);
-      }
-    });
-    
-    // Combine original nodes with new containers
-    const finalNodes = [...nodesToUpdate, ...containersToAdd];
-    
-    console.log(`🔧 Containerization complete: ${containersToAdd.length} containers added`);
-    
-    return { nodes: finalNodes, edges: generatedEdges };
-  }, []);
 
   return (
     <>
