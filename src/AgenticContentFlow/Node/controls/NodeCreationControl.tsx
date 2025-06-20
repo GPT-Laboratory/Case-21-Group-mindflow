@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useReactFlow } from "@xyflow/react";
 import { PlusCircle } from "lucide-react";
 import ControlDropdown from "../../Controls/Components/ControlDropdown";
@@ -8,6 +8,7 @@ import { useSelect } from "../../Select/contexts/SelectContext";
 import { useEdgeContext } from "../../Edge/store/useEdgeContext";
 import { useTransaction } from "@jalez/react-state-history";
 import { getHandlesForNodeType } from "../../Edge/hooks/utils/edgeUtils";
+import { generateUniqueId } from "../hooks/utils/nodeUtils";
 
 interface NodeCreationControlProps {
   availableNodeTypes: string[];
@@ -22,7 +23,6 @@ const NodeCreationControl: React.FC<NodeCreationControlProps> = ({
   const { selectedNodes } = useSelect();
   const { withTransaction } = useTransaction();
 
-
   const [open, setOpen] = useState(false);
 
   const handleNodeTypeSelect = (nodeType: string) => {
@@ -32,7 +32,7 @@ const NodeCreationControl: React.FC<NodeCreationControlProps> = ({
     });
 
     // Create a new node at the center of the viewport
-    const newNodeId = `node-${Date.now()}`;
+    const newNodeId = generateUniqueId("node");
     const newNode = createNodeFromTemplate(nodeType, {
       id: newNodeId,
       position: center,
@@ -52,7 +52,6 @@ const NodeCreationControl: React.FC<NodeCreationControlProps> = ({
           const selectedHandles = getHandlesForNodeType(selectedNode.type);
           const newNodeHandles = getHandlesForNodeType(nodeType);
 
-
           const newEdge = {
             id: `e-${selectedNode.id}-${newNodeId}`,
             source: selectedNode.id,
@@ -61,13 +60,8 @@ const NodeCreationControl: React.FC<NodeCreationControlProps> = ({
             targetHandle: newNodeHandles.targetHandle,
           };
 
-
           // Add the edge
           onEdgeAdd(newEdge);
-
-
-
-
         }
       }
     }, "NodeCreationControl/Add");

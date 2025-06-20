@@ -2,60 +2,54 @@
 import { useCallback, useState, useRef } from "react";
 import { Node, useReactFlow, useViewport } from "@xyflow/react";
 import { NodeData } from "../../types";
-import { getPotentialParentId } from "./utils/getPotentialParents";
-import {
-  updateNodeExtentInLocalNodes
-} from "./utils/dragUtils";
-import { getDragResistance, dragStartTimes } from "./utils/getDragResistance";
+import { updateNodeExtentInLocalNodes } from "./utils/dragUtils";
+import { useDragWorker } from "./useDragWorker";
+import { calculateIntersections as syncCalculateIntersections, calculateParentCandidate as syncCalculateParentCandidate } from "./utils/sharedDragUtils";
 
 // Define the root indicator string as a constant
 const ROOT_INDICATOR = "no-parent";
 
 /**
- * A custom hook for handling node dragging behavior in a mindmap.
+ * Hook for handling node drag operations with Web Worker support
  */
 export const useNodeDrag = (
-  trackUpdateNodes: (nodes: Node<NodeData>[], previousNodes: Node<NodeData>[], description: string) => void,
   nodes: Node<NodeData>[],
+  trackUpdateNodes: (nodes: Node<NodeData>[], previousNodes: Node<NodeData>[], description: string) => void,
   nodeMap: Map<string, Node<NodeData>>,
   nodeParentIdMapWithChildIdSet: Map<string, Set<string>>,
-  updateNode?: (node: Node<NodeData>) => void
+  onDraggingStateChange?: (isDragging: boolean) => void
 ) => {
-  const { getIntersectingNodes, getNode } = useReactFlow();
+  const { updateNode } = useReactFlow();
   const { x, y, zoom } = useViewport();
+  const { calculateIntersections, calculateParentCandidate } = useDragWorker();
 
-  const [isDragging, setIsDragging] = useState(false);
   const [localNodes, setLocalNodes] = useState<Node<NodeData>[]>([]);
   const [currentParentCandidateId, setCurrentParentCandidateId] = useState<string | null>(null);
   const isDraggingRef = useRef(false);
 
   // Handle drag start
-  const onNodeDragStart = useCallback((_: React.MouseEvent, __: Node<NodeData>, nodesToDrag: Node<NodeData>[]) => {
-    setIsDragging(true);
-    isDraggingRef.current = true;
-    // Create a map of the nodes to drag where the nodeId is the key
-    const nodesToDragMap = new Map<string, Node<NodeData>>();
-    nodesToDrag.forEach((node) => {
-      node.selected = true;
-      nodesToDragMap.set(node.id, node);
-      //nodeMap.set(node.id, node);
-    });
-
-    const updatedNodes = nodes.map((n) => {
-
-      return {
-        ...n,
-        selected: nodesToDragMap.has(n.id),
+  const onNodeDragStart = useCallback(
+    (event: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
+      isDraggingRef.current = true;
+      onDraggingStateChange?.(true);
+      
+      // Create a set of dragged node IDs for efficient lookup
+      const draggedNodeIds = new Set(draggedNodes.map(node => node.id));
+      
+      // Simply update the nodes with selection and highlighting
+      const updatedNodes = nodes.map(node => ({
+        ...node,
+        selected: draggedNodeIds.has(node.id),
         data: {
-          ...n.data,
+          ...node.data,
           highlighted: false
-        },
-      };
+        }
+      }));
 
-    });
-
-    setLocalNodes(updatedNodes);
-  }, [nodes, updateNode]);
+      setLocalNodes(updatedNodes);
+    },
+    [nodes, onDraggingStateChange]
+  );
 
   /**
    * Helper function to update node highlighting
@@ -70,7 +64,6 @@ export const useNodeDrag = (
         highlighted
       },
     } as Node<NodeData>;
-    //updateNode(updatedNode);
 
     setLocalNodes(prev =>
       prev.map(n => n.id === nodeId ? updatedNode : n)
@@ -79,31 +72,24 @@ export const useNodeDrag = (
   }, [nodeMap, setLocalNodes, localNodes]);
 
   /**
-   * Helper function to clear highlighting from current parent candidate
+   * Optimized onNodeDrag with Web Worker support
    */
-  const clearCurrentParentHighlight = useCallback(() => {
-    if (currentParentCandidateId) {
-      updateNodeHighlight(currentParentCandidateId, false);
-      setCurrentParentCandidateId(null);
-    }
-  }, [currentParentCandidateId, updateNodeHighlight]);
-
-  // Handle drag in progress
   const onNodeDrag = useCallback(
-    (event: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
+    async (event: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
       // Handle breaking free from parent for all dragged nodes
       const mousePosition = {
         x: (event.clientX - x) / zoom,
         y: (event.clientY - y) / zoom
       };
+      
       draggedNodes.forEach((dn) => {
         const parent = nodeMap.get(dn.parentId || "");
         if (!parent) return;
-        const currentState = (getNode(dn.id) as Node<NodeData>) || dn;
-        const { shouldBreakFree } = getDragResistance(
-          currentState,
-          mousePosition,
-          parent
+
+        const shouldBreakFree = getDragResistance(
+          dn,
+          parent,
+          mousePosition
         );
         if (shouldBreakFree) {
           setLocalNodes(prev =>
@@ -112,40 +98,40 @@ export const useNodeDrag = (
         }
       });
 
-      // Handle parent candidate selection
-      const intersectingNodes = getIntersectingNodes(draggedNode);
+      // Use Web Worker for expensive intersection calculations
+      try {
+        const intersectingNodes = await calculateIntersections(draggedNode, nodes, { x, y, zoom });
+        
+        // Use Web Worker for parent candidate calculation
+        const potentialParentId = await calculateParentCandidate(
+          draggedNode,
+          intersectingNodes,
+          nodeParentIdMapWithChildIdSet,
+          nodeMap,
+          ROOT_INDICATOR
+        );
 
-      // No intersecting nodes - we are suggesting it becomes a root node
-      if (intersectingNodes.length === 0 || !draggedNode.id) {
-        clearCurrentParentHighlight();
-        setCurrentParentCandidateId(null);
-        return;
+        // Update highlighting based on worker results
+        if (potentialParentId !== currentParentCandidateId) {
+          // Clear previous highlight
+          if (currentParentCandidateId && currentParentCandidateId !== ROOT_INDICATOR) {
+            updateNodeHighlight(currentParentCandidateId, false);
+          }
+          
+          // Set new highlight
+          if (potentialParentId !== ROOT_INDICATOR) {
+            updateNodeHighlight(potentialParentId, true);
+          }
+          
+          setCurrentParentCandidateId(potentialParentId);
+        }
+      } catch (error) {
+        console.error('Error in drag worker calculations:', error);
+        // Fallback to synchronous calculation if worker fails
+        // (You could implement fallback logic here if needed)
       }
-
-      const potentialParentId = getPotentialParentId(
-        draggedNode,
-        intersectingNodes,
-        nodeParentIdMapWithChildIdSet,
-        nodeMap,
-        ROOT_INDICATOR
-      );
-
-      if (potentialParentId === ROOT_INDICATOR) {
-        // If the potential parent is the root indicator, clear the current parent highlight
-        clearCurrentParentHighlight();
-        setCurrentParentCandidateId(null);
-        return;
-      }
-
-
-      if (currentParentCandidateId === potentialParentId) return;
-      clearCurrentParentHighlight();
-      updateNodeHighlight(potentialParentId, true);
-      setCurrentParentCandidateId(potentialParentId);
     },
     [
-      getIntersectingNodes,
-      nodeParentIdMapWithChildIdSet,
       nodeMap,
       currentParentCandidateId,
       updateNode,
@@ -153,75 +139,122 @@ export const useNodeDrag = (
       x,
       y,
       zoom,
-      getNode,
-      clearCurrentParentHighlight,
+      nodes,
+      nodeParentIdMapWithChildIdSet,
+      calculateIntersections,
+      calculateParentCandidate,
       updateNodeHighlight
     ]
   );
 
-  // Handle drag end
-  const onNodeDragStop = useCallback((_: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
-    setIsDragging(false);
-    isDraggingRef.current = false;
+  /**
+   * Handle drag stop
+   */
+  const onNodeDragStop = useCallback(
+    (event: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
+      isDraggingRef.current = false;
+      onDraggingStateChange?.(false);
 
-    // Reset drag start times for all dragged nodes
-    draggedNodes.forEach(dn => {
-      if (dn.id) dragStartTimes.delete(dn.id);
-    });
-
-    const updatedLocalNodes = draggedNodes;
-
-    const intersectingNodes = getIntersectingNodes(draggedNode);
-
-    const potentialParentId = getPotentialParentId(
-      draggedNode,
-      intersectingNodes,
-      nodeParentIdMapWithChildIdSet,
-      nodeMap,
-      ROOT_INDICATOR
-    );
-
-
-    // Update parent relationships for all dragged nodes
-    if (potentialParentId && potentialParentId !== ROOT_INDICATOR) {
-      // Clear highlight on the candidate
-      updatedLocalNodes.forEach(localNode => {
-        if (localNode.id === potentialParentId) {
-          localNode.data.highlighted = false;
-        }
-        // Assign new parent to each dragged node
-        if (draggedNodes.some(dn => dn.id === localNode.id)) {
-          localNode.parentId = potentialParentId;
-          localNode.extent = "parent";
-        }
-      });
+      // Clear any current highlighting
+      if (currentParentCandidateId && currentParentCandidateId !== ROOT_INDICATOR) {
+        updateNodeHighlight(currentParentCandidateId, false);
+      }
       setCurrentParentCandidateId(null);
-    } else {
-      // If no parent candidate, make each dragged node a root
-      updatedLocalNodes.forEach(localNode => {
-        if (draggedNodes.some(dn => dn.id === localNode.id) && localNode.parentId) {
-          localNode.parentId = undefined;
-          delete localNode.extent;
-        }
-      });
-    }
 
-    // Commit changes to node state
-    if (updatedLocalNodes.length > 0) {
-      //setLocalNodes(updatedLocalNodes);
-      // Update the nodes in the store
-      trackUpdateNodes(updatedLocalNodes, nodes, "Update nodes on drag stop");
-      setLocalNodes([]);
-    }
-  }, [localNodes, nodes, currentParentCandidateId]);
+      const updatedLocalNodes = draggedNodes;
+
+      // Use synchronous calculations for drag stop (like the old version) to prevent glitching
+      try {
+        const intersectingNodes = syncCalculateIntersections(draggedNode, nodes, { x, y, zoom });
+        const potentialParentId = syncCalculateParentCandidate(
+          draggedNode,
+          intersectingNodes,
+          nodeParentIdMapWithChildIdSet,
+          nodeMap,
+          ROOT_INDICATOR
+        );
+
+        // Update parent relationships for all dragged nodes
+        if (potentialParentId && potentialParentId !== ROOT_INDICATOR) {
+          // Clear highlight on the candidate
+          updatedLocalNodes.forEach(localNode => {
+            if (localNode.id === potentialParentId) {
+              localNode.data.highlighted = false;
+            }
+            // Assign new parent to each dragged node
+            if (draggedNodes.some(dn => dn.id === localNode.id)) {
+              localNode.parentId = potentialParentId;
+              localNode.extent = "parent";
+            }
+          });
+        } else {
+          // If no parent candidate, make each dragged node a root
+          updatedLocalNodes.forEach(localNode => {
+            if (draggedNodes.some(dn => dn.id === localNode.id) && localNode.parentId) {
+              localNode.parentId = undefined;
+              delete localNode.extent;
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error in synchronous drag stop calculations:', error);
+        // Fallback: make all dragged nodes roots
+        updatedLocalNodes.forEach(localNode => {
+          if (draggedNodes.some(dn => dn.id === localNode.id) && localNode.parentId) {
+            localNode.parentId = undefined;
+            delete localNode.extent;
+          }
+        });
+      }
+
+      // Commit changes to node state
+      if (updatedLocalNodes.length > 0) {
+        // Update the nodes in the store
+        trackUpdateNodes(updatedLocalNodes, nodes, "Update nodes on drag stop");
+        setLocalNodes([]);
+      }
+    },
+    [localNodes, nodes, currentParentCandidateId, nodeParentIdMapWithChildIdSet, nodeMap, trackUpdateNodes, updateNodeHighlight, onDraggingStateChange, x, y, zoom]
+  );
 
   return {
-    isDragging,
+    onNodeDragStart,
+    onNodeDrag,
+    onNodeDragStop,
     isDraggingRef,
     localNodes,
     setLocalNodes,
-    onNodeDragStart,
-    onNodeDragStop,
-    onNodeDrag,
   };
+};
+
+/**
+ * Helper function to determine if a node should break free from its parent
+ */
+const getDragResistance = (
+  node: Node<NodeData>,
+  parent: Node<NodeData>,
+  mousePosition: { x: number; y: number }
+): boolean => {
+  const parentWidth = parent.width || parent.measured?.width || 0;
+  const parentHeight = parent.height || parent.measured?.height || 0;
+  const nodeWidth = node.width || node.measured?.width || 0;
+  const nodeHeight = node.height || node.measured?.height || 0;
+
+  const parentLeft = parent.position.x;
+  const parentRight = parentLeft + parentWidth;
+  const parentTop = parent.position.y;
+  const parentBottom = parentTop + parentHeight;
+
+  const nodeLeft = mousePosition.x - nodeWidth / 2;
+  const nodeRight = mousePosition.x + nodeWidth / 2;
+  const nodeTop = mousePosition.y - nodeHeight / 2;
+  const nodeBottom = mousePosition.y + nodeHeight / 2;
+
+  // Check if the node is completely outside the parent bounds
+  return (
+    nodeRight < parentLeft ||
+    nodeLeft > parentRight ||
+    nodeBottom < parentTop ||
+    nodeTop > parentBottom
+  );
 };
