@@ -25,6 +25,7 @@ import { ensureNodeTypesRegistered } from "./Nodes/registerBasicNodeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
 import { NotificationProvider } from "./Notifications";
+import { GeneratorProvider } from "./Generator/context/GeneratorContext";
 
 import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React Flow
 import ReactStateHistory from "./History/ReactStateHistory";
@@ -75,51 +76,53 @@ export function AgenticContentFlowContent() {
       }}
     >
       <NotificationProvider>
-        <LayoutProvider
-          initialDirection="DOWN"
-          initialAutoLayout={true}
-          initialPadding={20}
-          initialSpacing={{ node: 80, layer: 80 }}
-          initialParentResizingOptions={{
-            padding: {
-              horizontal: 50,
-              vertical: 50,
-            },
-            minWidth: 100,
-            minHeight: 100,
-          }}
-          initialNodeDimensions={{
-            width: 200,
-            height: 200,
-          }}
-          updateNodes={handleNodeUpdate}
-          updateEdges={handleEdgeUpdate}
-        >
-          <ShortcutsManager>
-            <FlowContainer ref={flowWrapper} onWheel={handleWheel}>
-                <UnifiedControls onToggleFullscreen={handleToggleFullscreen} />
-              <Flow>
-                {showGrid && (
-                  <Background
-                    variant={gridVariant}
-                    gap={GRID_SETTINGS.BACKGROUND_GAP}
-                    size={GRID_SETTINGS.BACKGROUND_SIZE}
-                    color="var(--color-border)"
-                  />
-                )}
-                <SelectLogic />
-                <Minimap />
+        <GeneratorProvider>
+          <LayoutProvider
+            initialDirection="DOWN"
+            initialAutoLayout={true}
+            initialPadding={20}
+            initialSpacing={{ node: 80, layer: 80 }}
+            initialParentResizingOptions={{
+              padding: {
+                horizontal: 50,
+                vertical: 50,
+              },
+              minWidth: 100,
+              minHeight: 100,
+            }}
+            initialNodeDimensions={{
+              width: 200,
+              height: 200,
+            }}
+            updateNodes={handleNodeUpdate}
+            updateEdges={handleEdgeUpdate}
+          >
+            <ShortcutsManager>
+              <FlowContainer ref={flowWrapper} onWheel={handleWheel}>
+                  <UnifiedControls onToggleFullscreen={handleToggleFullscreen} />
+                <Flow>
+                  {showGrid && (
+                    <Background
+                      variant={gridVariant}
+                      gap={GRID_SETTINGS.BACKGROUND_GAP}
+                      size={GRID_SETTINGS.BACKGROUND_SIZE}
+                      color="var(--color-border)"
+                    />
+                  )}
+                  <SelectLogic />
+                  <Minimap />
 
-                {/* Register available controls here */}
-                <GridControlsRegistration />
-                <TestControlsRegistration />
-                <LayoutControlsRegistration />
-                <CopyWorkflowControlsRegistration />
-                <APISetupControlsRegistration />
-              </Flow>
-            </FlowContainer>
-          </ShortcutsManager>
-        </LayoutProvider>
+                  {/* Register available controls here */}
+                  <GridControlsRegistration />
+                  <TestControlsRegistration />
+                  <LayoutControlsRegistration />
+                  <CopyWorkflowControlsRegistration />
+                  <APISetupControlsRegistration />
+                </Flow>
+              </FlowContainer>
+            </ShortcutsManager>
+          </LayoutProvider>
+        </GeneratorProvider>
       </NotificationProvider>
     </ProcessProvider>
   );
