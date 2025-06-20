@@ -14,23 +14,16 @@ import {
   ValidationWarning,
   FlowGenerationResult
 } from '../../generatortypes';
+import { useUnifiedNodeTypeStore } from '../../../Node/store/useUnifiedNodeTypeStore';
 
 // Enhanced constants for validation and correction
-export const VALID_NODE_TYPES = [
-  'restnode',
-  'logicnode',
-  'contentnode', 
-  'conditionalnode',
-  'datanode',
-  'pagenode',
-  'statisticsnode',
-  'invisiblenode',
-  'coursenode',
-  'modulenode',
-  'cellnode'
-] as const;
-
 export const VALID_HANDLE_POSITIONS = ['top', 'bottom', 'left', 'right'] as const;
+
+// Get valid node types dynamically from the store
+export const getValidNodeTypes = (): string[] => {
+  const nodeTypeStore = useUnifiedNodeTypeStore.getState();
+  return nodeTypeStore.getAllNodeTypeNames();
+};
 
 // Auto-correction mappings from the original FlowValidationService
 export const NODE_TYPE_CORRECTIONS: Record<string, string> = {
@@ -133,7 +126,7 @@ export class FlowValidator {
 
     for (const node of nodes) {
       // Check node type with correction suggestions
-      if (node.type && !VALID_NODE_TYPES.includes(node.type as any)) {
+      if (node.type && !getValidNodeTypes().includes(node.type as any)) {
         errors.push({
           type: 'invalid_node_type',
           message: `Invalid node type: "${node.type}"`,
@@ -163,21 +156,55 @@ export class FlowValidator {
 
       // Enhanced data structure validation
       if (node.data) {
+        // Check for required data fields
+        const requiredFields = ['expanded', 'depth', 'isParent', 'instanceData', 'templateData'];
+        for (const field of requiredFields) {
+          if (node.data[field] === undefined) {
+            errors.push({
+              type: 'missing_required_field',
+              message: `Node ${node.id} missing required field: data.${field}`,
+              nodeId: node.id,
+              field: `data.${field}`,
+              suggestedFix: field === 'expanded' ? 'true' : 
+                           field === 'depth' ? '0' : 
+                           field === 'isParent' ? 'false' :
+                           field === 'instanceData' ? '{ "label": "Node Label", "details": "Node description" }' :
+                           '{ "method": "GET", "url": "https://api.example.com/endpoint", "headers": {}, "authentication": "none" }'
+            });
+          }
+        }
+
+        // Check instanceData structure
         const instanceData = node.data.instanceData as any;
-        if (!instanceData?.label) {
+        if (instanceData && (!instanceData.label || !instanceData.details)) {
           warnings.push({
             type: 'best_practice',
-            message: `Node ${node.id} should have a descriptive label`,
-            suggestion: 'Add instanceData.label field'
+            message: `Node ${node.id} should have complete instanceData with label and details`,
+            suggestion: 'Add instanceData.label and instanceData.details fields'
           });
         }
 
+        // Check instanceCode for processing nodes
         if (!node.data.instanceCode && node.type !== 'invisiblenode') {
-          warnings.push({
-            type: 'best_practice',
-            message: `Node ${node.id} should have instance code for processing`,
-            suggestion: 'Add instanceCode field with processing logic'
+          errors.push({
+            type: 'missing_required_field',
+            message: `Node ${node.id} missing required field: data.instanceCode`,
+            nodeId: node.id,
+            field: 'data.instanceCode',
+            suggestedFix: 'async function process(incomingData, nodeData, params, targetMap, sourceMap) { /* processing logic */ }'
           });
+        }
+
+        // Check for realistic API endpoints in restnode types
+        if (node.type === 'restnode' && node.data.templateData?.url) {
+          const url = node.data.templateData.url;
+          if (url.includes('example.com') || url.includes('api.example.com')) {
+            warnings.push({
+              type: 'best_practice',
+              message: `Node ${node.id} uses generic example.com URL`,
+              suggestion: 'Use realistic API endpoints (Gmail API, Telegram API, etc.)'
+            });
+          }
         }
       }
     }
@@ -208,7 +235,8 @@ export class FlowValidator {
         errors.push({
           type: 'invalid_edge',
           message: `Edge references non-existent source node: "${edge.source}"`,
-          edgeId: edge.id
+          edgeId: edge.id,
+          suggestedFix: `Check if node ID "${edge.source}" exists in the nodes array`
         });
       }
 
@@ -216,8 +244,40 @@ export class FlowValidator {
         errors.push({
           type: 'invalid_edge',
           message: `Edge references non-existent target node: "${edge.target}"`,
-          edgeId: edge.id
+          edgeId: edge.id,
+          suggestedFix: `Check if node ID "${edge.target}" exists in the nodes array`
         });
+      }
+
+      // Check for similar node IDs that might be typos
+      if (!nodeIds.has(edge.source)) {
+        const similarIds = Array.from(nodeIds).filter(id => 
+          id.includes(edge.source.split('-').slice(-2).join('-')) || 
+          edge.source.includes(id.split('-').slice(-2).join('-'))
+        );
+        if (similarIds.length > 0) {
+          errors.push({
+            type: 'invalid_edge',
+            message: `Edge source "${edge.source}" not found. Similar node IDs: ${similarIds.join(', ')}`,
+            edgeId: edge.id,
+            suggestedFix: `Use one of the existing node IDs: ${similarIds.join(', ')}`
+          });
+        }
+      }
+
+      if (!nodeIds.has(edge.target)) {
+        const similarIds = Array.from(nodeIds).filter(id => 
+          id.includes(edge.target.split('-').slice(-2).join('-')) || 
+          edge.target.includes(id.split('-').slice(-2).join('-'))
+        );
+        if (similarIds.length > 0) {
+          errors.push({
+            type: 'invalid_edge',
+            message: `Edge target "${edge.target}" not found. Similar node IDs: ${similarIds.join(', ')}`,
+            edgeId: edge.id,
+            suggestedFix: `Use one of the existing node IDs: ${similarIds.join(', ')}`
+          });
+        }
       }
 
       // Enhanced handle validation with correction suggestions
@@ -258,6 +318,16 @@ export class FlowValidator {
   private validateStructure(nodes: any[], edges: any[]): { errors: ValidationError[], warnings: ValidationWarning[] } {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
+
+    // Check for the common AI error: edges without nodes
+    if (edges.length > 0 && nodes.length === 0) {
+      errors.push({
+        type: 'missing_required_field',
+        message: 'Flow contains edges but no nodes. This is a common generation error.',
+        field: 'nodes',
+        suggestedFix: 'Create actual nodes that the edges reference. Do not copy example structure without creating nodes.'
+      });
+    }
 
     // Check for isolated nodes
     const connectedNodes = new Set();
@@ -443,7 +513,7 @@ export class FlowValidator {
   }
 
   buildSelfCorrectionPrompt(invalidFlow: any, errors: any[], request: any): string {
-    const validNodeTypes = VALID_NODE_TYPES;
+    const validNodeTypes = getValidNodeTypes();
     const validHandles = VALID_HANDLE_POSITIONS;
     
     const errorsList = errors.map(e => 
