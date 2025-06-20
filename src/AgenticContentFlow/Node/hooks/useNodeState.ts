@@ -51,15 +51,17 @@ export const useNodeHistoryStateImpl = (
   const nodeMapToUse = nodeMap || new Map();
   const parentMapToUse = nodeParentIdMapWithChildIdSet || new Map();
 
+  // Track dragging state for React Flow visual feedback
+  const [isDragging, setIsDragging] = useState(false);
+
   const {
-    isDragging,
+    onNodeDragStart,
+    onNodeDrag,
+    onNodeDragStop,
     isDraggingRef,
     localNodes,
-    setLocalNodes,
-    onNodeDragStart,
-    onNodeDragStop,
-    onNodeDrag
-  } = useNodeDrag(trackUpdateNodes, nodes, nodeMapToUse, parentMapToUse, updateNode);
+    setLocalNodes
+  } = useNodeDrag(nodes, trackUpdateNodes, nodeMapToUse, parentMapToUse, setIsDragging);
 
   const onNodesChange = useCallback(
     withErrorHandler("onNodesChange", (changes: NodeChange[]) => {
@@ -68,20 +70,6 @@ export const useNodeHistoryStateImpl = (
           applyNodeChanges(changes, prev.length > 0 ? prev : nodes) as Node<NodeData>[]
         );
       } else {
-        // Only track significant changes in history
-        // Skip position changes as they're too frequent and will be tracked by onNodeDragStop
-        // const hasNonPositionChanges = changes.some(change =>
-        //   change.type !== 'position' && change.type !== 'remove' && change.type !== 'add'
-        // );
-        
-        // if (hasNonPositionChanges && lastExecutedAction !== "onNodeRemove" && lastExecutedAction !== "onNodeAdd" && lastExecutedAction !== "handleUpdateNodes") {
-        //   const updatedNodes = applyNodeChanges(changes, nodes) as Node<NodeData>[];
-        //   // Create a deep copy of the nodes to avoid mutating the original state
-        //   const deepCopyNodes = nodes.map(node => ({ ...node }));
-        //   trackUpdateNodes(updatedNodes, deepCopyNodes, "Update nodes on change");
-        //   setLastExecutedAction("onNodesChange");
-        // } else {
-        // }
         const updatedNodes = applyNodeChanges(changes, nodes) as Node<NodeData>[];
         updateNodes(updatedNodes);
       }
