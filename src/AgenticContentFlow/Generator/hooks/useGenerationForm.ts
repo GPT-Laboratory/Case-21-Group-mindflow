@@ -5,6 +5,8 @@ import {
   LLMProvider 
 } from '../generatortypes';
 import { GeneratorOrchestrator } from '../core/GeneratorOrchestrator';
+import { useGenerator } from '../context/GeneratorContext';
+import { useNotifications } from '../../Notifications/hooks/useNotifications';
 import { apiKeyManager } from '../providers/management/APIKeyManager';
 
 export interface GenerationFormState {
@@ -41,7 +43,6 @@ export function useGenerationForm(
   notifyError?: (title: string, message?: string) => void
 ): GenerationFormState {
   const [description, setDescription] = useState('');
-  const [selectedProvider, setSelectedProvider] = useState<LLMProvider>('openai');
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptHistory, setPromptHistory] = useState<string[]>(() => {
     const savedHistory = localStorage.getItem('agentic_prompt_history');
@@ -49,57 +50,26 @@ export function useGenerationForm(
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
 
+  // Use the GeneratorContext for provider management
+  const {
+    selectedProvider,
+    setSelectedProvider,
+    availableProviders,
+    providersLoading
+  } = useGenerator();
+
+  // Use notifications for error handling
+  const { showErrorToast, showWarningToast } = useNotifications();
+
   const orchestrator = new GeneratorOrchestrator(notifyError);
-
-  // Provider loading logic
-  const [availableProviders, setAvailableProviders] = useState<Array<{
-    provider: LLMProvider;
-    name: string;
-    configured: boolean;
-    preferred: boolean;
-    models?: string[];
-    defaultModel?: string;
-  }>>([]);
-  const [providersLoading, setProvidersLoading] = useState(false);
-
-  // Load providers on mount (async)
-  useEffect(() => {
-    let mounted = true;
-    setProvidersLoading(true);
-    (async () => {
-      const providers = await apiKeyManager.getProviderInfo();
-      if (mounted) {
-        setAvailableProviders(providers);
-        setProvidersLoading(false);
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
-
-  // Set preferred provider on availableProviders change
-  useEffect(() => {
-    const preferred = availableProviders.find((p: any) => p.preferred);
-    if (preferred) {
-      setSelectedProvider(preferred.provider);
-    }
-  }, [availableProviders]);
 
   // Load initial state from localStorage
   useEffect(() => {
-    const savedProvider = localStorage.getItem('agentic_selected_provider');
-    if (savedProvider) {
-      setSelectedProvider(savedProvider as LLMProvider);
-    }
     const savedInput = localStorage.getItem('agentic_generation_input');
     if (savedInput) {
       setDescription(savedInput);
     }
   }, []);
-
-  // Save selectedProvider to localStorage on change
-  useEffect(() => {
-    localStorage.setItem('agentic_selected_provider', selectedProvider);
-  }, [selectedProvider]);
 
   // Save description (input value) to localStorage on change
   useEffect(() => {
@@ -134,8 +104,9 @@ export function useGenerationForm(
 
     setIsGenerating(true);
     try {
-      // Get selected model from localStorage for Ollama
-      const selectedModel = localStorage.getItem('agentic_selected_model') || undefined;
+      // Get the API configuration to use the saved model
+      const apiConfig = apiKeyManager.getConfig(selectedProvider);
+      const modelToUse = apiConfig?.model || localStorage.getItem('agentic_selected_model') || undefined;
       
       if (type === 'process' && selectedNodes.length === 1) {
         // Process generation for single node
@@ -147,7 +118,7 @@ export function useGenerationForm(
           nodeType: node.type,
           nodeData: node.data || {},
           provider: selectedProvider,
-          model: selectedModel, // Include model
+          model: modelToUse, // Include model
           // Add more fields as needed
         };
         const result = await orchestrator.generate(request);
@@ -163,7 +134,7 @@ export function useGenerationForm(
               type: 'flow' as const,
               description,
               provider: selectedProvider,
-              model: selectedModel, // Include model
+              model: modelToUse, // Include model
               // Optionally: nodeTypes, features, etc.
             };
             result = await orchestrator.generate(flowRequest);
@@ -181,7 +152,9 @@ export function useGenerationForm(
           onGenerated(result);
         } else {
           console.error('Flow generation failed after retries:', lastError);
-          // Optionally, show a notification or error to the user
+          // Show error notification to user
+          const errorMessage = lastError?.message || lastError || 'Unknown error occurred';
+          showErrorToast('Flow Generation Failed', `Failed to generate flow after ${attempts} attempts: ${errorMessage}`);
         }
       }
 
@@ -193,10 +166,13 @@ export function useGenerationForm(
 
     } catch (error) {
       console.error('Generation failed:', error);
+      // Show error notification to user
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      showErrorToast('Generation Failed', errorMessage);
     } finally {
       setIsGenerating(false);
     }
-  }, [description, type, selectedNodes, isGenerating, onGenerated, orchestrator, selectedProvider, resetHistory, promptHistory]);
+  }, [description, type, selectedNodes, isGenerating, onGenerated, orchestrator, selectedProvider, resetHistory, promptHistory, showErrorToast]);
 
   const handleSuggest = useCallback(() => {
     const suggestions = [
