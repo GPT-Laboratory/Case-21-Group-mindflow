@@ -77,10 +77,21 @@ export class GeneratorOrchestrator {
     console.log('📝 Prompt length:', prompt.length);
     
     // Always use 'ai' for flow generation
-    return await this.flowGenerator.generate(request, {
+    const result = await this.flowGenerator.generate(request, {
       strategy: 'ai',
       prompt
     });
+
+    // Check for common AI error: edges without nodes
+    if (result && result.type === 'flow') {
+      const flowData = result as any;
+      if (flowData.edges && Array.isArray(flowData.edges) && flowData.edges.length > 0 && 
+          (!flowData.nodes || !Array.isArray(flowData.nodes) || flowData.nodes.length === 0)) {
+        throw new Error('AI generated edges without nodes. This is a common generation error. Please retry.');
+      }
+    }
+
+    return result;
   }
 
   /**
