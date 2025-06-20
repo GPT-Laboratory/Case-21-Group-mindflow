@@ -48,7 +48,8 @@ export const ConfigurationSection: React.FC<ConfigurationSectionProps> = ({
     if (newFieldKey.trim() && !data.hasOwnProperty(newFieldKey)) {
       const defaultValue = newFieldType === 'boolean' ? false :
                           newFieldType === 'number' ? 0 :
-                          newFieldType === 'object' ? {} : '';
+                          newFieldType === 'object' ? {} :
+                          newFieldType === 'array' ? [] : '';
       onChange(newFieldKey, defaultValue);
       setNewFieldKey('');
     }
@@ -178,6 +179,7 @@ export const ConfigurationSection: React.FC<ConfigurationSectionProps> = ({
                 <option value="number">Number</option>
                 <option value="boolean">Boolean</option>
                 <option value="object">Object</option>
+                <option value="array">Array</option>
               </select>
               <Button
                 onClick={handleAddField}

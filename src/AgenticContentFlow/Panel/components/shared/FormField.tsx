@@ -18,40 +18,48 @@ interface FormFieldProps {
 export const FormField: React.FC<FormFieldProps> = ({ fieldKey, config, value, onChange }) => {
   const { onFocus, onBlur } = useInputFocusHandlers();
 
-  // Helper function to format object values for textarea display
-  const formatValueForDisplay = (val: any, fieldType: string): string => {
-    if (fieldType === 'textarea' && val && typeof val === 'object') {
-      try {
-        return JSON.stringify(val, null, 2);
-      } catch (error) {
-        console.warn('Error stringifying object value:', error);
-        return '';
-      }
+  // Debug logging to help identify [object Object] issues
+  React.useEffect(() => {
+    if (value && typeof value === 'object') {
+      console.log(`FormField debug for ${fieldKey}:`, {
+        value,
+        valueType: typeof value,
+        fieldType: config.fieldType,
+        isArray: Array.isArray(value)
+      });
     }
-    return val || config.defaultValue || '';
-  };
-
-  // Helper function to parse textarea values back to objects when needed
-  const parseTextareaValue = (textValue: string): any => {
-    // If the placeholder suggests JSON format, try to parse it
-    if (config.placeholder && config.placeholder.includes('{')) {
-      try {
-        return JSON.parse(textValue);
-      } catch (error) {
-        // If parsing fails, return as string
-        return textValue;
-      }
-    }
-    return textValue;
-  };
+  }, [fieldKey, value, config.fieldType]);
 
   const renderField = () => {
+    // Handle object and array values by showing them as JSON strings
+    if (value && typeof value === 'object' && value !== null) {
+      return (
+        <Textarea
+          value={JSON.stringify(value, null, 2)}
+          onChange={(e) => {
+            try {
+              const parsed = JSON.parse(e.target.value);
+              onChange(parsed);
+            } catch (error) {
+              // If JSON is invalid, just store the raw string
+              onChange(e.target.value);
+            }
+          }}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          placeholder="Enter JSON object or array..."
+          rows={4}
+          className="font-mono text-sm"
+        />
+      );
+    }
+
     switch (config.fieldType) {
       case 'text':
         return (
           <Input
             type="text"
-            value={formatValueForDisplay(value, 'text')}
+            value={value || config.defaultValue || ''}
             onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
             onBlur={onBlur}
@@ -63,8 +71,8 @@ export const FormField: React.FC<FormFieldProps> = ({ fieldKey, config, value, o
       case 'textarea':
         return (
           <Textarea
-            value={formatValueForDisplay(value, 'textarea')}
-            onChange={(e) => onChange(parseTextareaValue(e.target.value))}
+            value={value || config.defaultValue || ''}
+            onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
             onBlur={onBlur}
             placeholder={config.placeholder}
@@ -118,7 +126,7 @@ export const FormField: React.FC<FormFieldProps> = ({ fieldKey, config, value, o
         return (
           <Input
             type="text"
-            value={formatValueForDisplay(value, 'text')}
+            value={value || config.defaultValue || ''}
             onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
             onBlur={onBlur}
