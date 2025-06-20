@@ -119,7 +119,7 @@ const CustomMiniMap = () => {
     () =>
       showMiniMap ? (
         <MiniMap
-          nodeStrokeWidth={4}
+          nodeStrokeWidth={20}
           nodeStrokeColor={getNodeStrokeColor}
           nodeColor={getNodeColor}
           zoomable
