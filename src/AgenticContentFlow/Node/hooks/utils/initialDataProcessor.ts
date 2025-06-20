@@ -3,6 +3,7 @@ import { NodeData } from "../../../types";
 import { createNodeFromTemplate } from "../../registry/nodeTypeRegistry";
 import { isHorizontalConnection } from "./dragUtils";
 import { calculateInitialContainerNodePosition } from "./nodeUtils";
+import { generateUniqueId } from "./nodeUtils";
 
 interface ProcessedGraphData {
   nodes: Node<NodeData>[];
@@ -59,7 +60,7 @@ export const processInitialGraphData = (
       group.edges.push(edge);
     } else {
       // Create new group
-      const newGroupKey = `group-${Date.now()}-${Math.random()}`;
+      const newGroupKey = generateUniqueId("group");
       horizontalEdgeGroups.set(newGroupKey, {
         nodes: new Set([edge.source, edge.target]),
         edges: [edge]
@@ -89,7 +90,7 @@ export const processInitialGraphData = (
     const containerPosition = calculateInitialContainerNodePosition(groupNodes);
     
     // Create invisible container
-    const containerId = `container-lr-auto-${Date.now()}-${groupKey}`;
+    const containerId = generateUniqueId("container-lr-auto");
     const invisibleContainer = createNodeFromTemplate('invisiblenode', {
       id: containerId,
       position: containerPosition,
