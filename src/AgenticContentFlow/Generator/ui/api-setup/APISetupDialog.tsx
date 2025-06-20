@@ -9,111 +9,83 @@
  */
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Key } from 'lucide-react';
-import { useAPISetup } from './hooks/useAPISetup';
-import { ProviderSelector } from './APIProviderSelector';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/ui/dialog';
+import { Button } from '../../../../components/ui/button';
 import { APIConfigForm } from './APIConfigForm';
-import { ConnectionTest } from './APIConnectionTest';
+import { useAPISetup } from './hooks/useAPISetup';
 import { LLMProvider } from '../../generatortypes';
 
 interface APISetupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onComplete?: () => void;
   initialProvider?: LLMProvider;
+  onComplete?: () => void;
 }
 
 export const APISetupDialog: React.FC<APISetupDialogProps> = ({
   open,
   onOpenChange,
-  onComplete,
-  initialProvider
+  initialProvider,
+  onComplete
 }) => {
   const {
     selectedProvider,
     config,
     isValidating,
     validationResult,
-    existingConfigs,
-    providerInfo,
-    currentProviderInfo,
+    isFetchingModels,
+    lastFetchedModels,
     handleProviderChange,
     handleConfigChange,
     handleTest,
     handleSave,
-    hasApiKey,
+    handleFetchModels,
     canSave
   } = useAPISetup(initialProvider);
 
   const handleSaveAndClose = () => {
-    const success = handleSave();
-    if (success) {
-      onComplete?.();
+    if (handleSave()) {
       onOpenChange(false);
+      onComplete?.();
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Key className="w-5 h-5" />
-            LLM API Configuration
-          </DialogTitle>
-          <DialogDescription>
-            Configure API access to LLM providers for code generation. 
-            {existingConfigs.length === 0 && ' Set up your first provider to get started.'}
-          </DialogDescription>
+          <DialogTitle>API Configuration</DialogTitle>
         </DialogHeader>
-
+        
         <div className="space-y-6">
-          {/* Provider Selection */}
-          <ProviderSelector
-            selectedProvider={selectedProvider}
-            onProviderSelect={handleProviderChange}
-            existingConfigs={existingConfigs}
-            providerInfo={providerInfo}
-            showQuickSetup={existingConfigs.length === 0}
-          />
-
-          {/* Configuration Form */}
           <APIConfigForm
+            selectedProvider={selectedProvider}
+            onProviderChange={handleProviderChange}
             config={config}
             onConfigChange={handleConfigChange}
-            provider={selectedProvider}
-            providerInfo={currentProviderInfo}
-          />
-
-          <Separator />
-
-          {/* Connection Test */}
-          <ConnectionTest
+            onTest={handleTest}
+            onFetchModels={handleFetchModels}
             isValidating={isValidating}
             validationResult={validationResult}
-            onTest={handleTest}
-            hasApiKey={hasApiKey}
-            provider={selectedProvider}
+            isFetchingModels={isFetchingModels}
+            lastFetchedModels={lastFetchedModels}
+            disabled={isValidating || isFetchingModels}
           />
-
-          {/* Actions */}
-          <div className="flex justify-between pt-4 border-t">
-            <div /> {/* Spacer */}
-            
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSaveAndClose}
-                disabled={!canSave}
-              >
-                Save Configuration
-              </Button>
-            </div>
+          
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isValidating || isFetchingModels}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveAndClose}
+              disabled={!canSave || isValidating || isFetchingModels}
+            >
+              Save Configuration
+            </Button>
           </div>
         </div>
       </DialogContent>

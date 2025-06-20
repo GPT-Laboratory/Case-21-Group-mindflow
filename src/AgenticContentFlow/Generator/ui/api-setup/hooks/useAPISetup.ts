@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { LLMProvider, LLMAPIConfig } from '../../../generatortypes';
 import { apiKeyManager } from '../../../providers/management/APIKeyManager';
 import { LLMProviderFactory } from '../../../providers/factory/LLMProviderFactory';
+import { useGenerator } from '../../../context/GeneratorContext';
 
 export const useAPISetup = (initialProvider?: LLMProvider) => {
   const [selectedProvider, setSelectedProvider] = useState<LLMProvider>(initialProvider || 'openai');
@@ -16,6 +17,11 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
   const [validationResult, setValidationResult] = useState<{ success: boolean; error?: string } | null>(null);
   const [existingConfigs, setExistingConfigs] = useState<LLMProvider[]>([]);
   const [providerInfo, setProviderInfo] = useState<Record<LLMProvider, any>>({} as Record<LLMProvider, any>);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [lastFetchedModels, setLastFetchedModels] = useState<string>('');
+
+  // Use GeneratorContext for saving configurations
+  const { saveProviderConfig, setPreferredProvider, availableProviders } = useGenerator();
 
   // Load existing configurations and provider info when hook initializes
   useEffect(() => {
@@ -40,6 +46,13 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
         });
       }
       setValidationResult(null);
+      
+      // Set initial fetch time for providers that have models loaded
+      if (providerInfoRecord[selectedProvider]?.models?.length > 0) {
+        const now = new Date();
+        const timestamp = now.toLocaleTimeString();
+        setLastFetchedModels(`Auto: ${timestamp}`);
+      }
     };
     loadProviderInfo();
   }, [selectedProvider]);
@@ -72,6 +85,13 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
           maxTokens: 2048
         });
       }
+      
+      // Set fetch time for providers that have models loaded
+      if (providerInfoRecord[provider]?.models?.length > 0) {
+        const now = new Date();
+        const timestamp = now.toLocaleTimeString();
+        setLastFetchedModels(`Auto: ${timestamp}`);
+      }
     };
     loadProviderInfo();
   }, []);
@@ -83,6 +103,45 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
     }));
     setValidationResult(null);
   }, []);
+
+  const handleFetchModels = useCallback(async () => {
+    if (!config.apiKey && selectedProvider !== 'custom' && selectedProvider !== 'ollama') {
+      return;
+    }
+
+    setIsFetchingModels(true);
+    try {
+      // Create test configuration for fetching models
+      const testConfig = {
+        ...config,
+        provider: selectedProvider,
+        apiKey: selectedProvider === 'ollama' ? '' : config.apiKey
+      } as LLMAPIConfig;
+
+      // Create provider instance and fetch models
+      const providerInstance = LLMProviderFactory.createProvider(selectedProvider);
+      
+      // For providers that support model fetching, call their method
+      if ('fetchModels' in providerInstance && typeof providerInstance.fetchModels === 'function') {
+        await (providerInstance as any).fetchModels(testConfig);
+      }
+      
+      // Update provider info with new models
+      const info = await apiKeyManager.getProviderInfo();
+      const providerInfoRecord = info.reduce((acc, p) => ({ ...acc, [p.provider]: p }), {}) as Record<LLMProvider, any>;
+      setProviderInfo(providerInfoRecord);
+      
+      // Update timestamp for manual fetch
+      const now = new Date();
+      const timestamp = now.toLocaleTimeString();
+      setLastFetchedModels(`Manual: ${timestamp}`);
+      
+    } catch (error) {
+      console.error('Fetch models error:', error);
+    } finally {
+      setIsFetchingModels(false);
+    }
+  }, [config, selectedProvider]);
 
   const handleTest = useCallback(async () => {
     if (!config.apiKey && selectedProvider !== 'custom' && selectedProvider !== 'ollama') {
@@ -121,7 +180,7 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
       // Only save the config if the test was successful
       if (result.success) {
         console.log('Saving successful configuration');
-        apiKeyManager.saveConfig(selectedProvider, testConfig);
+        saveProviderConfig(selectedProvider, testConfig);
       }
     } catch (error) {
       console.error('Test connection error:', error);
@@ -132,7 +191,7 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
     } finally {
       setIsValidating(false);
     }
-  }, [config, selectedProvider]);
+  }, [config, selectedProvider, saveProviderConfig]);
 
   const handleSave = useCallback(() => {
     if (!config.apiKey && selectedProvider !== 'custom' && selectedProvider !== 'ollama') {
@@ -145,22 +204,20 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
       config.baseURL = config.baseURL || 'http://localhost:11434';
     }
 
-    // Save configuration
+    // Save configuration using the context
     const saveConfig = {
       ...config,
       provider: selectedProvider,
       apiKey: selectedProvider === 'ollama' ? '' : config.apiKey
     } as LLMAPIConfig;
 
-    apiKeyManager.saveConfig(selectedProvider, saveConfig);
+    saveProviderConfig(selectedProvider, saveConfig);
     
-    // Set as preferred if it's the first one
-    if (existingConfigs.length === 0) {
-      apiKeyManager.setPreferredProvider(selectedProvider);
-    }
+    // Set as preferred provider using the context
+    setPreferredProvider(selectedProvider);
 
     return true;
-  }, [config, selectedProvider, existingConfigs]);
+  }, [config, selectedProvider, saveProviderConfig, setPreferredProvider]);
 
   return {
     // State
@@ -169,6 +226,8 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
     isValidating,
     validationResult,
     existingConfigs,
+    isFetchingModels,
+    lastFetchedModels,
     
     // Provider info
     providerInfo,
@@ -179,6 +238,7 @@ export const useAPISetup = (initialProvider?: LLMProvider) => {
     handleConfigChange,
     handleTest,
     handleSave,
+    handleFetchModels,
     
     // Computed values
     hasApiKey: !!config.apiKey,

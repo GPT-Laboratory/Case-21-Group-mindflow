@@ -5,132 +5,208 @@
  */
 
 import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Globe, Settings } from 'lucide-react';
-import { LLMAPIConfig, LLMProvider } from '../../generatortypes';
+import { Input } from '../../../../components/ui/input';
+import { Label } from '../../../../components/ui/label';
+import { Button } from '../../../../components/ui/button';
+import { Card, CardContent } from '../../../../components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
+import { HelpCircle, TestTube, Download, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../../components/ui/tooltip';
+import { LLMProvider, LLMAPIConfig } from '../../generatortypes';
+import { APIProviderSelector } from './APIProviderSelector';
+import { ConnectionStatus } from '../shared/ConnectionStatus';
+import { useGenerator } from '../../context/GeneratorContext';
 
 interface APIConfigFormProps {
+  selectedProvider: LLMProvider;
+  onProviderChange: (provider: LLMProvider) => void;
   config: Partial<LLMAPIConfig>;
   onConfigChange: (field: keyof LLMAPIConfig, value: any) => void;
-  provider: LLMProvider;
-  providerInfo: {
-    name: string;
-    keyLabel: string;
-    keyPlaceholder: string;
-    helpUrl: string;
-    models: string[];
-    defaultModel: string;
-  };
+  onTest: () => Promise<void>;
+  onFetchModels: () => Promise<void>;
+  isValidating: boolean;
+  validationResult: { success: boolean; error?: string } | null;
+  isFetchingModels: boolean;
+  lastFetchedModels: string;
+  disabled?: boolean;
 }
 
-export const APIConfigForm: React.FC<APIConfigFormProps> = ({
-  config,
-  onConfigChange,
-  provider,
-  providerInfo
-}) => {
+// Fetch models button component
+const FetchModelsButton: React.FC<{
+  onFetch: () => Promise<void>;
+  isFetching: boolean;
+  lastFetched: string;
+}> = ({ onFetch, isFetching, lastFetched }) => {
   return (
-    <div className="space-y-4">
-      {/* API Key - Hide for Ollama */}
-      {provider !== 'ollama' && (
-        <div className="space-y-2">
-          <Label htmlFor="apiKey" className="flex items-center gap-2">
-            {providerInfo.keyLabel}
-            {provider !== 'custom' && <span className="text-red-500">*</span>}
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="apiKey"
-              type="password"
-              placeholder={providerInfo.keyPlaceholder}
-              value={config.apiKey || ''}
-              onChange={(e) => onConfigChange('apiKey', e.target.value)}
-              className="flex-1"
-            />
-            {providerInfo.helpUrl !== '#' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(providerInfo.helpUrl, '_blank')}
-              >
-                <Globe className="w-4 h-4" />
-              </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onFetch}
+            disabled={isFetching}
+            className="flex-shrink-0"
+          >
+            {isFetching ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="text-center">
+            <p>Fetch available models</p>
+            {lastFetched && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Last: {lastFetched}
+              </p>
             )}
           </div>
-        </div>
-      )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 
-      {/* Base URL - Show for custom and Ollama */}
-      {(provider === 'custom' || provider === 'ollama') && (
+export const APIConfigForm: React.FC<APIConfigFormProps> = ({
+  selectedProvider,
+  onProviderChange,
+  config,
+  onConfigChange,
+  onTest,
+  onFetchModels,
+  isValidating,
+  validationResult,
+  isFetchingModels,
+  lastFetchedModels,
+  disabled
+}) => {
+  const { getProviderConfig, availableProviders } = useGenerator();
+  const currentConfig = getProviderConfig(selectedProvider);
+  const providerInfo = availableProviders.find(p => p.provider === selectedProvider);
+
+  return (
+    <div className="space-y-3">
+      {/* Provider Selection */}
+      <APIProviderSelector
+        selectedProvider={selectedProvider}
+        onProviderChange={onProviderChange}
+        disabled={disabled}
+      />
+
+      {/* API Key - Hide for Ollama */}
+      {selectedProvider !== 'ollama' && (
         <div className="space-y-2">
-          <Label htmlFor="baseURL">
-            Base URL {provider === 'custom' && <span className="text-red-500">*</span>}
+          <Label htmlFor="apiKey" className="flex items-center gap-2">
+            API Key <span className="text-red-500">*</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Your API key for {selectedProvider}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </Label>
           <Input
-            id="baseURL"
-            placeholder={provider === 'ollama' ? 'http://localhost:11434' : 'https://your-api.example.com/v1'}
-            value={config.baseURL || ''}
-            onChange={(e) => onConfigChange('baseURL', e.target.value)}
+            id="apiKey"
+            type="password"
+            placeholder="Enter your API key"
+            value={config.apiKey || ''}
+            onChange={(e) => onConfigChange('apiKey', e.target.value)}
+            disabled={disabled}
+            className="flex-1 min-w-0"
           />
         </div>
       )}
 
+      {/* Base URL */}
+      <div className="space-y-2">
+        <Label htmlFor="baseURL">
+          Base URL {selectedProvider === 'custom' && <span className="text-red-500">*</span>}
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            id="baseURL"
+            placeholder={
+              selectedProvider === 'ollama' ? 'http://localhost:11434' :
+              selectedProvider === 'openai' ? 'https://api.openai.com/v1' :
+              selectedProvider === 'gemini' ? 'https://generativelanguage.googleapis.com' :
+              selectedProvider === 'claude' ? 'https://api.anthropic.com' :
+              'https://your-api.example.com/v1'
+            }
+            value={config.baseURL || ''}
+            onChange={(e) => onConfigChange('baseURL', e.target.value)}
+            disabled={disabled}
+            className="flex-1 min-w-0"
+          />
+          <ConnectionStatus
+            provider={selectedProvider}
+            size="sm"
+          />
+        </div>
+      </div>
+
       {/* Model Selection */}
       <div className="space-y-2">
         <Label htmlFor="model">Model</Label>
-        <Select 
-          value={config.model || providerInfo.defaultModel} 
-          onValueChange={(value) => onConfigChange('model', value)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {providerInfo.models.map((model) => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select 
+            value={config.model || ''} 
+            onValueChange={(value: string) => onConfigChange('model', value)}
+            disabled={disabled}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Select a model" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[200px]">
+              {providerInfo?.models?.map((model: string) => (
+                <SelectItem key={model} value={model}>
+                  {model}
+                </SelectItem>
+              )) || []}
+            </SelectContent>
+          </Select>
+          <FetchModelsButton
+            onFetch={onFetchModels}
+            isFetching={isFetchingModels}
+            lastFetched={lastFetchedModels}
+          />
+        </div>
       </div>
 
-      {/* Advanced Settings */}
-      <div className="space-y-4">
-        <Label className="flex items-center gap-2">
-          <Settings className="w-4 h-4" />
-          Advanced Settings
-        </Label>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="temperature" className="text-sm">Temperature</Label>
-            <Input
-              id="temperature"
-              type="number"
-              min="0"
-              max="1"
-              step="0.1"
-              value={config.temperature || 0.3}
-              onChange={(e) => onConfigChange('temperature', parseFloat(e.target.value))}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="maxTokens" className="text-sm">Max Tokens</Label>
-            <Input
-              id="maxTokens"
-              type="number"
-              min="100"
-              max="4096"
-              value={config.maxTokens || 2048}
-              onChange={(e) => onConfigChange('maxTokens', parseInt(e.target.value))}
-            />
-          </div>
-        </div>
+      {/* Temperature */}
+      <div className="space-y-2">
+        <Label htmlFor="temperature">Temperature</Label>
+        <Input
+          id="temperature"
+          type="number"
+          min="0"
+          max="2"
+          step="0.1"
+          placeholder="0.3"
+          value={config.temperature || ''}
+          onChange={(e) => onConfigChange('temperature', parseFloat(e.target.value) || 0.3)}
+          disabled={disabled}
+        />
+      </div>
+
+      {/* Max Tokens */}
+      <div className="space-y-2">
+        <Label htmlFor="maxTokens">Max Tokens</Label>
+        <Input
+          id="maxTokens"
+          type="number"
+          min="1"
+          placeholder="2048"
+          value={config.maxTokens || ''}
+          onChange={(e) => onConfigChange('maxTokens', parseInt(e.target.value) || 2048)}
+          disabled={disabled}
+        />
       </div>
     </div>
   );

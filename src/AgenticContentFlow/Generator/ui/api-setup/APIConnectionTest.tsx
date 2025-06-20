@@ -33,18 +33,20 @@ export const ConnectionTest: React.FC<ConnectionTestProps> = ({
         variant="outline"
         onClick={onTest}
         disabled={isValidating || !canTest}
-        className="w-full"
+        className="w-full sm:w-auto"
       >
         {isValidating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         Test Connection
       </Button>
       
       {validationResult && (
-        <ValidationResult
-          isValid={validationResult.success}
-          errors={validationResult.success ? [] : [validationResult.error || 'Connection failed']}
-          successMessage="Connection successful!"
-        />
+        <div className="mt-3">
+          <ValidationResult
+            isValid={validationResult.success}
+            errors={validationResult.success ? [] : [validationResult.error || 'Connection failed']}
+            successMessage="Connection successful!"
+          />
+        </div>
       )}
     </div>
   );
