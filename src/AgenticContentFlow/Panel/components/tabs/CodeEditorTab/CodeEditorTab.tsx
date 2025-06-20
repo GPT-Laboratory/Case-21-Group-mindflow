@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Code2, Save, RotateCcw, Edit3 } from 'lucide-react';
-import Editor from '@monaco-editor/react';
+import React, { useState, useEffect } from 'react';
+import { Code2 } from 'lucide-react';
 import { 
   TabContainer, 
-  ActionButtonGroup,
-  ValidationResult,
+  SharedEditor,
   InfoCard,
   Badge
 } from '../../shared';
@@ -28,65 +26,8 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedCode, setEditedCode] = useState('');
   const [validationResult, setValidationResult] = useState<any>(null);
-  const [isSaving, setSisSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
-  const [editorTheme, setEditorTheme] = useState<'vs-light' | 'vs-dark'>('vs-light');
-  
-  const editorRef = useRef<any>(null);
-
-  // Monaco Editor configuration
-  const editorOptions = {
-    fontSize: 14,
-    fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-    minimap: { enabled: true },
-    scrollBeyondLastLine: false,
-    automaticLayout: true,
-    wordWrap: 'on' as const,
-    lineNumbers: 'on' as const,
-    folding: true,
-    bracketMatching: 'always' as const,
-    autoIndent: 'full' as const,
-    formatOnPaste: true,
-    formatOnType: true,
-    tabSize: 2,
-    insertSpaces: true,
-    detectIndentation: false,
-    renderWhitespace: 'selection' as const,
-    renderControlCharacters: false,
-    renderIndentGuides: true,
-    renderLineHighlight: 'all' as const,
-    contextmenu: true,
-    mouseWheelZoom: true,
-    quickSuggestions: true,
-    parameterHints: { enabled: true },
-    suggest: {
-      showMethods: true,
-      showFunctions: true,
-      showConstructors: true,
-      showFields: true,
-      showVariables: true,
-      showClasses: true,
-      showStructs: true,
-      showInterfaces: true,
-      showModules: true,
-      showProperties: true,
-      showEvents: true,
-      showOperators: true,
-      showUnits: true,
-      showValues: true,
-      showConstants: true,
-      showEnums: true,
-      showEnumMembers: true,
-      showKeywords: true,
-      showWords: true,
-      showColors: true,
-      showFiles: true,
-      showReferences: true,
-      showFolders: true,
-      showTypeParameters: true,
-      showSnippets: true,
-    }
-  };
 
   // Load factory configuration
   useEffect(() => {
@@ -134,7 +75,7 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
 
   // Save code changes
   const saveCodeChanges = async () => {
-    setSisSaving(true);
+    setIsSaving(true);
     try {
       await validateCode();
       
@@ -152,7 +93,7 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
     } catch (error) {
       console.error('Failed to save code:', error);
     } finally {
-      setSisSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -209,122 +150,43 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
       icon={Code2}
       badges={badges}
     >
-      {/* Action Bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setEditorTheme(editorTheme === 'vs-light' ? 'vs-dark' : 'vs-light')}
-            className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-          >
-            {editorTheme === 'vs-light' ? '🌙 Dark' : '☀️ Light'}
-          </button>
-          {isEditing && (
-            <button
-              onClick={() => {
-                if (editorRef.current) {
-                  editorRef.current.getAction('editor.action.formatDocument').run();
-                }
-              }}
-              className="text-xs px-3 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-            >
-              ✨ Format
-            </button>
-          )}
-          <div className="text-xs text-gray-500">
-            {isEditing ? 'Editing • Ctrl+S to save' : 'Read-only view'}
-          </div>
-        </div>
-        
-        <ActionButtonGroup
-          buttons={
-            !isEditing ? [
-              {
-                icon: Edit3,
-                text: 'Edit Code',
-                onClick: () => setIsEditing(true),
-                variant: 'default'
-              }
-            ] : [
-              {
-                icon: RotateCcw,
-                text: 'Reset to Template',
-                onClick: resetToDefault,
-                disabled: !isCustomCode,
-                variant: 'outline'
-              },
-              {
-                icon: Save,
-                text: isSaving ? 'Saving...' : 'Save',
-                onClick: saveCodeChanges,
-                disabled: !validationResult?.isValid || isSaving,
-                loading: isSaving,
-                variant: 'default'
-              }
-            ]
-          }
-        />
-      </div>
-
-      {/* Code Editor - Full Height */}
-      <div className="border rounded overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
-        <Editor
-          height="100%"
-          language="javascript"
-          value={isEditing ? editedCode : currentCode}
-          onChange={(value) => isEditing && setEditedCode(value || '')}
-          options={{
-            ...editorOptions,
-            readOnly: !isEditing,
-            theme: editorTheme,
-            contextmenu: isEditing,
-            quickSuggestions: isEditing
-          }}
-          theme={editorTheme}
-          onMount={(editor, monaco) => {
-            editorRef.current = editor;
+      <SharedEditor
+        value={isEditing ? editedCode : currentCode}
+        onChange={setEditedCode}
+        language="javascript"
+        title="Code Editor"
+        description="Edit the JavaScript process function for this node"
+        icon={Code2}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        validationResult={validationResult}
+        isSaving={isSaving}
+        hasCustomContent={isCustomCode}
+        onSave={saveCodeChanges}
+        onReset={resetToDefault}
+        beforeMount={(monaco) => {
+          monaco.languages.typescript.javascriptDefaults.addExtraLib(`
+            /**
+             * Process function executed by factory nodes
+             * @param {any} incomingData - Data from upstream nodes
+             * @param {object} nodeData - Static configuration for this node instance
+             * @param {object} params - Dynamic parameters that can be configured per instance
+             * @param {Map} targetMap - Map of downstream target nodes
+             * @param {Map} sourceMap - Map of upstream source nodes
+             * @param {Map} edgeMap - Map of edge configurations
+             * @returns {Promise<any>} Processed result data
+             */
+            declare function process(incomingData: any, nodeData: object, params: object, targetMap?: Map<string, any>, sourceMap?: Map<string, any>, edgeMap?: Map<string, any>): Promise<any>;
             
-            if (isEditing) {
-              editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-                saveCodeChanges();
-              });
-            }
-          }}
-          beforeMount={(monaco) => {
-            monaco.languages.typescript.javascriptDefaults.addExtraLib(`
-              /**
-               * Process function executed by factory nodes
-               * @param {any} incomingData - Data from upstream nodes
-               * @param {object} nodeData - Static configuration for this node instance
-               * @param {object} params - Dynamic parameters that can be configured per instance
-               * @param {Map} targetMap - Map of downstream target nodes
-               * @param {Map} sourceMap - Map of upstream source nodes
-               * @param {Map} edgeMap - Map of edge configurations
-               * @returns {Promise<any>} Processed result data
-               */
-              declare function process(incomingData: any, nodeData: object, params: object, targetMap?: Map<string, any>, sourceMap?: Map<string, any>, edgeMap?: Map<string, any>): Promise<any>;
-              
-              // Common utilities available in process context
-              declare const fetch: typeof globalThis.fetch;
-              declare const console: typeof globalThis.console;
-              declare const JSON: typeof globalThis.JSON;
-              declare const Promise: typeof globalThis.Promise;
-              declare const Error: typeof globalThis.Error;
-            `, 'ts:process-types.d.ts');
-          }}
-        />
-      </div>
-
-      {/* Validation Results - Compact */}
-      {isEditing && validationResult && (
-        <div className="mt-3">
-          <ValidationResult
-            isValid={validationResult.isValid}
-            errors={validationResult.errors}
-            warnings={validationResult.warnings}
-            successMessage="Code validation passed"
-          />
-        </div>
-      )}
+            // Common utilities available in process context
+            declare const fetch: typeof globalThis.fetch;
+            declare const console: typeof globalThis.console;
+            declare const JSON: typeof globalThis.JSON;
+            declare const Promise: typeof globalThis.Promise;
+            declare const Error: typeof globalThis.Error;
+          `, 'ts:process-types.d.ts');
+        }}
+      />
 
       {/* Loading state */}
       {isValidating && (
