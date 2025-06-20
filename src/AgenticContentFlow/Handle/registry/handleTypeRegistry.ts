@@ -5,9 +5,9 @@ import {
   ConnectionCompatibility,
   NodeCategory 
 } from '../../types/handleTypes';
-import { containerNodeFactory } from '../../Node/factories/container/ContainerNodeFactory';
 
-import { nodeFactory } from '@/AgenticContentFlow/Node/factories/cell';
+// Import unified system instead of old cell factory
+import { getNodeType, getAvailableNodeTypes } from '../../Node/store/unifiedNodeTypeStoreInitializer';
 
 export class HandleTypeRegistry {
   private static instance: HandleTypeRegistry;
@@ -29,7 +29,7 @@ export class HandleTypeRegistry {
    */
   getNodeHandles(nodeType: string): HandleTypeDefinition[] {
     // First try cell factory
-    const cellConfig = nodeFactory.getNodeConfig(nodeType);
+    const cellConfig = getNodeType(nodeType);
     if (cellConfig?.handles?.definitions) {
       return cellConfig.handles.definitions;
     }
@@ -59,7 +59,7 @@ export class HandleTypeRegistry {
    */
   getNodeCategory(nodeType: string): NodeCategory | undefined {
     // First try cell factory
-    const cellConfig = nodeFactory.getNodeConfig(nodeType);
+    const cellConfig = getNodeType(nodeType);
     if (cellConfig?.handles?.category) {
       return cellConfig.handles.category;
     }
@@ -193,7 +193,7 @@ export class HandleTypeRegistry {
    * Get all registered node types from all sources
    */
   getRegisteredNodeTypes(): string[] {
-    const cellTypes = nodeFactory.getRegisteredNodeTypes();
+    const cellTypes = getAvailableNodeTypes();
     const containerTypes = containerNodeFactory.getRegisteredNodeTypes();
     const legacyTypes = Array.from(this.legacyHandleConfigs.keys());
     

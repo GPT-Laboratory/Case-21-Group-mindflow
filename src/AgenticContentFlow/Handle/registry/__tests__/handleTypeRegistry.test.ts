@@ -11,7 +11,7 @@ describe('HandleTypeRegistry', () => {
     registry.clear();
   });
 
-  const sampleDataNodeConfig: NodeHandleConfiguration = {
+  const sampleDataNodeTemplate: NodeHandleConfiguration = {
     nodeType: 'datanode',
     category: 'data',
     handles: [
@@ -48,7 +48,7 @@ describe('HandleTypeRegistry', () => {
 
   describe('registration and retrieval', () => {
     it('should register and retrieve node handle configurations', () => {
-      registry.registerNodeHandles(sampleDataNodeConfig);
+      registry.registerNodeHandles(sampleDataNodeTemplate);
       
       const handles = registry.getNodeHandles('datanode');
       expect(handles).toHaveLength(2);
@@ -62,7 +62,7 @@ describe('HandleTypeRegistry', () => {
     });
 
     it('should get node category', () => {
-      registry.registerNodeHandles(sampleDataNodeConfig);
+      registry.registerNodeHandles(sampleDataNodeTemplate);
       
       const category = registry.getNodeCategory('datanode');
       expect(category).toBe('data');
@@ -71,7 +71,7 @@ describe('HandleTypeRegistry', () => {
 
   describe('connection validation', () => {
     beforeEach(() => {
-      registry.registerNodeHandles(sampleDataNodeConfig);
+      registry.registerNodeHandles(sampleDataNodeTemplate);
       registry.registerNodeHandles(sampleContentNodeConfig);
     });
 
@@ -99,7 +99,7 @@ describe('HandleTypeRegistry', () => {
 
   describe('edge type determination', () => {
     beforeEach(() => {
-      registry.registerNodeHandles(sampleDataNodeConfig);
+      registry.registerNodeHandles(sampleDataNodeTemplate);
       registry.registerNodeHandles(sampleContentNodeConfig);
     });
 
@@ -116,7 +116,7 @@ describe('HandleTypeRegistry', () => {
 
   describe('compatibility checking', () => {
     beforeEach(() => {
-      registry.registerNodeHandles(sampleDataNodeConfig);
+      registry.registerNodeHandles(sampleDataNodeTemplate);
     });
 
     it('should return compatible target categories', () => {
