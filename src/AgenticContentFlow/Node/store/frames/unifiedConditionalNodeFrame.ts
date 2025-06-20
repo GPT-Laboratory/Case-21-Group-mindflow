@@ -47,11 +47,27 @@ export const unifiedConditionalNodeFrame: UnifiedFrameJSON = {
         edgeType: "package"
       },
       {
+        position: "left",
+        type: "target",
+        dataFlow: "control",
+        acceptsFrom: ["view", "logic", "integration"],
+        icon: "arrow-right",
+        edgeType: "package"
+      },
+      {
         position: "bottom",
         type: "source",
         dataFlow: "control", 
         connectsTo: ["logic", "container", "page", "view"],
         icon: "arrow-down",
+        edgeType: "package"
+      },
+      {
+        position: "right",
+        type: "source",
+        dataFlow: "control",
+        connectsTo: ["logic", "container", "page", "view"],
+        icon: "arrow-right",
         edgeType: "package"
       }
     ]
