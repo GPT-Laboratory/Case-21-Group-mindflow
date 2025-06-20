@@ -8,6 +8,7 @@ import { useEdgeContext } from "../../../Edge/store/useEdgeContext";
 import { useTransaction } from "@jalez/react-state-history";
 import { calculateTargetNodePosition } from "../utils/positionUtils";
 import { createEdge, getHandlesForNodeType } from "../../../Edge/hooks/utils/edgeUtils";
+import { generateUniqueId } from "../utils/nodeUtils";
 
 export const useTargetNodeOperations = () => {
   const { 
@@ -24,7 +25,7 @@ export const useTargetNodeOperations = () => {
 
   const addTargetNode = useCallback(
     withErrorHandler("addTargetNode", (eventNode: Node<NodeData>) => {
-      const newNodeId = `node-${Date.now()}`;
+      const newNodeId = generateUniqueId("node");
 
       // Find existing children of this parent using the more efficient Set structure
       const childIdSet = nodeParentIdMapWithChildIdSet.get(eventNode.id);

@@ -8,6 +8,7 @@ import { useEdgeContext } from "../../../Edge/store/useEdgeContext";
 import { useTransaction } from "@jalez/react-state-history";
 import { calculateSourceNodePosition } from "../utils/positionUtils";
 import { createEdge } from "../../../Edge/hooks/utils/edgeUtils";
+import { generateUniqueId } from "../utils/nodeUtils";
 
 export const useSourceNodeOperations = () => {
   const { 
@@ -31,7 +32,7 @@ export const useSourceNodeOperations = () => {
         return;
       }
       
-      const newNodeId = `node-${Date.now()}`;
+      const newNodeId = generateUniqueId("node");
       const newPosition = calculateSourceNodePosition(realChildNode);
 
       // Use the node registry to create a source node

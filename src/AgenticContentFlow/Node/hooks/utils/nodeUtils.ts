@@ -3,6 +3,19 @@ import { Edge, Node } from "@xyflow/react";
 import { createNodeFromTemplate } from "../../registry/nodeTypeRegistry";
 import { isHorizontalConnection } from "./dragUtils";
 
+// Counter for generating unique IDs
+let idCounter = 0;
+
+/**
+ * Generate a unique ID that's guaranteed to be unique within the session
+ * @param prefix - Optional prefix for the ID
+ * @returns A unique ID string
+ */
+export const generateUniqueId = (prefix: string = 'node'): string => {
+  idCounter++;
+  return `${prefix}-${Date.now()}-${idCounter}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
 /**
  * @description
  * Get the node's parent if it has a parent of a specific type
@@ -150,7 +163,7 @@ export const handleContainerization = (
     else {
         const containerPosition = calculateInitialContainerNodePosition([fromNode, toNode]);
         containerToAdd = createNodeFromTemplate("invisiblenode", {
-            id: `invisible-${Date.now()}`,
+            id: generateUniqueId("invisible"),
             position: containerPosition,
             data: {}
         });

@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useNodeContext } from "../../context/useNodeContext";
 import { useEdgeContext } from "../../../Edge/store/useEdgeContext";
 import { getCumulativeParentOffset } from "../utils/positionUtils";
-import { createConnectionNode, handleContainerization } from "../utils/nodeUtils";
+import { createConnectionNode, handleContainerization, generateUniqueId } from "../utils/nodeUtils";
 import { useTransaction } from "@jalez/react-state-history";
 import { createConnectionEdge } from "@/AgenticContentFlow/Edge/hooks/utils/edgeUtils";
 import { NodeData } from "@/AgenticContentFlow/types";
@@ -39,7 +39,7 @@ export const useDragToCreateOperations = () => {
           fromNode,
           event
         );
-        const newNodeId = `node-${Date.now()}`;
+        const newNodeId = generateUniqueId("node");
         
         // Use the node registry to create a new node
         const newToNode = createConnectionNode(
@@ -113,8 +113,29 @@ export const useDragToCreateOperations = () => {
     },
     [screenToFlowPosition, nodeMap]
   );
+
+  const handleCreateNode = useCallback((nodeType: string, position: { x: number; y: number }) => {
+    const newNodeId = generateUniqueId("node");
+    // Create a dummy node to pass to createConnectionNode
+    const dummyNode = {
+      id: 'dummy',
+      type: nodeType,
+      position: { x: 0, y: 0 },
+      data: {}
+    } as Node<NodeData>;
+    
+    const newNode = createConnectionNode(dummyNode, newNodeId, position);
+
+    if (newNode) {
+      addNode(newNode);
+      return newNode;
+    }
+    return null;
+  }, [addNode]);
+
   return {
     onConnectEnd,
+    handleCreateNode,
   };
 };
 

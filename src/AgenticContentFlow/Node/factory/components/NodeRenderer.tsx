@@ -105,16 +105,16 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
     ref: containerRef,
     className: cn(
       "w-full h-full flex flex-col select-none transition-[width,height] duration-200 ease-in-out",
-      "rounded-lg shadow-md",
-      // Apply container-specific styles if defined
-      config.visual.style?.borderStyle === 'dashed' && "border-2 border-dashed",
-      config.visual.style?.borderStyle === 'solid' && "border-2 border-solid",
-      config.visual.style?.borderStyle === 'none' && "border-none"
+      "rounded-lg shadow-md"
+      // Removed Tailwind border classes to avoid conflicts with borderColor
     ),
     style: {
       width: currentDimensions.width,
       height: currentDimensions.height,
       backgroundColor: styleConfig.backgroundColor, // Depth-based color
+      borderWidth: config.visual.style?.borderStyle === 'none' ? '0px' : '2px',
+      borderStyle: config.visual.style?.borderStyle === 'dashed' ? 'dashed' : 
+                   config.visual.style?.borderStyle === 'solid' ? 'solid' : 'none',
       borderColor: selected ? '#3b82f6' : styleConfig.backgroundColor,
       boxShadow: config.visual.style?.shadowStyle || "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
       ...config.visual.style?.customStyles,
