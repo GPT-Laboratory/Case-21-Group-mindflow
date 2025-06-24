@@ -21,6 +21,7 @@ interface ControlDropdownProps {
   disabled?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  customContent?: ReactNode;
 }
 
 const ControlDropdown: React.FC<ControlDropdownProps> = ({
@@ -29,7 +30,8 @@ const ControlDropdown: React.FC<ControlDropdownProps> = ({
   items,
   disabled = false,
   open,
-  onOpenChange
+  onOpenChange,
+  customContent
 }) => {
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
@@ -43,16 +45,36 @@ const ControlDropdown: React.FC<ControlDropdownProps> = ({
           />
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        {items.map((item) => (
-          <DropdownMenuItem 
-            key={item.key} 
-            onClick={item.onClick}
-            className={`${item.active ? "bg-accent" : ""} ${item.className || ""}`}
-          >
-            {item.label}
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent 
+        className="p-0"
+        onKeyDown={(e) => {
+          // Let custom content handle its own keyboard events
+          if (customContent) {
+            e.stopPropagation();
+          }
+        }}
+        onCloseAutoFocus={(e) => {
+          // Prevent auto-focus when using custom content
+          if (customContent) {
+            e.preventDefault();
+          }
+        }}
+      >
+        {customContent ? (
+          <div className="focus:outline-none">
+            {customContent}
+          </div>
+        ) : (
+          items.map((item) => (
+            <DropdownMenuItem 
+              key={item.key} 
+              onClick={item.onClick}
+              className={`${item.active ? "bg-accent" : ""} ${item.className || ""}`}
+            >
+              {item.label}
+            </DropdownMenuItem>
+          ))
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

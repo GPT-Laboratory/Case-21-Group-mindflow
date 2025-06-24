@@ -1,11 +1,12 @@
 /** @format */
 
+import { HandleTypeDefinition, NodeCategory } from "@/AgenticContentFlow/types/handleTypes";
+
 /**
  * Unified node frame structure that combines cell and container functionality
  * This will eventually replace both CellFrameJSON and ContainerFrameJSON
  */
 
-import { HandleTypeDefinition, NodeCategory } from '../../../../types/handleTypes';
 
 export interface IconReference {
   type: 'builtin' | 'path' | 'component';

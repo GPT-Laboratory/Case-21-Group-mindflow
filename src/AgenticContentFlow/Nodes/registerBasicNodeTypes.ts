@@ -6,7 +6,6 @@ import NodeCreationControl from "../Node/controls/NodeCreationControl";
 // Import unified factory system
 import { 
   initializeUnifiedNodeTypeStore, 
-  getAvailableNodeTypes,
   isUnifiedNodeTypeStoreInitialized 
 } from "../Node/store/unifiedNodeTypeStoreInitializer";
 
@@ -46,17 +45,14 @@ export async function ensureNodeTypesRegistered(): Promise<void> {
     throw new Error(`Unified node registration failed: ${error}`);
   }
 
-  // Step 4: Register the node creation control with all available node types from the store
-  const availableNodeTypes = getAvailableNodeTypes();
-  console.log(`✅ Registered ${availableNodeTypes.length} node types:`, availableNodeTypes);
+  // Step 4: Register the node creation control (no longer needs availableNodeTypes)
+  console.log("✅ Registering node creation control");
   
   registerControl(
     "viewSettings",
     "mindmap",
     "node-creation",
     NodeCreationControl,
-    { 
-      availableNodeTypes
-    }
+    {} // No props needed since NodeCreationControl gets node types from store
   );
 }

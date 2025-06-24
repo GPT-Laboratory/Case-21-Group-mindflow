@@ -1,86 +1,120 @@
-import React, { useState, useCallback } from "react";
-import { useReactFlow } from "@xyflow/react";
+import React, { useState, useEffect, useRef } from "react";
 import { PlusCircle } from "lucide-react";
 import ControlDropdown from "../../Controls/Components/ControlDropdown";
-import { createNodeFromTemplate } from "../registry/nodeTypeRegistry";
-import { useNodeContext } from "../context/useNodeContext";
-import { useSelect } from "../../Select/contexts/SelectContext";
-import { useEdgeContext } from "../../Edge/store/useEdgeContext";
-import { useTransaction } from "@jalez/react-state-history";
-import { getHandlesForNodeType } from "../../Edge/hooks/utils/edgeUtils";
-import { generateUniqueId } from "../hooks/utils/nodeUtils";
+import NodeTypeList from "./components/NodeTypeList";
+import NodePlacementOverlay from "./components/NodePlacementOverlay";
+import PlacementIndicator from "./components/PlacementIndicator";
+import { useNodePlacement } from "./hooks/useNodePlacement";
+import { useNodeTypeData } from "./hooks/useNodeTypeData";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../ShortCuts/registry/shortcutsRegistry";
 
 interface NodeCreationControlProps {
-  availableNodeTypes: string[];
+  availableNodeTypes?: string[]; // Keep for backward compatibility
 }
 
-const NodeCreationControl: React.FC<NodeCreationControlProps> = ({
-  availableNodeTypes,
-}) => {
-  const { addNode } = useNodeContext();
-  const { onEdgeAdd } = useEdgeContext();
-  const { screenToFlowPosition } = useReactFlow();
-  const { selectedNodes } = useSelect();
-  const { withTransaction } = useTransaction();
-
+const NodeCreationControl: React.FC<NodeCreationControlProps> = () => {
   const [open, setOpen] = useState(false);
+  const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const { nodeTypes, getNodeTypeConfig } = useNodeTypeData();
+  const {
+    isPlacingNode,
+    mousePosition,
+    isOverFlow,
+    startPlacement,
+    cancelPlacement
+  } = useNodePlacement();
+
+  // Register keyboard shortcut for opening the dropdown
+  useEffect(() => {
+    registerShortcut(
+      DEFAULT_SHORTCUT_CATEGORIES.TOOLS,
+      "open-node-creation",
+      "n",
+      () => {
+        if (!isPlacingNode) {
+          setOpen(true);
+          // Focus will be handled by handleOpenChange
+        }
+      },
+      "Open Node Creation Dropdown"
+    );
+  }, [isPlacingNode]);
 
   const handleNodeTypeSelect = (nodeType: string) => {
-    const center = screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-    });
-
-    // Create a new node at the center of the viewport
-    const newNodeId = generateUniqueId("node");
-    const newNode = createNodeFromTemplate(nodeType, {
-      id: newNodeId,
-      position: center,
-      details: "Add details about this concept",
-    });
-
-    withTransaction(() => {
-      // Add the new node first
-      if (newNode) {
-        addNode(newNode);
-      }
-
-      // Create connections to selected nodes with invisible node management
-      for (const selectedNode of selectedNodes) {
-        if (!selectedNode.data.isContainer && selectedNode.type) {
-          // Get appropriate handles for the node types
-          const selectedHandles = getHandlesForNodeType(selectedNode.type);
-          const newNodeHandles = getHandlesForNodeType(nodeType);
-
-          const newEdge = {
-            id: `e-${selectedNode.id}-${newNodeId}`,
-            source: selectedNode.id,
-            target: newNodeId,
-            sourceHandle: selectedHandles.sourceHandle,
-            targetHandle: newNodeHandles.targetHandle,
-          };
-
-          // Add the edge
-          onEdgeAdd(newEdge);
-        }
-      }
-    }, "NodeCreationControl/Add");
-
+    setSelectedNodeType(nodeType);
     setOpen(false);
+    startPlacement(nodeType);
   };
 
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      // Reset focus when closing
+      setSelectedNodeType(null);
+    } else {
+      // Focus the dropdown content when opening
+      setTimeout(() => {
+        const container = dropdownRef.current;
+        if (container) {
+          container.focus();
+        }
+      }, 50);
+    }
+  };
+
+  // Create a custom dropdown content with the NodeTypeList
+  const dropdownContent = (
+    <div 
+      ref={dropdownRef}
+      className="w-80 max-h-96 overflow-y-auto p-2"
+      tabIndex={0}
+      onFocus={() => {
+        // Ensure the NodeTypeList gets focus when the container is focused
+        const nodeTypeList = dropdownRef.current?.querySelector('[role="listbox"]') as HTMLElement;
+        if (nodeTypeList) {
+          nodeTypeList.focus();
+        }
+      }}
+    >
+      <NodeTypeList
+        nodeTypes={nodeTypes}
+        onNodeTypeSelect={handleNodeTypeSelect}
+        isOpen={open}
+      />
+    </div>
+  );
+
+  const selectedNodeTypeConfig = selectedNodeType ? getNodeTypeConfig(selectedNodeType) : null;
+  const nodeTypeName = selectedNodeTypeConfig?.defaultLabel || selectedNodeType || '';
+
   return (
-    <ControlDropdown
-      tooltip="Create New Node"
-      icon={<PlusCircle className="size-4" />}
-      items={availableNodeTypes.map((nodeType) => ({
-        key: nodeType,
-        label: nodeType,
-        onClick: () => handleNodeTypeSelect(nodeType)
-      }))}
-      open={open}
-      onOpenChange={setOpen}
-    />
+    <>
+      <ControlDropdown
+        tooltip={isPlacingNode ? "Click on the flow to place node" : "Create New Node (N)"}
+        icon={<PlusCircle className="size-4" />}
+        items={[]} // Empty items array since we're using custom content
+        open={open}
+        onOpenChange={handleOpenChange}
+        customContent={dropdownContent}
+        disabled={isPlacingNode}
+      />
+      
+      <PlacementIndicator
+        isVisible={isPlacingNode}
+        nodeTypeName={nodeTypeName}
+        onCancel={cancelPlacement}
+      />
+
+      {selectedNodeTypeConfig && (
+        <NodePlacementOverlay
+          isVisible={isPlacingNode && isOverFlow}
+          mousePosition={mousePosition}
+          nodeType={selectedNodeTypeConfig}
+        />
+      )}
+    </>
   );
 };
 
