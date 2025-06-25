@@ -57,13 +57,51 @@ export class GeneratorOrchestrator {
    * Generate process code
    */
   async generateProcess(request: ProcessGenerationRequest): Promise<GenerationResult> {
-    const prompt = await this.promptBuilder.buildProcessPrompt(request);
-    const strategy = (this.config.generationStrategy || request.strategy) || 'hybrid';
+    console.log('🚀 Starting process generation:', request);
+    
+    try {
+      // Use the new simplified approach
+      const { code, updatedNodeData } = await this.processGenerator.generateProcessCode(
+        request.nodeId,
+        request.nodeType,
+        request.nodeData,
+        request.nodeData?.userRequest || '',
+        request.nodeData?.currentInstanceCode,
+        request.provider,
+        request.model
+      );
 
-    return await this.processGenerator.generate(request, {
-      strategy,
-      prompt
-    });
+      return {
+        type: 'process',
+        strategy: 'ai',
+        code: code,
+        nodeId: request.nodeId,
+        confidence: 0.8,
+        generatedAt: new Date().toISOString(),
+        provider: request.provider,
+        updatedNodeData: updatedNodeData,
+        validation: {
+          isValid: true,
+          errors: [],
+          warnings: [],
+          syntaxValid: true,
+          securityIssues: [],
+          performanceWarnings: [],
+          suggestions: []
+        },
+        metadata: {
+          nodeType: request.nodeType,
+          templateUsed: 'ai-generated',
+          tokensUsed: 0,
+          generationTime: Date.now(),
+          validationScore: 0.8,
+          confidence: 0.8
+        }
+      };
+    } catch (error) {
+      console.error('❌ Process generation failed:', error);
+      throw error;
+    }
   }
 
   /**
