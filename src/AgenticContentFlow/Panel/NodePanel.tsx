@@ -33,7 +33,7 @@ const DEFAULT_SIZES = {
 
 export const NodeConfigPanel: React.FC = () => {
   const { selectedNodes } = useSelect();
-  const { updateNode } = useNodeContext();
+  const { updateNode, nodeMap } = useNodeContext();
   const [isExpanded, setIsExpanded] = useState(false);
   const [position, setPosition] = useState<PanelPosition>('right');
   const [activeNode, setActiveNode] = useState<any>(null);
@@ -92,6 +92,32 @@ export const NodeConfigPanel: React.FC = () => {
       setHasDataChanges(false);
     }
   }, [selectedNodes]);
+
+  // Update formData when the selected node's data changes (e.g., from AI generation)
+  useEffect(() => {
+    if (selectedNodes.length === 1) {
+      const selectedNodeId = selectedNodes[0].id;
+      const currentNodeFromMap = nodeMap.get(selectedNodeId);
+      
+      if (currentNodeFromMap && activeNode && activeNode.id === selectedNodeId) {
+        // Check if the node data has actually changed
+        const oldDataString = JSON.stringify(activeNode.data);
+        const newDataString = JSON.stringify(currentNodeFromMap.data);
+        
+        if (oldDataString !== newDataString) {
+          console.log('🔄 [NodePanel] Node data updated from nodeMap, refreshing formData:', {
+            nodeId: selectedNodeId,
+            oldData: activeNode.data,
+            newData: currentNodeFromMap.data
+          });
+          setActiveNode(currentNodeFromMap);
+          setFormData(currentNodeFromMap.data || {});
+          setHasChanges(false);
+          setHasDataChanges(false);
+        }
+      }
+    }
+  }, [selectedNodes, activeNode, nodeMap]);
 
   const handleFieldChange = (fieldKey: string, value: any) => {
     setFormData(prev => ({
