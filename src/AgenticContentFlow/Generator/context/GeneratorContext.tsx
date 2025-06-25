@@ -35,6 +35,10 @@ interface GeneratorContextType {
   // Actions
   setPreferredProvider: (provider: LLMProvider) => void;
   getPreferredProvider: () => LLMProvider | null;
+  
+  // Node update state
+  updatingNodes: Set<string>;
+  setUpdatingNode: (nodeId: string, isUpdating: boolean) => void;
 }
 
 const GeneratorContext = createContext<GeneratorContextType | undefined>(undefined);
@@ -47,6 +51,7 @@ export const GeneratorProvider: React.FC<GeneratorProviderProps> = ({ children }
   const [selectedProvider, setSelectedProvider] = useState<LLMProvider>('openai');
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
   const [providersLoading, setProvidersLoading] = useState(false);
+  const [updatingNodes, setUpdatingNodes] = useState<Set<string>>(new Set());
 
   // Load providers on mount
   useEffect(() => {
@@ -97,6 +102,19 @@ export const GeneratorProvider: React.FC<GeneratorProviderProps> = ({ children }
     return apiKeyManager.getPreferredProvider();
   }, []);
 
+  // Node update state
+  const setUpdatingNode = useCallback((nodeId: string, isUpdating: boolean) => {
+    if (isUpdating) {
+      setUpdatingNodes(prevNodes => new Set(prevNodes).add(nodeId));
+    } else {
+      setUpdatingNodes(prevNodes => {
+        const newNodes = new Set(prevNodes);
+        newNodes.delete(nodeId);
+        return newNodes;
+      });
+    }
+  }, []);
+
   const value: GeneratorContextType = {
     selectedProvider,
     setSelectedProvider,
@@ -107,6 +125,8 @@ export const GeneratorProvider: React.FC<GeneratorProviderProps> = ({ children }
     providersLoading,
     setPreferredProvider,
     getPreferredProvider,
+    updatingNodes,
+    setUpdatingNode,
   };
 
   return (

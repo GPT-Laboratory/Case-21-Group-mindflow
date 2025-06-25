@@ -97,6 +97,9 @@ export interface ProcessGenerationResult extends BaseGenerationResult {
   tokensUsed?: number;
   suggestions?: string[];
   warnings?: string[];
+  
+  // New field for complete node data updates
+  updatedNodeData?: Record<string, any>;
 }
 
 export interface FlowGenerationResult extends BaseGenerationResult {
@@ -188,7 +191,7 @@ export interface ProcessMetadata {
   validationScore: number;
   
   // Enhanced fields from legacy
-  generatedBy?: 'ai' | 'template' | 'hybrid';
+  generatedBy?: 'ai' | 'template';
   sourceDescriptorId?: string;
   confidence: number; // 0-1 confidence score
 }
