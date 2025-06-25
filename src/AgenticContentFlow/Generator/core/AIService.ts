@@ -76,13 +76,25 @@ export class UnifiedAIService {
       if (!provider) {
         throw new Error('No LLM provider configured');
       }
+      
+      // Get the API configuration for this provider
+      const { apiKeyManager } = await import('../providers/management/APIKeyManager');
+      const apiConfig = apiKeyManager.getConfig(provider);
+      
+      if (!apiConfig) {
+        throw new Error(`${provider} API configuration is required. Please configure the provider in the API setup.`);
+      }
+      
       const providerInstance = LLMProviderFactory.createProvider(provider);
       const response = await providerInstance.generateContent({
         prompt: request.prompt,
         context: request.context,
         type: request.type,
         provider, // Pass the provider to the provider instance
-        config: request.config // Pass the config that contains the model
+        config: {
+          ...apiConfig, // Include the API configuration (apiKey, baseURL, etc.)
+          ...request.config // Override with any request-specific config (model, temperature, etc.)
+        }
       });
       return response;
     } catch (error) {
