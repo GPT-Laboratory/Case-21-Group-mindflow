@@ -8,6 +8,7 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
 import { LLMProvider } from '../../generatortypes';
 import { useGenerator } from '../../context/GeneratorContext';
+import { Settings } from 'lucide-react';
 
 interface APIProviderSelectorProps {
   selectedProvider: LLMProvider;
@@ -42,6 +43,19 @@ export const APIProviderSelector: React.FC<APIProviderSelectorProps> = ({
     onProviderChange(value as LLMProvider);
   };
 
+  const renderProviderIcon = (provider: LLMProvider) => {
+    if (provider === 'custom') {
+      return <Settings className="w-4 h-4" />;
+    }
+    return (
+      <img
+        src={providerIcons[provider]}
+        alt={providerNames[provider]}
+        className="w-4 h-4"
+      />
+    );
+  };
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-foreground">
@@ -55,11 +69,7 @@ export const APIProviderSelector: React.FC<APIProviderSelectorProps> = ({
         <SelectTrigger className="w-full">
           <SelectValue>
             <div className="flex items-center gap-2">
-              <img
-                src={providerIcons[selectedProvider]}
-                alt={providerNames[selectedProvider]}
-                className="w-4 h-4"
-              />
+              {renderProviderIcon(selectedProvider)}
               <span>{providerNames[selectedProvider]}</span>
             </div>
           </SelectValue>
@@ -72,11 +82,7 @@ export const APIProviderSelector: React.FC<APIProviderSelectorProps> = ({
               className="flex items-center gap-2"
             >
               <div className="flex items-center gap-2 w-full">
-                <img
-                  src={providerIcons[providerInfo.provider]}
-                  alt={providerInfo.name}
-                  className="w-4 h-4"
-                />
+                {renderProviderIcon(providerInfo.provider)}
                 <span className="flex-1">{providerInfo.name}</span>
                 {providerInfo.configured && (
                   <span className="text-xs text-green-600 dark:text-green-400">

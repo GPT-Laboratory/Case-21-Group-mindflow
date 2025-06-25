@@ -10,7 +10,7 @@ import { Label } from '../../../../components/ui/label';
 import { Button } from '../../../../components/ui/button';
 import { Card, CardContent } from '../../../../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select';
-import { HelpCircle, TestTube, Download, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { HelpCircle, TestTube, Download, Loader2, CheckCircle2, XCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../../components/ui/tooltip';
 import { LLMProvider, LLMAPIConfig } from '../../generatortypes';
 import { APIProviderSelector } from './APIProviderSelector';
@@ -86,6 +86,9 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
   const { getProviderConfig, availableProviders } = useGenerator();
   const currentConfig = getProviderConfig(selectedProvider);
   const providerInfo = availableProviders.find(p => p.provider === selectedProvider);
+  
+  // State for API key visibility
+  const [showApiKey, setShowApiKey] = React.useState(false);
 
   return (
     <div className="space-y-3">
@@ -112,15 +115,30 @@ export const APIConfigForm: React.FC<APIConfigFormProps> = ({
               </Tooltip>
             </TooltipProvider>
           </Label>
-          <Input
-            id="apiKey"
-            type="password"
-            placeholder="Enter your API key"
-            value={config.apiKey || ''}
-            onChange={(e) => onConfigChange('apiKey', e.target.value)}
-            disabled={disabled}
-            className="flex-1 min-w-0"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="apiKey"
+              type={showApiKey ? "text" : "password"}
+              placeholder="Enter your API key"
+              value={config.apiKey || ''}
+              onChange={(e) => onConfigChange('apiKey', e.target.value)}
+              disabled={disabled}
+              className="flex-1 min-w-0"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowApiKey(!showApiKey)}
+              className="flex-shrink-0"
+              type="button"
+            >
+              {showApiKey ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </div>
       )}
 
