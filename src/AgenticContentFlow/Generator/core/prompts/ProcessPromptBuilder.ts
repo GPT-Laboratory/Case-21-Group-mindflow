@@ -45,14 +45,18 @@ export class ProcessPromptBuilder {
     const configSection = this.buildConfigurationSection(instanceData, templateData);
     const schemaSection = this.buildSchemaSection(inputSchema, outputSchema);
     const requirementsSection = this.buildRequirementsSection(nodeType, templateData);
+    const currentCodeSection = this.buildCurrentCodeSection(instanceData);
+    const userRequestSection = this.buildUserRequestSection(instanceData);
 
     const basePrompt = `Generate a JavaScript async function for a ${nodeType} node in an Agentic Content Flow system.
+
+**USER REQUEST**: ${instanceData?.userRequest || 'No specific request provided'}
 
 **Template Description**: ${templateDescription}
 
 **Purpose**: Create a process function that handles data flow between nodes in a visual workflow system.
 
-${configSection}${schemaSection}${contextSection}${requirementsSection}
+${currentCodeSection}${userRequestSection}${configSection}${schemaSection}${contextSection}${requirementsSection}
 
 **Function Signature**:
 \`\`\`javascript
@@ -77,9 +81,13 @@ async function process(incomingData, nodeData, params, targetMap, sourceMap)
 - MUST include console.log statements for debugging
 - MUST return a result object with data and metadata
 
+**IMPORTANT**: The user request "${instanceData?.userRequest || 'No request'}" should be implemented in the code. If they ask to change the URL, change the URL in the code. If they ask to change the data processing, change the data processing logic.
+
 ${this.buildConditionalRoutingSection(templateData)}
 
-Return ONLY the JavaScript function - no explanations, no markdown, just the function code.`;
+**IMPORTANT**: Return ONLY the JavaScript function - no explanations, no markdown, just the function code.
+
+**Example**: If the user says "Change this to get comments instead", update the URL in the code to point to the comments endpoint.`;
 
     return basePrompt;
   }
@@ -239,5 +247,46 @@ return {
   metadata: { /* ... */ }
 };
 \`\`\``;
+  }
+
+  private buildCurrentCodeSection(instanceData: Record<string, any>): string {
+    const currentCode = instanceData.currentInstanceCode;
+    const lastGenerated = instanceData.lastGenerated;
+    
+    if (!currentCode) {
+      return '';
+    }
+    
+    let section = '**Current Implementation**:\n';
+    section += 'The node currently has this process function:\n\n';
+    section += '```javascript\n';
+    section += currentCode;
+    section += '\n```\n\n';
+    
+    if (lastGenerated) {
+      section += `*Last generated: ${lastGenerated}*\n\n`;
+    }
+    
+    return section;
+  }
+
+  private buildUserRequestSection(instanceData: Record<string, any>): string {
+    const userRequest = instanceData.userRequest;
+    
+    if (!userRequest) {
+      return '';
+    }
+    
+    let section = '**User Request**:\n';
+    section += `The user wants to modify this node: "${userRequest}"\n\n`;
+    section += '**Instructions**:\n';
+    section += '- Update the process function to implement the requested changes\n';
+    section += '- Keep the same function signature and error handling structure\n';
+    section += '- Maintain compatibility with the existing node configuration\n';
+    section += '- If the request is about changing API endpoints, URLs, or methods, update those in the code\n';
+    section += '- If the request is about changing data processing logic, modify the processing part\n';
+    section += '- If the request is about changing conditions or routing, update the conditional logic\n\n';
+    
+    return section;
   }
 }
