@@ -18,7 +18,7 @@ import { UnifiedAIService } from '../../core/AIService';
 import { apiKeyManager } from '../../providers/management/APIKeyManager';
 
 export interface FlowGenerationOptions {
-  strategy: 'ai' | 'hybrid';
+  strategy: 'ai';
   prompt?: string;
 }
 
@@ -27,6 +27,34 @@ export interface FlowGenerationOptions {
  */
 const generateRequestId = (): string => {
   return `gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+/**
+ * Fix duplicate node IDs by generating unique IDs for duplicates
+ */
+const fixDuplicateNodeIds = (nodes: any[]): { nodes: any[], fixedCount: number } => {
+  const nodeIdMap = new Map<string, any>();
+  const duplicateIds = new Set<string>();
+  let fixedCount = 0;
+  
+  nodes.forEach((node: any) => {
+    if (nodeIdMap.has(node.id)) {
+      duplicateIds.add(node.id);
+      // Generate a unique ID for the duplicate
+      const originalNode = nodeIdMap.get(node.id);
+      const newId = `${node.id}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      node.id = newId;
+      fixedCount++;
+      console.warn(`[AIFlowStrategy] Fixed duplicate node ID: ${originalNode.id} -> ${newId}`);
+    }
+    nodeIdMap.set(node.id, node);
+  });
+  
+  if (duplicateIds.size > 0) {
+    console.warn(`[AIFlowStrategy] Fixed ${fixedCount} duplicate node IDs`);
+  }
+  
+  return { nodes: Array.from(nodeIdMap.values()), fixedCount };
 };
 
 /**
@@ -101,6 +129,14 @@ export class AIFlowStrategy {
       const flowData = JSON.parse(jsonContent);
       console.log('✅ Parsed flow data:', flowData);
       
+      // Fix duplicate node IDs to prevent React key collisions
+      let fixedCount = 0;
+      if (flowData.nodes && Array.isArray(flowData.nodes)) {
+        const result = fixDuplicateNodeIds(flowData.nodes);
+        flowData.nodes = result.nodes;
+        fixedCount = result.fixedCount;
+      }
+      
       const metadata: FlowMetadata = {
         requestId: generateRequestId(),
         timestamp: Date.now(),
@@ -109,7 +145,7 @@ export class AIFlowStrategy {
         edgeCount: flowData.edges?.length || 0,
         flowType: request.type,
         features: request.features || [],
-        autoCorrections: 0
+        autoCorrections: fixedCount // Track how many duplicates were fixed
       };
       
       return {
