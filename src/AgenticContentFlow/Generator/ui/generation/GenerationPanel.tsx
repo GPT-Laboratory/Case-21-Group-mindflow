@@ -8,10 +8,11 @@ import { GenerationStatus } from './GenerationStatus';
 import { APISetupDialog } from '../api-setup/APISetupDialog';
 import { ConnectionStatus } from '../shared/ConnectionStatus';
 import { ProviderIcon } from '../shared/ProviderIcon';
-import { LLMProvider } from '../../generatortypes';
+import { LLMProvider, GenerationResult, ProcessGenerationResult } from '../../generatortypes';
 import { useGenerator } from '../../context/GeneratorContext';
 import { useGenerationForm } from '../../hooks/useGenerationForm';
 import { useSelect } from '../../../Select/contexts/SelectContext';
+import { useNodeContext } from '../../../Node/context/useNodeContext';
 import { useInputFocusHandlers } from '../../../Panel/hooks/useInputFocusHandlers';
 import { useNotifications } from '../../../Notifications/hooks/useNotifications';
 import { MoreHorizontal, Lightbulb, Send } from 'lucide-react';
@@ -44,9 +45,13 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
   const [selectedModel, setSelectedModel] = useState<string>('');
 
   const { selectedNodes: selectNodes } = useSelect();
+  const { updateNode } = useNodeContext();
   const { onFocus, onBlur } = useInputFocusHandlers();
-  const { showErrorToast } = useNotifications();
+  const { showErrorToast, showSuccessToast } = useNotifications();
   const { availableProviders, providersLoading } = useGenerator();
+
+  // Determine the actual generation type based on selection
+  const actualGenerationType = selectNodes.length === 1 ? 'process' : type;
 
   const handleAPISetupComplete = () => {
     setShowAPISetup(false);
@@ -58,7 +63,89 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
     setShowAPISetup(true);
   };
 
-  // Use the generation form hook
+  // Handle node update when process generation completes
+  const handleNodeUpdate = (result: GenerationResult) => {
+    console.log('📋 [GenerationPanel] handleNodeUpdate called with result:', result);
+    
+    if (result.type === 'process' && selectNodes.length === 1) {
+      const processResult = result as ProcessGenerationResult;
+      const selectedNode = selectNodes[0];
+      
+      console.log('🎯 [GenerationPanel] Processing node update for:', {
+        nodeId: selectedNode.id,
+        nodeType: selectedNode.type,
+        resultType: processResult.type,
+        hasCode: !!processResult.code,
+        codeLength: processResult.code?.length || 0
+      });
+      
+      try {
+        // Update the node with new process code and metadata
+        const updatedNode = {
+          ...selectedNode,
+          data: {
+            ...selectedNode.data,
+            // Apply the updated node data from AI (labels, URLs, etc.)
+            ...(processResult.updatedNodeData || {}),
+            // Update the process code
+            instanceCode: processResult.code,
+            lastGenerated: new Date().toISOString(),
+            generationMetadata: {
+              provider: processResult.provider,
+              confidence: processResult.confidence,
+              strategy: processResult.strategy,
+              generatedAt: processResult.generatedAt,
+              validation: processResult.validation,
+              metadata: processResult.metadata
+            }
+          }
+        };
+        
+        console.log('📝 [GenerationPanel] Updated node data:', {
+          nodeId: updatedNode.id,
+          hasInstanceCode: !!updatedNode.data.instanceCode,
+          instanceCodeLength: updatedNode.data.instanceCode?.length || 0,
+          lastGenerated: updatedNode.data.lastGenerated,
+          generationMetadata: updatedNode.data.generationMetadata,
+          updatedNodeData: processResult.updatedNodeData,
+          hasUpdatedNodeData: !!processResult.updatedNodeData && Object.keys(processResult.updatedNodeData).length > 0
+        });
+        
+        // Log the specific updated node data for debugging
+        if (processResult.updatedNodeData) {
+          console.log('🔍 [GenerationPanel] AI returned updated node data:', {
+            instanceData: processResult.updatedNodeData.instanceData,
+            templateData: processResult.updatedNodeData.templateData,
+            fullUpdatedData: processResult.updatedNodeData
+          });
+        }
+        
+        console.log('🔄 [GenerationPanel] Calling updateNode with updated node');
+        updateNode(updatedNode);
+        
+        showSuccessToast(
+          'Node Updated', 
+          `Successfully updated ${selectedNode.type} node with new process code`
+        );
+        
+        // Clear the input after successful update
+        setDescription('');
+        resetHistory();
+        
+        console.log('✅ [GenerationPanel] Node update completed successfully');
+        
+      } catch (error) {
+        console.error('❌ [GenerationPanel] Failed to update node:', error);
+        showErrorToast('Update Failed', 'Failed to update node with new process code');
+      }
+    } else {
+      console.log('🌊 [GenerationPanel] Handling flow generation result');
+      // Handle flow generation as before
+      onGenerated(result);
+    }
+  };
+
+  // Use the generation form hook with custom onGenerated callback and actual generation type
   const {
     description,
     setDescription,
@@ -71,7 +158,7 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
     historyIndex,
     navigateHistory,
     resetHistory
-  } = useGenerationForm(type, selectNodes as any[], onGenerated, defaultRequest, showErrorToast);
+  } = useGenerationForm(actualGenerationType, selectNodes as any[], handleNodeUpdate, defaultRequest, showErrorToast);
 
   // Check if current provider is configured
   const currentProviderInfo = availableProviders.find(p => p.provider === selectedProvider);
@@ -109,11 +196,11 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
 
   // Smart placeholder based on type and selection
   const getSmartPlaceholder = () => {
-    if (type === 'process' && selectNodes.length === 1) {
+    if (actualGenerationType === 'process' && selectNodes.length === 1) {
       const nodeType = selectNodes[0].type;
       return `Describe how this ${nodeType} should process data...`;
     } else {
-      return `Describe the ${type === 'flow' ? 'workflow' : 'process'} you want to generate...`;
+      return `Describe the ${actualGenerationType === 'flow' ? 'workflow' : 'process'} you want to generate...`;
     }
   };
 
@@ -138,7 +225,7 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
     setConnectionStatus(status);
   };
 
-  // Custom generate function that includes model selection
+  // Custom generate function that includes model selection and node updates
   const handleGenerateWithModel = async () => {
     if (!description.trim() || isGenerating) return;
 
@@ -176,7 +263,7 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
               onClick={handleGenerateWithModel}
               disabled={!description.trim() || isGenerating}
               className="flex items-center justify-center w-8 h-8 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-              title="Generate"
+              title={selectNodes.length === 1 ? "Update Node" : "Generate"}
             >
               <Send className="w-4 h-4" />
             </button>
@@ -236,7 +323,7 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
         {/* Status indicator */}
         <GenerationStatus
           isGenerating={isGenerating}
-          generationType={type}
+          generationType={actualGenerationType}
           historyIndex={historyIndex}
           historyLength={promptHistory.length}
         />

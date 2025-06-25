@@ -55,7 +55,8 @@ export function useGenerationForm(
     selectedProvider,
     setSelectedProvider,
     availableProviders,
-    providersLoading
+    providersLoading,
+    setUpdatingNode
   } = useGenerator();
 
   // Use notifications for error handling
@@ -102,7 +103,16 @@ export function useGenerationForm(
   const handleGenerate = useCallback(async () => {
     if (!description.trim() || isGenerating) return;
 
+    console.log('🚀 [useGenerationForm] Starting generation:', { type, selectedNodes: selectedNodes.length, description });
     setIsGenerating(true);
+    
+    // Set updating state for selected node if this is a process generation
+    if (type === 'process' && selectedNodes.length === 1) {
+      const node = selectedNodes[0];
+      console.log('🔄 [useGenerationForm] Setting updating state for node:', node.id);
+      setUpdatingNode(node.id, true);
+    }
+    
     try {
       // Get the API configuration to use the saved model
       const apiConfig = apiKeyManager.getConfig(selectedProvider);
@@ -111,20 +121,48 @@ export function useGenerationForm(
       if (type === 'process' && selectedNodes.length === 1) {
         // Process generation for single node
         const node = selectedNodes[0];
+        console.log('🎯 [useGenerationForm] Generating process for node:', { 
+          nodeId: node.id, 
+          nodeType: node.type, 
+          provider: selectedProvider, 
+          model: modelToUse 
+        });
+        
         // Build ProcessGenerationRequest
         const request = {
           type: 'process' as const,
           nodeId: node.id,
           nodeType: node.type,
-          nodeData: node.data || {},
+          nodeData: {
+            // Pass the complete node data structure
+            ...node.data,
+            // Ensure we have the current instanceCode for context
+            currentInstanceCode: node.data?.instanceCode || '',
+            // Include all the data fields the AI needs to understand the node
+            instanceData: node.data?.instanceData || {},
+            templateData: node.data?.templateData || {},
+            // Include metadata about the current state
+            lastGenerated: node.data?.lastGenerated,
+            generationMetadata: node.data?.generationMetadata,
+            // Include the user's request for what to change
+            userRequest: description
+          },
           provider: selectedProvider,
           model: modelToUse, // Include model
           // Add more fields as needed
         };
+        
+        console.log('📤 [useGenerationForm] Sending process generation request:', request);
         const result = await orchestrator.generate(request);
+        console.log('📥 [useGenerationForm] Received process generation result:', result);
+        
+        // Call the onGenerated callback with the result
+        // This will be handled by the GenerationPanel to update the node
+        console.log('📞 [useGenerationForm] Calling onGenerated callback with result');
         onGenerated(result);
       } else {
         // Flow generation: use orchestrator and retry if result is empty/invalid
+        console.log('🌊 [useGenerationForm] Generating flow with description:', description);
         let attempts = 0;
         let result: GenerationResult | null = null;
         let lastError: any = null;
@@ -165,14 +203,22 @@ export function useGenerationForm(
       resetHistory();
 
     } catch (error) {
-      console.error('Generation failed:', error);
+      console.error('❌ [useGenerationForm] Generation failed:', error);
       // Show error notification to user
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       showErrorToast('Generation Failed', errorMessage);
     } finally {
+      console.log('🏁 [useGenerationForm] Generation completed, clearing states');
       setIsGenerating(false);
+      
+      // Clear updating state for selected node if this was a process generation
+      if (type === 'process' && selectedNodes.length === 1) {
+        const node = selectedNodes[0];
+        console.log('🔄 [useGenerationForm] Clearing updating state for node:', node.id);
+        setUpdatingNode(node.id, false);
+      }
     }
-  }, [description, type, selectedNodes, isGenerating, onGenerated, orchestrator, selectedProvider, resetHistory, promptHistory, showErrorToast]);
+  }, [description, type, selectedNodes, isGenerating, onGenerated, orchestrator, selectedProvider, resetHistory, promptHistory, showErrorToast, setUpdatingNode]);
 
   const handleSuggest = useCallback(() => {
     const suggestions = [
