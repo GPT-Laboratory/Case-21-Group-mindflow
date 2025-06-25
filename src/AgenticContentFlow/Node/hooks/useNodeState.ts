@@ -104,11 +104,21 @@ export const useNodeHistoryStateImpl = (
 
   const handleUpdateNode = useCallback(
     withErrorHandler("handleUpdateNode", (updatedNode: Node<NodeData>, isClick = true) => {
+      console.log('🔄 [useNodeState] handleUpdateNode called:', {
+        nodeId: updatedNode.id,
+        nodeType: updatedNode.type,
+        isClick,
+        hasInstanceCode: !!updatedNode.data?.instanceCode,
+        instanceCodeLength: typeof updatedNode.data?.instanceCode === 'string' ? updatedNode.data.instanceCode.length : 0
+      });
+      
       if (!isClick) {
+        console.log('🔄 [useNodeState] Direct update (not tracked)');
         updateNode(updatedNode);
         return;
       }
       const deepCopyNodes = JSON.parse(JSON.stringify(nodes)); // Create a deep copy of the nodes
+      console.log('🔄 [useNodeState] Tracked update with history');
       trackUpdateNode(updatedNode, deepCopyNodes, "Update node");
       setLastExecutedAction("handleUpdateNode");
 

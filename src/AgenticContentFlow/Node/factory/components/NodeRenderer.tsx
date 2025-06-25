@@ -48,6 +48,8 @@ interface BaseNodeRendererProps {
   onApprove?: () => void;
   onAutoApproveToggle?: () => void;
   disabled?: boolean;
+  // Node update state
+  isUpdating?: boolean;
 }
 
 /**
@@ -87,14 +89,16 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
   onLoopIntervalChange,
   onApprove,
   onAutoApproveToggle,
-  disabled = false
+  disabled = false,
+  // Node update state
+  isUpdating
 }) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const iconResolver = new IconResolver();
 
   // Resolve main icon - only one icon for both header and content
   const mainIcon = iconResolver.resolveIcon(config.visual.icon, {
-    className: `relative w-6 h-6 ${config.visual.icon.className || ''} ${isProcessing ? 'animate-pulse' : ''}`
+    className: `relative w-6 h-6 ${config.visual.icon.className || ''} ${isProcessing || isUpdating ? 'animate-pulse' : ''}`
   });
 
   // Determine if this is a container node
@@ -157,6 +161,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
           isProcessing={isProcessing}
           isCompleted={isCompleted}
           hasError={hasError}
+          isUpdating={isUpdating}
           menuItems={menuItems}
         >
           {/* Expand/Collapse Button */}
@@ -178,6 +183,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         isProcessing={isProcessing}
         isCompleted={isCompleted}
         hasError={hasError}
+        isUpdating={isUpdating}
         menuItems={menuItems}
         style={{ backgroundColor: styleConfig.backgroundColor }}
       >
@@ -221,7 +227,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         {hasVariants && (
           <div className="text-center text-sm text-slate-700 leading-relaxed px-1 flex flex-row items-center">
             <Badge variant="outline" className={cn("text-xs px-2 py-1 m-1 font-mono", variantBadgeColor || '')}>
-              {isProcessing ? 'PROCESSING...' : variantBadgeText}
+              {isUpdating ? 'UPDATING...' : isProcessing ? 'PROCESSING...' : variantBadgeText}
             </Badge>
           </div>
         )}

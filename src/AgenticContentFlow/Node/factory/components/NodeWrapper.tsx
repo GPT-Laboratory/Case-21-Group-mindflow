@@ -1,12 +1,13 @@
 /** @format */
 
 import React from 'react';
-import { NodeProps, useReactFlow } from '@xyflow/react';
+import { NodeProps, useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import { UnifiedStyleManager } from '../utils/UnifiedStyleManager';
 import { useUnifiedNodeState } from '../hooks/useUnifiedNodeState';
 import { BaseNodeRenderer } from './NodeRenderer';
 import { getNodeType } from '../../store/unifiedNodeTypeStoreInitializer';
 import { useNodeProcess } from '../../../Process/useNodeProcess';
+import { useGenerator } from '../../../Generator/context/GeneratorContext';
 
 interface UnifiedNodeWrapperProps extends NodeProps {
   customContent?: React.ReactNode;
@@ -28,6 +29,8 @@ interface UnifiedNodeWrapperProps extends NodeProps {
   onApprove?: () => void;
   onAutoApproveToggle?: () => void;
   disabled?: boolean;
+  // Node update state
+  isUpdating?: boolean;
 }
 
 /**
@@ -57,10 +60,41 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
   onLoopIntervalChange,
   onApprove,
   onAutoApproveToggle,
-  disabled = false
+  disabled = false,
+  // Node update state
+  isUpdating = false
 }) => {
+  // Debug: Log node data to see if instanceCode is present
+  React.useEffect(() => {
+    if (data?.instanceCode) {
+      console.log('🔍 [NodeWrapper] Node data received with instanceCode:', {
+        nodeId: id,
+        nodeType: type,
+        hasInstanceCode: !!data.instanceCode,
+        instanceCodeLength: typeof data.instanceCode === 'string' ? data.instanceCode.length : 0,
+        lastGenerated: data.lastGenerated,
+        hasGenerationMetadata: !!data.generationMetadata
+      });
+    }
+  }, [id, type, data?.instanceCode, data?.lastGenerated, data?.generationMetadata]);
+
   // Get React Flow functions for building node maps
   const { getEdges, getNode, setNodes } = useReactFlow();
+  
+  // Force React Flow to update the node when instanceCode changes
+  const updateNodeInternals = useUpdateNodeInternals();
+  
+  // Force update when instanceCode changes
+  React.useEffect(() => {
+    if (data?.instanceCode) {
+      console.log('🔄 [NodeWrapper] Force updating React Flow node internals for:', id);
+      updateNodeInternals(id);
+    }
+  }, [id, data?.instanceCode, updateNodeInternals]);
+  
+  // Check if this node is being updated
+  const { updatingNodes } = useGenerator();
+  const isNodeUpdating = updatingNodes.has(id);
   
   // Look up the config from the unified store using the type prop
   const config = type && typeof type === 'string' ? getNodeType(type) : null;
@@ -279,7 +313,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
     {
       selected: Boolean(selected),
       expanded,
-      isProcessing: processIsProcessing,
+      isProcessing: processIsProcessing || isNodeUpdating,
       hasError: processHasError,
       isCompleted: processIsCompleted
     }
@@ -288,7 +322,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
   // Update processing styles with current state
   const updatedProcessingStyles = UnifiedStyleManager.getProcessingStateStyles(
     updatedStyleConfig,
-    processingState
+    isNodeUpdating ? 'processing' : processingState
   );
 
   // Update node data with current background color for minimap
@@ -402,7 +436,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
       config={config}
       nodeInFlow={nodeInFlow}
       customContent={customContent}
-      isProcessing={processIsProcessing}
+      isProcessing={processIsProcessing || isNodeUpdating}
       isCompleted={processIsCompleted}
       hasError={processHasError}
       currentDimensions={currentDimensions}
@@ -430,6 +464,8 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
       onApprove={handleApprove}
       onAutoApproveToggle={handleAutoApproveToggle}
       disabled={disabled}
+      // Node update state
+      isUpdating={isNodeUpdating}
     />
   );
 }; 

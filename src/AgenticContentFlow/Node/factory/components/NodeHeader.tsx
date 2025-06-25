@@ -18,13 +18,14 @@ export interface NodeHeaderProps extends HTMLAttributes<HTMLElement> {
   isProcessing?: boolean;
   isCompleted?: boolean;
   hasError?: boolean;
+  isUpdating?: boolean;
   menuItems?: ReactNode[];
   iconClassName?: string;
   labelClassName?: string;
 }
 
 export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
-  ({ className, icon, label, isProcessing, isCompleted, hasError, menuItems, iconClassName, labelClassName, ...props }, ref) => {
+  ({ className, icon, label, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, ...props }, ref) => {
     return (
       <header 
         ref={ref} 
@@ -51,17 +52,22 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
         )}
         
         {/* Status badges */}
-        {isProcessing && (
+        {isUpdating && (
+          <Badge variant="outline" className="text-xs px-2 py-1 bg-yellow-50 text-yellow-700">
+            Updating...
+          </Badge>
+        )}
+        {isProcessing && !isUpdating && (
           <Badge variant="outline" className="text-xs px-2 py-1 bg-blue-50 text-blue-700">
             Processing...
           </Badge>
         )}
-        {isCompleted && (
+        {isCompleted && !isProcessing && !isUpdating && (
           <Badge variant="outline" className="text-xs px-2 py-1 bg-green-50 text-green-700">
             Complete
           </Badge>
         )}
-        {hasError && (
+        {hasError && !isProcessing && !isUpdating && (
           <Badge variant="outline" className="text-xs px-2 py-1 bg-red-50 text-red-700">
             Error
           </Badge>

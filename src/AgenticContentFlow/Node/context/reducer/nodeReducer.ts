@@ -132,20 +132,27 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
   
       case "UPDATE_NODE": {
         const updatedNode = normalizeNodeExpandedState(action.payload);
-        if (!state.nodeMap.has(updatedNode.id)) {
-          console.error("Node not found in the store:", updatedNode.id);
-          return state; // Return current state if node not found
-        }
-  
-        // Get the old node to check for parentId changes
-        const oldNode = state.nodeMap.get(updatedNode.id)!;
-  
-        // Create new maps (immutable update)
+        console.log('🔄 [nodeReducer] UPDATE_NODE action received:', {
+          nodeId: updatedNode.id,
+          nodeType: updatedNode.type,
+          hasInstanceCode: !!updatedNode.data?.instanceCode,
+          instanceCodeLength: typeof updatedNode.data?.instanceCode === 'string' ? updatedNode.data.instanceCode.length : 0
+        });
+        
+        // Create new maps (immutable update) starting from the current state
         const newNodeMap = new Map(state.nodeMap);
         const newNodeParentIdMapWithChildIdSet = new Map(
           state.nodeParentIdMapWithChildIdSet
         );
-  
+
+        // Check if the node exists in the current state
+        const oldNode = newNodeMap.get(updatedNode.id);
+        if (!oldNode) {
+          console.error(`[nodeReducer] Node not found in the store: ${updatedNode.id}`);
+          return state; // Return unchanged state if node not found
+        }
+
+        console.log('🔄 [nodeReducer] Updating existing node in map');
         // Update the node in the nodeMap
         newNodeMap.set(updatedNode.id, updatedNode);
   
@@ -190,8 +197,14 @@ export const nodeReducer = (state: NodeStoreState, action: NodeAction): NodeStor
         const newChildNodes = newNodes.filter(node =>
           !newParentNodes.some(parentNode => parentNode.id === node.id)
         );
-  
-  
+
+        console.log('✅ [nodeReducer] UPDATE_NODE completed successfully:', {
+          nodeId: updatedNode.id,
+          newNodesCount: newNodes.length,
+          newParentNodesCount: newParentNodes.length,
+          newChildNodesCount: newChildNodes.length
+        });
+
         return {
           ...state,
           nodes: newNodes, // Update with the new nodes array
