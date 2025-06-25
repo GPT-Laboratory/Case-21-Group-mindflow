@@ -94,9 +94,36 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     const visibleNodes = sourceNodes.filter(node => !node.hidden);
     console.log("sourceNodes", sourceNodes);
     
+    // Debug: Check if the updated node data is present
+    const updatedNode = visibleNodes.find(node => node.id === 'api-user-request');
+    if (updatedNode && updatedNode.data?.instanceCode) {
+      console.log('🔍 [Flow] Found updated node in filteredNodes:', {
+        nodeId: updatedNode.id,
+        hasInstanceCode: !!updatedNode.data.instanceCode,
+        instanceCodeLength: typeof updatedNode.data.instanceCode === 'string' ? updatedNode.data.instanceCode.length : 0,
+        lastGenerated: updatedNode.data.lastGenerated
+      });
+    }
+    
     // Deduplicate nodes by ID before rendering to prevent React key collisions
- 
-    return visibleNodes;
+    const nodeIdMap = new Map<string, Node<NodeData>>();
+    const duplicateIds = new Set<string>();
+    
+    visibleNodes.forEach(node => {
+      if (nodeIdMap.has(node.id)) {
+        duplicateIds.add(node.id);
+        console.warn(`[FilteredNodes] Duplicate node ID found: ${node.id}. Keeping the last occurrence.`);
+      }
+      nodeIdMap.set(node.id, node);
+    });
+    
+    // Log if we found duplicates
+    if (duplicateIds.size > 0) {
+      console.warn(`[FilteredNodes] Removed ${duplicateIds.size} duplicate nodes from filtered nodes`);
+    }
+    
+    const deduplicatedNodes = Array.from(nodeIdMap.values());
+    return deduplicatedNodes;
   }, [nodes, localNodes, isDragging]);
 
   /**
@@ -371,64 +398,64 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
 
   return (
     <>
-        {/* Register the grid controls */}
-        
-        {/* Always render ReactFlow with background visible */}
-        <ReactFlow
-          nodeTypes={memoizedNodeTypes}
-          edgeTypes={memoizedEdgeTypes}
-          defaultEdgeOptions={defaultEdgeOptions}
-          // Only show nodes and edges when factory system is ready
-          nodes={isFactorySystemReady ? filteredNodes : []}
-          onNodesDelete={isFactorySystemReady ? () => handleDelete("removeNodes") : undefined}
-          onNodesChange={isFactorySystemReady ? onNodesChange : undefined}
-          onNodeDragStart={isFactorySystemReady ? handleNodeDragStart : undefined}
-          onNodeDrag={isFactorySystemReady ? handleNodeDrag : undefined}
-          onNodeDragStop={isFactorySystemReady ? handleNodeDragStop : undefined}
-          onNodeClick={isFactorySystemReady ? DetermineNodeClickFunction : undefined}
-          onNodeDoubleClick={isFactorySystemReady ? DetermineNodeClickFunction : undefined}
-          edges={isFactorySystemReady ? visibleEdges : []}
-          onEdgesChange={isFactorySystemReady ? onEdgesChange : undefined}
-          onEdgeClick={isFactorySystemReady ? DetermineEdgeClickFunction : undefined}
-          onEdgeDoubleClick={isFactorySystemReady ? DetermineEdgeClickFunction : undefined}
-          onEdgesDelete={isFactorySystemReady ? () => handleDelete("onEdgesDelete") : undefined}
-          onConnect={isFactorySystemReady ? onConnect : undefined}
-          onConnectEnd={isFactorySystemReady ? onConnectEnd : undefined}
-          // Enable node functionality only when ready
-          nodesFocusable={isFactorySystemReady}
-          nodesConnectable={isFactorySystemReady}
-          elementsSelectable={isFactorySystemReady}
-          selectionMode={SelectionMode.Partial}
-          selectNodesOnDrag={isFactorySystemReady}
-          onSelectionStart={isFactorySystemReady ? handleSelectionDragStart : undefined}
-          onSelectionEnd={isFactorySystemReady ? handleSelectionEnd : undefined}
-          selectionKeyCode="Control"
-          //multiSelectionKeyCode="Control"
-          fitView
-          zoomOnScroll={isFactorySystemReady}
-          zoomOnPinch={isFactorySystemReady}
-          minZoom={VIEWPORT_CONSTRAINTS.MIN_ZOOM}
-          maxZoom={VIEWPORT_CONSTRAINTS.MAX_ZOOM}
-          onMoveStart={isFactorySystemReady ? handlePanStart : undefined}
-          onMoveEnd={isFactorySystemReady ? handlePanEnd : undefined}
-          panOnScroll={false}
-          onPaneClick={isFactorySystemReady ? handleClearSelection : undefined}
-        >
-          {children}
-        </ReactFlow>
-        
-        {/* Flow Generation Controls - Always visible when system is ready */}
-          <GenerationControl 
-            type="flow"
-            onGenerated={handleFlowGenerated}
-          />
-       
-        {/* Node Configuration Panel */}
-        <NodeConfigPanel />
-        
-        {/* Temporary demo component for testing */}
-        {/* {process.env.NODE_ENV === 'development' && <NotificationDemo />} */}
-      </>
+      {/* Register the grid controls */}
+      
+      {/* Always render ReactFlow with background visible */}
+      <ReactFlow
+        nodeTypes={memoizedNodeTypes}
+        edgeTypes={memoizedEdgeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        // Only show nodes and edges when factory system is ready
+        nodes={isFactorySystemReady ? filteredNodes : []}
+        onNodesDelete={isFactorySystemReady ? () => handleDelete("removeNodes") : undefined}
+        onNodesChange={isFactorySystemReady ? onNodesChange : undefined}
+        onNodeDragStart={isFactorySystemReady ? handleNodeDragStart : undefined}
+        onNodeDrag={isFactorySystemReady ? handleNodeDrag : undefined}
+        onNodeDragStop={isFactorySystemReady ? handleNodeDragStop : undefined}
+        onNodeClick={isFactorySystemReady ? DetermineNodeClickFunction : undefined}
+        onNodeDoubleClick={isFactorySystemReady ? DetermineNodeClickFunction : undefined}
+        edges={isFactorySystemReady ? visibleEdges : []}
+        onEdgesChange={isFactorySystemReady ? onEdgesChange : undefined}
+        onEdgeClick={isFactorySystemReady ? DetermineEdgeClickFunction : undefined}
+        onEdgeDoubleClick={isFactorySystemReady ? DetermineEdgeClickFunction : undefined}
+        onEdgesDelete={isFactorySystemReady ? () => handleDelete("onEdgesDelete") : undefined}
+        onConnect={isFactorySystemReady ? onConnect : undefined}
+        onConnectEnd={isFactorySystemReady ? onConnectEnd : undefined}
+        // Enable node functionality only when ready
+        nodesFocusable={isFactorySystemReady}
+        nodesConnectable={isFactorySystemReady}
+        elementsSelectable={isFactorySystemReady}
+        selectionMode={SelectionMode.Partial}
+        selectNodesOnDrag={isFactorySystemReady}
+        onSelectionStart={isFactorySystemReady ? handleSelectionDragStart : undefined}
+        onSelectionEnd={isFactorySystemReady ? handleSelectionEnd : undefined}
+        selectionKeyCode="Control"
+        //multiSelectionKeyCode="Control"
+        fitView
+        zoomOnScroll={isFactorySystemReady}
+        zoomOnPinch={isFactorySystemReady}
+        minZoom={VIEWPORT_CONSTRAINTS.MIN_ZOOM}
+        maxZoom={VIEWPORT_CONSTRAINTS.MAX_ZOOM}
+        onMoveStart={isFactorySystemReady ? handlePanStart : undefined}
+        onMoveEnd={isFactorySystemReady ? handlePanEnd : undefined}
+        panOnScroll={false}
+        onPaneClick={isFactorySystemReady ? handleClearSelection : undefined}
+      >
+        {children}
+      </ReactFlow>
+      
+      {/* Flow Generation Controls - Always visible when system is ready */}
+      <GenerationControl 
+        type="flow"
+        onGenerated={handleFlowGenerated}
+      />
+     
+      {/* Node Configuration Panel */}
+      <NodeConfigPanel />
+      
+      {/* Temporary demo component for testing */}
+      {/* {process.env.NODE_ENV === 'development' && <NotificationDemo />} */}
+    </>
   );
 })
 
