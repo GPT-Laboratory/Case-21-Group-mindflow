@@ -2,6 +2,7 @@
 import { BezierEdge, SmoothStepEdge, StepEdge } from '@xyflow/react';
 import { registerEdgeType } from '../Edge/registry/edgeTypeRegistry';
 import { AnimatedPackageEdge } from './ProcessPackageEdge';
+import { CycleEdge } from './CycleEdge';
 
 // Track initialization state
 let registered = false;
@@ -28,4 +29,5 @@ export function ensureEdgeTypesRegistered(): void {
     animated: true,
     style: { stroke: 'black' }
   });
+  registerEdgeType("cycle", CycleEdge, { animated: true });
 }
