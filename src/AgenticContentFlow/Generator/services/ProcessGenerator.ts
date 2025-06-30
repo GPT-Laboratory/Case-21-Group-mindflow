@@ -24,6 +24,10 @@ interface GenerationOptions {
   prompt?: string;
 }
 
+interface StatusCallback {
+  (nodeId: string, status: 'generating_function' | 'generating_label' | 'generating_details' | 'generating_url' | 'generating_condition' | 'generating_content' | 'generating_transformation' | 'generating_config' | 'completed' | 'error', message: string, error?: string): void;
+}
+
 /**
  * Process Generator Service
  * 
@@ -370,7 +374,8 @@ export class ProcessGenerator {
     userRequest: string,
     currentCode?: string,
     provider?: string,
-    model?: string
+    model?: string,
+    statusCallback?: StatusCallback
   ): Promise<{ code: string; updatedNodeData?: any }> {
     try {
       console.log('ProcessGenerator: Starting generation for node', nodeId);
@@ -381,11 +386,16 @@ export class ProcessGenerator {
       console.log('ProcessGenerator: Model:', model);
 
       // Step 1: Generate the updated process function
+      statusCallback?.(nodeId, 'generating_function', 'Generating function code...');
+      
       const promptRequest = {
         nodeId,
         nodeType,
         templateDescription: templateData?.description || 'Process node',
-        instanceData: templateData?.instanceData || {},
+        instanceData: {
+          ...templateData?.instanceData,
+          userRequest: userRequest
+        },
         templateData: templateData?.templateData || {},
         inputSchema: templateData?.inputSchema,
         outputSchema: templateData?.outputSchema,
@@ -424,14 +434,56 @@ export class ProcessGenerator {
       }
 
       // Step 2: Generate updated node data by asking for specific fields
-      const updatedNodeData = await this.generateUpdatedNodeData(nodeType, userRequest, templateData, provider, model);
+      const updatedNodeData = await this.generateUpdatedNodeData(
+        nodeId,
+        nodeType, 
+        userRequest, 
+        templateData, 
+        functionCode, 
+        provider, 
+        model,
+        statusCallback
+      );
 
+      // Generate node-specific configuration updates based on node type
+      await this.generateNodeSpecificUpdates(
+        nodeId,
+        nodeType,
+        userRequest,
+        templateData,
+        updatedNodeData,
+        provider,
+        model,
+        statusCallback
+      );
+
+      console.log('ProcessGenerator: Generated updated node data:', updatedNodeData);
+      
+      // Debug: Log what was preserved vs updated
+      console.log('ProcessGenerator: Data preservation check:', {
+        originalInstanceData: Object.keys(templateData?.instanceData || {}),
+        originalTemplateData: Object.keys(templateData?.templateData || {}),
+        updatedInstanceData: Object.keys(updatedNodeData.instanceData || {}),
+        updatedTemplateData: Object.keys(updatedNodeData.templateData || {}),
+        preservedTemplateKeys: Object.keys(templateData?.templateData || {}).filter(key => 
+          updatedNodeData.templateData && updatedNodeData.templateData[key] !== undefined
+        )
+      });
+      
+      // Additional debugging to show the actual values
+      console.log('🔍 [ProcessGenerator] Final updatedNodeData:', {
+        instanceData: updatedNodeData.instanceData,
+        templateData: updatedNodeData.templateData,
+        originalTemplateData: templateData?.templateData
+      });
+      
       return {
         code: functionCode,
         updatedNodeData
       };
     } catch (error) {
       console.error('ProcessGenerator: Error generating process code:', error);
+      statusCallback?.(nodeId, 'error', 'Generation failed', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     }
   }
@@ -447,11 +499,26 @@ export class ProcessGenerator {
     return response.trim();
   }
 
-  private async generateUpdatedNodeData(nodeType: string, userRequest: string, templateData: any, provider?: string, model?: string): Promise<any> {
+  private async generateUpdatedNodeData(
+    nodeId: string,
+    nodeType: string, 
+    userRequest: string, 
+    templateData: any, 
+    functionCode: string, 
+    provider?: string, 
+    model?: string,
+    statusCallback?: StatusCallback
+  ): Promise<any> {
     try {
-      const updatedNodeData: any = {};
+      // Initialize with existing data to preserve configuration
+      const updatedNodeData: any = {
+        instanceData: { ...templateData?.instanceData },
+        templateData: { ...templateData?.templateData }
+      };
 
       // Ask for label update - make it very specific
+      statusCallback?.(nodeId, 'generating_label', 'Generating node label...');
+      
       const labelPrompt = `Based on this user request: "${userRequest}"
 
 For a ${nodeType} node, what should the SHORT LABEL be? This should be a brief, descriptive name (2-4 words max).
@@ -480,17 +547,28 @@ Return ONLY the short label, nothing else.`;
         };
       }
 
-      // Ask for details update - make it different and more descriptive
-      const detailsPrompt = `Based on this user request: "${userRequest}"
+      // Ask for details update - generate based on what the function actually does
+      statusCallback?.(nodeId, 'generating_details', 'Generating node description...');
+      
+      const functionDetailsPrompt = `Based on this function code:
 
-For a ${nodeType} node, what should the DETAILED DESCRIPTION be? This should be a longer explanation of what the node does (1-2 sentences).
+${functionCode}
 
-Current details: ${templateData?.instanceData?.details || 'No description'}
+Write a brief, user-friendly description for what this function does. The description should:
+- Be simple and easy to understand
+- Explain the main purpose in plain language
+- Be 1 sentence maximum
+- Focus on what the user will see, not technical implementation
 
-Return ONLY the detailed description, nothing else.`;
+Examples of good descriptions:
+- "Fetch posts from JSONPlaceholder API"
+- "Get user data from external service"
+- "Filter data based on conditions"
 
-      const detailsRequest: LLMRequest = {
-        prompt: detailsPrompt,
+Return ONLY the brief description, nothing else.`;
+
+      const functionDetailsRequest: LLMRequest = {
+        prompt: functionDetailsPrompt,
         type: 'process',
         context: `Generating detailed description for ${nodeType} node`,
         provider: (provider || 'openai') as LLMProvider,
@@ -501,48 +579,192 @@ Return ONLY the detailed description, nothing else.`;
         }
       };
 
-      const detailsResponse = await this.aiService.generateContent(detailsRequest);
-      if (detailsResponse && detailsResponse.content) {
+      const functionDetailsResponse = await this.aiService.generateContent(functionDetailsRequest);
+      if (functionDetailsResponse && functionDetailsResponse.content) {
         updatedNodeData.instanceData = {
           ...updatedNodeData.instanceData,
-          details: detailsResponse.content.trim()
+          details: functionDetailsResponse.content.trim()
         };
-      }
-
-      // Ask for URL update if this is an API node
-      if (nodeType === 'api' || templateData?.templateData?.url) {
-        const urlPrompt = `Based on this user request: "${userRequest}"
-
-For a ${nodeType} node, what should the API URL be? Return ONLY the complete URL, nothing else.
-
-Current URL: ${templateData?.templateData?.url || 'No URL'}`;
-
-        const urlRequest: LLMRequest = {
-          prompt: urlPrompt,
-          type: 'process',
-          context: `Generating URL for ${nodeType} node`,
-          provider: (provider || 'openai') as LLMProvider,
-          config: {
-            model: model || 'gpt-4',
-            temperature: 0.7,
-            maxTokens: 200
-          }
-        };
-
-        const urlResponse = await this.aiService.generateContent(urlRequest);
-        if (urlResponse && urlResponse.content) {
-          updatedNodeData.templateData = {
-            ...updatedNodeData.templateData,
-            url: urlResponse.content.trim()
-          };
-        }
       }
 
       console.log('ProcessGenerator: Generated updated node data:', updatedNodeData);
+      
+      // Debug: Log what was preserved vs updated
+      console.log('ProcessGenerator: Data preservation check:', {
+        originalInstanceData: Object.keys(templateData?.instanceData || {}),
+        originalTemplateData: Object.keys(templateData?.templateData || {}),
+        updatedInstanceData: Object.keys(updatedNodeData.instanceData || {}),
+        updatedTemplateData: Object.keys(updatedNodeData.templateData || {}),
+        preservedTemplateKeys: Object.keys(templateData?.templateData || {}).filter(key => 
+          updatedNodeData.templateData && updatedNodeData.templateData[key] !== undefined
+        )
+      });
+      
       return updatedNodeData;
     } catch (error) {
       console.error('ProcessGenerator: Error generating node data:', error);
       return {};
+    }
+  }
+
+  private async generateNodeSpecificUpdates(
+    nodeId: string,
+    nodeType: string,
+    userRequest: string,
+    templateData: any,
+    updatedNodeData: any,
+    provider?: string,
+    model?: string,
+    statusCallback?: StatusCallback
+  ): Promise<void> {
+    // Get the current template data keys that could be updated
+    const currentTemplateKeys = Object.keys(templateData?.templateData || {});
+    
+    console.log(`🔧 [ProcessGenerator] generateNodeSpecificUpdates called:`, {
+      nodeId,
+      nodeType,
+      userRequest,
+      currentTemplateKeys,
+      hasTemplateData: !!templateData?.templateData,
+      templateDataKeys: currentTemplateKeys
+    });
+    
+    if (currentTemplateKeys.length === 0) {
+      // No template data to update
+      console.log(`⚠️ [ProcessGenerator] No template data keys found for node ${nodeId}`);
+      return;
+    }
+
+    // Generate updates for each template data key
+    for (const key of currentTemplateKeys) {
+      console.log(`🔄 [ProcessGenerator] Processing key: ${key}`);
+      await this.generateKeyValueUpdate(
+        nodeId,
+        nodeType,
+        userRequest,
+        key,
+        templateData?.templateData[key],
+        updatedNodeData,
+        provider,
+        model,
+        statusCallback
+      );
+    }
+    
+    console.log(`✅ [ProcessGenerator] generateNodeSpecificUpdates completed for node ${nodeId}`);
+  }
+
+  private async generateKeyValueUpdate(
+    nodeId: string,
+    nodeType: string,
+    userRequest: string,
+    key: string,
+    currentValue: any,
+    updatedNodeData: any,
+    provider?: string,
+    model?: string,
+    statusCallback?: StatusCallback
+  ): Promise<void> {
+    statusCallback?.(nodeId, 'generating_config', `Generating ${key}...`);
+    
+    // Create a generic prompt that works for any key
+    const keyValuePrompt = `You are updating the "${key}" field for a ${nodeType} node.
+
+User request: "${userRequest}"
+
+Current ${key}: ${currentValue || 'No value'}
+
+IMPORTANT: You must generate a value appropriate for the "${key}" field type.
+
+Field-specific requirements:
+- "url": Must be a complete HTTP/HTTPS URL (e.g., https://api.example.com/endpoint)
+- "method": Must be GET, POST, PUT, DELETE, or PATCH
+- "headers": Must be valid JSON object (e.g., {"Content-Type": "application/json"})
+- "authentication": Must be none, basic, bearer, oauth, or api-key
+- "condition": Must be a JavaScript expression (e.g., data.active === true)
+- "content": Must be the content value (e.g., "Hello World")
+- "body": Must be JSON data or string (e.g., {"name": "John"})
+
+CRITICAL: Do NOT return a label or description. Return ONLY the value for the "${key}" field.
+
+Return ONLY the value, nothing else.`;
+
+    const keyValueRequest: LLMRequest = {
+      prompt: keyValuePrompt,
+      type: 'process',
+      context: `Generating ${key} for ${nodeType} node`,
+      provider: (provider || 'openai') as LLMProvider,
+      config: {
+        model: model || 'gpt-4',
+        temperature: 0.7,
+        maxTokens: 200
+      }
+    };
+
+    const keyValueResponse = await this.aiService.generateContent(keyValueRequest);
+    if (keyValueResponse && keyValueResponse.content) {
+      const newValue = keyValueResponse.content.trim();
+      
+      console.log(`🔧 [ProcessGenerator] Key-value update attempt:`, {
+        key,
+        currentValue,
+        newValue,
+        isValid: this.isValidValueForKey(key, newValue)
+      });
+      
+      // Validate the response based on key type
+      if (this.isValidValueForKey(key, newValue)) {
+        updatedNodeData.templateData = {
+          ...updatedNodeData.templateData,
+          [key]: newValue
+        };
+        console.log(`✅ [ProcessGenerator] Updated ${key} to:`, newValue);
+      } else {
+        console.log(`❌ [ProcessGenerator] Invalid value for ${key}:`, newValue);
+      }
+    }
+  }
+
+  private isValidValueForKey(key: string, value: string): boolean {
+    // Add validation logic for different key types
+    switch (key.toLowerCase()) {
+      case 'url':
+        return value.startsWith('http') && value.includes('://');
+      case 'method':
+        return ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(value.toUpperCase());
+      case 'condition':
+        // Basic validation for JavaScript expressions
+        return value.length > 0 && !value.includes('"') && !value.includes("'");
+      case 'content':
+        return value.length > 0;
+      case 'headers':
+        // Try to parse as JSON
+        try {
+          JSON.parse(value);
+          return true;
+        } catch {
+          return false;
+        }
+      case 'authentication':
+        // Authentication should be specific values, not labels
+        const validAuth = ['none', 'basic', 'bearer', 'oauth', 'api-key'];
+        return validAuth.includes(value.toLowerCase()) || value === 'none';
+      case 'body':
+        // Try to parse as JSON if it looks like JSON
+        if (value.startsWith('{') || value.startsWith('[')) {
+          try {
+            JSON.parse(value);
+            return true;
+          } catch {
+            return false;
+          }
+        }
+        return value.length > 0;
+      default:
+        // For unknown keys, accept any non-empty value that doesn't look like a label
+        // Reject values that look like labels (title case with spaces)
+        const looksLikeLabel = /^[A-Z][a-z]+(\s+[A-Z][a-z]+)*$/.test(value);
+        return value.length > 0 && !looksLikeLabel;
     }
   }
 }
