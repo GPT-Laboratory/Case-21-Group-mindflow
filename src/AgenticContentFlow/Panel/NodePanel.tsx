@@ -18,7 +18,8 @@ import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
 // LLM Generation System imports
 import { apiKeyManager } from '../Generator/providers/management/APIKeyManager';
 import { useNotifications } from '../Notifications/hooks/useNotifications';
-import { GeneratorOrchestrator } from '../Generator';
+import { useGeneration } from '../Generator/hooks/useGeneration';
+import { useGenerator } from '../Generator/context/GeneratorContext';
 import { ProcessGenerationRequest } from '../Generator/generatortypes';
 import { InputOutputTab } from './components/tabs/InputOutput/InputOutputTab';
 
@@ -43,7 +44,8 @@ export const NodeConfigPanel: React.FC = () => {
 
   // LLM Generation state
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationOrchestrator] = useState(() => new GeneratorOrchestrator());
+  const { generateContent } = useGeneration();
+  const { updateNodeGenerationStatus, setUpdatingNode } = useGenerator();
 
   // Notifications for progress and results
   const {
@@ -168,6 +170,9 @@ export const NodeConfigPanel: React.FC = () => {
     let notificationId: string | null = null;
 
     try {
+      // Set the node as updating in the context
+      setUpdatingNode(activeNode.id, true);
+
       // Show progress notification
       notificationId = showBlockingNotification(
         'Generating Code',
@@ -184,16 +189,29 @@ export const NodeConfigPanel: React.FC = () => {
         inputSchema: null, // TODO: Get from DataFlowTab
       };
 
-      // Generate code
-      await generationOrchestrator.generate(request);
+      // Status callback for real-time updates
+      const statusCallback = (nodeId: string, status: string, message: string, error?: string) => {
+        console.log(`🔄 [NodePanel] Generation status update:`, { nodeId, status, message, error });
+        
+        // Update the notification with current status
+        if (notificationId) {
+          if (status === 'error') {
+            failBlockingNotification(notificationId, error || message);
+          } else if (status === 'completed') {
+            completeBlockingNotification(notificationId, message);
+          } else {
+            // Update the notification message for intermediate steps
+            // Note: The notification system might not support dynamic updates, so we'll log them
+            console.log(`📝 [NodePanel] ${message}`);
+          }
+        }
+        
+        // Update the generation status in context
+        updateNodeGenerationStatus(nodeId, { status: status as any, message, error });
+      };
 
-      // Complete the notification
-      if (notificationId) {
-        completeBlockingNotification(
-          notificationId,
-          'Code generated successfully!'
-        );
-      }
+      // Generate code with status callback
+      await generateContent(request, statusCallback);
 
       // Auto-save the generated code
       setTimeout(() => {
@@ -223,6 +241,8 @@ export const NodeConfigPanel: React.FC = () => {
       }
     } finally {
       setIsGenerating(false);
+      // Clear the updating state
+      setUpdatingNode(activeNode.id, false);
     }
   };
 
