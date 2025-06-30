@@ -22,10 +22,13 @@ export interface NodeHeaderProps extends HTMLAttributes<HTMLElement> {
   menuItems?: ReactNode[];
   iconClassName?: string;
   labelClassName?: string;
+  // Generation state props
+  generationMessage?: string;
+  isLabelUpdating?: boolean;
 }
 
 export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
-  ({ className, icon, label, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, ...props }, ref) => {
+  ({ className, icon, label, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, generationMessage, isLabelUpdating, ...props }, ref) => {
     return (
       <header 
         ref={ref} 
@@ -45,6 +48,7 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
         {label && (
           <div className={cn(
             "flex-1 font-semibold relative text-ellipsis overflow-hidden whitespace-nowrap",
+            isLabelUpdating && "animate-pulse text-yellow-600 dark:text-yellow-400",
             labelClassName
           )}>
             {label}
@@ -54,7 +58,7 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
         {/* Status badges */}
         {isUpdating && (
           <Badge variant="outline" className="text-xs px-2 py-1 bg-yellow-50 text-yellow-700">
-            Updating...
+            {generationMessage || 'Updating...'}
           </Badge>
         )}
         {isProcessing && !isUpdating && (
