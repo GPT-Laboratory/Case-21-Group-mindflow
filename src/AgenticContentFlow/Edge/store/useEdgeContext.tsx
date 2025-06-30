@@ -109,7 +109,8 @@ export const EdgeProvider: React.FC<EdgeProviderProps> = ({ children }) => {
     baseActions.setEdges,
     baseActions.updateEdges,
     baseActions.removeEdges,
-    baseActions.addEdge
+    baseActions.addEdge,
+    state.edgeSourceMap
   );
 
   // Effect to save state to localStorage whenever the 'edges' state changes
