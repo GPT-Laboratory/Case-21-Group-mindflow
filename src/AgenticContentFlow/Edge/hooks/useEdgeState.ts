@@ -6,6 +6,7 @@ import { dataSchemaManager } from "../../Schema";
 // Import useTrackableState directly only in this file
 // In the future, this will be used only internally by EdgeProvider
 import { useTrackableState } from "@jalez/react-state-history";
+import { doesEdgeCreateCycle } from "./utils/doesEdgeCreateCycle";
 
 // Define a private implementation that accepts parameters
 // This will be used by the EdgeProvider in the future, not exposed to components directly
@@ -14,7 +15,8 @@ export const useEdgeStateImpl = (
   setEdges: (edges: Edge[]) => void,
   updateEdges: (edges: Edge[]) => void,
   removeEdges: (edges: Edge[]) => void,
-  addEdge: (edge: Edge | Connection) => void
+  addEdge: (edge: Edge | Connection) => void,
+  edgeSourceMap: Map<string, Edge[]>
 ) => {
 
   const [lastExecutedAction, setLastExecutedAction] = useState<string | null>(null);
@@ -125,15 +127,21 @@ export const useEdgeStateImpl = (
 
   const onEdgeAdd = useCallback(
     withErrorHandler("onEdgeAdd", (newEdge: Edge | Connection, isClick=true) => {
+      console.log("onEdgeAdd", newEdge);
       if (!newEdge) {
         throw new Error("New edge is not valid:" + newEdge);
+      }
+      let edgeToAdd = newEdge;
+      if(doesEdgeCreateCycle(newEdge, edgeSourceMap)) {
+        console.log("cycle detected");
+        edgeToAdd = {...newEdge, type: "cycle"};
       }
       if (!isClick) {
         addEdge(newEdge);
         return;
       }
       const deepCopyEdges = edges.map((edge) => ({ ...edge }));
-      trackAddEdge(newEdge, deepCopyEdges, "Add edge"); // Use onEdgeAdd for consistency
+      trackAddEdge(edgeToAdd, deepCopyEdges, "Add edge"); // Use onEdgeAdd for consistency
       setLastExecutedAction("onEdgeAdd");
     }),
     [edges, trackAddEdge, setLastExecutedAction, lastExecutedAction, addEdge]
