@@ -21,6 +21,10 @@ import { ValidationService } from './ValidationService';
 import { ProcessGenerator } from '../services/ProcessGenerator';
 import { FlowGenerator } from '../services/FlowGenerator';
 
+interface StatusCallback {
+  (nodeId: string, status: 'generating_function' | 'generating_label' | 'generating_details' | 'generating_url' | 'generating_condition' | 'generating_content' | 'generating_transformation' | 'generating_config' | 'completed' | 'error', message: string, error?: string): void;
+}
+
 /**
  * Generator Orchestrator
  * 
@@ -56,7 +60,7 @@ export class GeneratorOrchestrator {
   /**
    * Generate process code
    */
-  async generateProcess(request: ProcessGenerationRequest): Promise<GenerationResult> {
+  async generateProcess(request: ProcessGenerationRequest, statusCallback?: StatusCallback): Promise<GenerationResult> {
     console.log('🚀 Starting process generation:', request);
     
     try {
@@ -68,7 +72,8 @@ export class GeneratorOrchestrator {
         request.nodeData?.userRequest || '',
         request.nodeData?.currentInstanceCode,
         request.provider,
-        request.model
+        request.model,
+        statusCallback
       );
 
       return {
@@ -135,7 +140,7 @@ export class GeneratorOrchestrator {
   /**
    * Generate content based on request type
    */
-  async generate(request: GenerationRequest): Promise<GenerationResult> {
+  async generate(request: GenerationRequest, statusCallback?: StatusCallback): Promise<GenerationResult> {
     console.log(`🚀 Starting ${request.type} generation:`, request);
 
     try {
@@ -143,7 +148,7 @@ export class GeneratorOrchestrator {
 
       switch (request.type) {
         case 'process':
-          result = await this.generateProcess(request as ProcessGenerationRequest);
+          result = await this.generateProcess(request as ProcessGenerationRequest, statusCallback);
           break;
         case 'flow':
           result = await this.generateFlow(request as FlowGenerationRequest);
