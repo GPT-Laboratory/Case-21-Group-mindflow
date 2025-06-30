@@ -5,6 +5,8 @@ import { registerControl } from "../Controls";
 import MinimapToggle from "./Controls/MinimapToggle";
 import { CONTROL_PRIORITIES, CONTROL_TYPES } from "../constants";
 import { useNodeContext } from "../Node/context/useNodeContext";
+import { UnifiedStyleManager } from "../Node/factory/utils/UnifiedStyleManager";
+import { getNodeType } from "../Node/store/unifiedNodeTypeStoreInitializer";
 
 // Custom MiniMap wrapper
 const CustomMiniMap = () => {
@@ -44,21 +46,31 @@ const CustomMiniMap = () => {
     };
   }, []);
 
-  // Helper function to get parent node color
+  // Helper function to get parent node color using UnifiedStyleManager
   const getParentNodeColor = useCallback((node: Node): string | null => {
     if (!node.parentId) return null;
     
     const parentNode = nodeMap.get(node.parentId);
     if (!parentNode) return null;
     
-    // Check if parent has a color
-    const parentMinimapColor = parentNode.data?.minimapColor;
-    const parentNodeColor = parentNode.data?.nodeColor;
+    // Get parent node config and calculate color using UnifiedStyleManager
+    const parentConfig = getNodeType(parentNode.type || '');
+    if (parentConfig) {
+      const parentStyleConfig = UnifiedStyleManager.generateStyleConfig(
+        parentConfig,
+        parentNode.data,
+        {
+          selected: parentNode.selected || false,
+          expanded: Boolean(parentNode.data?.expanded),
+          isProcessing: parentNode.data?.processState === 'processing',
+          hasError: parentNode.data?.processState === 'error',
+          isCompleted: parentNode.data?.processState === 'completed'
+        }
+      );
+      return UnifiedStyleManager.calculateMinimapColor(parentConfig, parentStyleConfig);
+    }
     
-    if (parentMinimapColor) return parentMinimapColor as string;
-    if (parentNodeColor) return parentNodeColor as string;
-    
-    // If parent doesn't have a color, recursively check its parent
+    // If parent doesn't have a config, recursively check its parent
     return getParentNodeColor(parentNode);
   }, [nodeMap]);
 
@@ -67,9 +79,23 @@ const CustomMiniMap = () => {
     // Invisible nodes should inherit parent colors
     if (node.type === 'invisiblenode') return true;
     
-    // Nodes with transparent backgrounds should inherit parent colors
-    const minimapColor = node.data?.minimapColor;
-    if (minimapColor === '#f3f4f6') return true; // Default transparent gray
+    // Get node config and check if it has transparent background
+    const config = getNodeType(node.type || '');
+    if (config) {
+      const styleConfig = UnifiedStyleManager.generateStyleConfig(
+        config,
+        node.data,
+        {
+          selected: node.selected || false,
+          expanded: Boolean(node.data?.expanded),
+          isProcessing: node.data?.processState === 'processing',
+          hasError: node.data?.processState === 'error',
+          isCompleted: node.data?.processState === 'completed'
+        }
+      );
+      const minimapColor = UnifiedStyleManager.calculateMinimapColor(config, styleConfig);
+      if (minimapColor === '#f3f4f6') return true; // Default transparent gray
+    }
     
     return false;
   }, []);
@@ -103,15 +129,24 @@ const CustomMiniMap = () => {
       if (parentColor) return parentColor;
     }
     
-    const minimapColor = node.data?.minimapColor;
-    const nodeColor = node.data?.nodeColor;
+    // Get node config and calculate color using UnifiedStyleManager
+    const config = getNodeType(node.type || '');
+    if (config) {
+      const styleConfig = UnifiedStyleManager.generateStyleConfig(
+        config,
+        node.data,
+        {
+          selected: node.selected || false,
+          expanded: Boolean(node.data?.expanded),
+          isProcessing: node.data?.processState === 'processing',
+          hasError: node.data?.processState === 'error',
+          isCompleted: node.data?.processState === 'completed'
+        }
+      );
+      return UnifiedStyleManager.calculateMinimapColor(config, styleConfig);
+    }
     
-    // If node has its own explicit color (not the default transparent gray), use it
-    if (minimapColor && minimapColor !== '#f3f4f6') return minimapColor as string;
-    if (nodeColor) return nodeColor as string;
-    
-    // Fallback to the calculated minimap color or default colors
-    if (minimapColor) return minimapColor as string;
+    // Fallback to default colors
     return node.selected ? 'var(--color-primary-foreground)' : 'var(--color-card)';
   }, [getParentNodeColor, shouldInheritParentColor, getRootInvisibleNodeColor]);
   
