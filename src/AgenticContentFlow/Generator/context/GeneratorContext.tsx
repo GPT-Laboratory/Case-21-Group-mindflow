@@ -18,6 +18,13 @@ interface ProviderInfo {
   defaultModel?: string;
 }
 
+interface NodeGenerationStatus {
+  nodeId: string;
+  status: 'idle' | 'generating_function' | 'generating_label' | 'generating_details' | 'generating_url' | 'completed' | 'error';
+  message: string;
+  error?: string;
+}
+
 interface GeneratorContextType {
   // Provider state
   selectedProvider: LLMProvider;
@@ -39,6 +46,11 @@ interface GeneratorContextType {
   // Node update state
   updatingNodes: Set<string>;
   setUpdatingNode: (nodeId: string, isUpdating: boolean) => void;
+  
+  // Generation status tracking
+  nodeGenerationStatus: Map<string, NodeGenerationStatus>;
+  updateNodeGenerationStatus: (nodeId: string, status: Partial<NodeGenerationStatus>) => void;
+  clearNodeGenerationStatus: (nodeId: string) => void;
 }
 
 const GeneratorContext = createContext<GeneratorContextType | undefined>(undefined);
@@ -52,6 +64,7 @@ export const GeneratorProvider: React.FC<GeneratorProviderProps> = ({ children }
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
   const [providersLoading, setProvidersLoading] = useState(false);
   const [updatingNodes, setUpdatingNodes] = useState<Set<string>>(new Set());
+  const [nodeGenerationStatus, setNodeGenerationStatus] = useState<Map<string, NodeGenerationStatus>>(new Map());
 
   // Load providers on mount
   useEffect(() => {
@@ -115,6 +128,28 @@ export const GeneratorProvider: React.FC<GeneratorProviderProps> = ({ children }
     }
   }, []);
 
+  // Update node generation status
+  const updateNodeGenerationStatus = useCallback((nodeId: string, status: Partial<NodeGenerationStatus>) => {
+    setNodeGenerationStatus(prev => {
+      const newMap = new Map(prev);
+      const currentStatus = newMap.get(nodeId) || {
+        nodeId,
+        status: 'idle',
+        message: ''
+      };
+      newMap.set(nodeId, { ...currentStatus, ...status });
+      return newMap;
+    });
+  }, []);
+
+  const clearNodeGenerationStatus = useCallback((nodeId: string) => {
+    setNodeGenerationStatus(prevStatus => {
+      const newStatus = new Map(prevStatus);
+      newStatus.delete(nodeId);
+      return newStatus;
+    });
+  }, []);
+
   const value: GeneratorContextType = {
     selectedProvider,
     setSelectedProvider,
@@ -127,6 +162,9 @@ export const GeneratorProvider: React.FC<GeneratorProviderProps> = ({ children }
     getPreferredProvider,
     updatingNodes,
     setUpdatingNode,
+    nodeGenerationStatus,
+    updateNodeGenerationStatus,
+    clearNodeGenerationStatus,
   };
 
   return (
