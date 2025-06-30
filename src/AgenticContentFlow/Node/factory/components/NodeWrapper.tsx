@@ -347,49 +347,9 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
     }
   }, [updatedStyleConfig.backgroundColor, data?.nodeColor, id, setNodes]);
 
-  // Calculate minimap-specific color that represents actual visual appearance
-  React.useEffect(() => {
-    const currentMinimapColor = data?.minimapColor;
-    const minimapColor = UnifiedStyleManager.calculateMinimapColor(config, updatedStyleConfig);
-    
-    if (currentMinimapColor !== minimapColor) {
-      setNodes((nodes) =>
-        nodes.map((node) =>
-          node.id === id
-            ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  minimapColor: minimapColor
-                }
-              }
-            : node
-        )
-      );
-    }
-  }, [updatedStyleConfig, config, data?.minimapColor, id, setNodes]);
 
-  // Calculate handle color that matches the node's visual appearance
-  React.useEffect(() => {
-    const currentHandleColor = data?.handleColor;
-    const handleColor = UnifiedStyleManager.calculateHandleColor(config, updatedStyleConfig);
-    
-    if (currentHandleColor !== handleColor) {
-      setNodes((nodes) =>
-        nodes.map((node) =>
-          node.id === id
-            ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  handleColor: handleColor
-                }
-              }
-            : node
-        )
-      );
-    }
-  }, [updatedStyleConfig, config, data?.handleColor, id, setNodes]);
+
+
 
   // Update node data with current process state for minimap border color
   React.useEffect(() => {
