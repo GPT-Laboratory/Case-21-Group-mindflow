@@ -71,6 +71,8 @@ async function process(incomingData, nodeData, params, targetMap, sourceMap)
 - \`sourceMap\`: Map of source nodes for context (Map<string, Node>)
 
 **Critical Implementation Rules**:
+- USE NODEDATA PARAMETERS - Always use nodeData.url, nodeData.method, etc. instead of hard-coded values
+- BE DYNAMIC - The function should work with any URL/method/headers passed in nodeData
 - IMPLEMENT THE ACTUAL REQUIREMENT - Don't create abstract helper functions
 - USE THE INSTANCE DATA - The "details" field contains the specific requirement
 - ACCESS INPUT DATA CORRECTLY - Use incomingData.data if it exists, otherwise use incomingData directly
@@ -81,7 +83,38 @@ async function process(incomingData, nodeData, params, targetMap, sourceMap)
 - MUST include console.log statements for debugging
 - MUST return a result object with data and metadata
 
-**IMPORTANT**: The user request "${instanceData?.userRequest || 'No request'}" should be implemented in the code. If they ask to change the URL, change the URL in the code. If they ask to change the data processing, change the data processing logic.
+**IMPORTANT**: The user request "${instanceData?.userRequest || 'No request'}" should be implemented in the code. If they ask to change the URL, change the URL in the code to point to the comments endpoint.
+
+**CRITICAL**: Use nodeData parameters, not hard-coded values. For example:
+- Use \`nodeData.url\` instead of hard-coding "https://jsonplaceholder.typicode.com/users"
+- Use \`nodeData.method\` instead of hard-coding "GET"
+- Use \`nodeData.headers\` instead of hard-coding headers
+
+**TEMPLATE DATA UPDATES**: When the user requests changes, you should update the templateData in the function. For example:
+- If user says "get comments", use \`nodeData.url\` which should be set to the comments endpoint
+- If user says "use POST method", use \`nodeData.method\` which should be set to "POST"
+- Always use the parameters from nodeData, never hard-code values
+
+**FUNCTION STRUCTURE**:
+\`\`\`javascript
+async function process(incomingData, nodeData, params, targetMap, sourceMap) {
+  try {
+    console.log('Processing:', { incomingData, nodeData });
+    
+    // Use nodeData parameters, not hard-coded values
+    const { url, method = 'GET', headers = {} } = nodeData;
+    
+    // Make the API call using the parameters
+    const response = await fetch(url, { method, headers });
+    const data = await response.json();
+    
+    return { data, metadata: { status: response.status } };
+  } catch (error) {
+    console.error('Error:', error);
+    throw error;
+  }
+}
+\`\`\`
 
 ${this.buildConditionalRoutingSection(templateData)}
 
