@@ -9,6 +9,13 @@ import {
 // Import unified system instead of old cell factory
 import { getNodeType, getAvailableNodeTypes } from '../../Node/store/unifiedNodeTypeStoreInitializer';
 
+// Import container factory - you'll need to create this or import from the correct location
+// For now, I'll create a placeholder that returns empty results
+const containerNodeFactory = {
+  getNodeConfig: (nodeType: string): any => null,
+  getRegisteredNodeTypes: () => [] as string[]
+};
+
 export class HandleTypeRegistry {
   private static instance: HandleTypeRegistry;
   
@@ -38,7 +45,7 @@ export class HandleTypeRegistry {
     const containerConfig = containerNodeFactory.getNodeConfig(nodeType);
     if (containerConfig?.handles?.definitions) {
       // Convert container handles to the expected format
-      return containerConfig.handles.definitions.map(handle => ({
+      return containerConfig.handles.definitions.map((handle: any) => ({
         position: handle.position,
         type: handle.type,
         dataFlow: handle.dataFlow,
