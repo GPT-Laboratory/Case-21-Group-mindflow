@@ -12,6 +12,7 @@ import ConnectionHandles from './NodeHandles';
 import { BaseNodeContainer } from './NodeStyles';
 import ProcessControls from './ProcessControls';
 import { ExpandCollapseHandler } from './ExpandCollapseHandler';
+import { UnifiedStyleManager } from '../utils/UnifiedStyleManager';
 
 interface BaseNodeRendererProps {
   id: string;
@@ -50,6 +51,11 @@ interface BaseNodeRendererProps {
   disabled?: boolean;
   // Node update state
   isUpdating?: boolean;
+  // Generation state
+  generationState?: 'idle' | 'generating' | 'completed' | 'error';
+  generationMessage?: string;
+  // Label update state for flashing effect
+  isLabelUpdating?: boolean;
 }
 
 /**
@@ -91,7 +97,12 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
   onAutoApproveToggle,
   disabled = false,
   // Node update state
-  isUpdating
+  isUpdating,
+  // Generation state
+  generationState,
+  generationMessage,
+  // Label update state for flashing effect
+  isLabelUpdating,
 }) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const iconResolver = new IconResolver();
@@ -163,6 +174,8 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
           hasError={hasError}
           isUpdating={isUpdating}
           menuItems={menuItems}
+          generationMessage={generationMessage}
+          isLabelUpdating={isLabelUpdating}
         >
           {/* Expand/Collapse Button */}
           <ExpandCollapseHandler
@@ -185,6 +198,8 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         hasError={hasError}
         isUpdating={isUpdating}
         menuItems={menuItems}
+        generationMessage={generationMessage}
+        isLabelUpdating={isLabelUpdating}
         style={{ backgroundColor: styleConfig.backgroundColor }}
       >
         {/* Expand/Collapse Button for container nodes */}
@@ -232,6 +247,8 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
           </div>
         )}
         
+ 
+        
         {/* Process Controls for cell-like nodes and containers with processes */}
         {(() => {
           if (config.process) {
@@ -273,7 +290,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         <div {...containerProps}>
           <ConnectionHandles 
             nodeType={config.nodeType}
-            color={nodeInFlow?.data?.handleColor || styleConfig.backgroundColor}
+            color={UnifiedStyleManager.calculateHandleColor(config, styleConfig)}
             icons={{
               left: config.handles.definitions.find(h => h.position === 'left')?.icon,
               right: config.handles.definitions.find(h => h.position === 'right')?.icon,
@@ -289,7 +306,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         <BaseNodeContainer {...cellProps}>
           <ConnectionHandles 
             nodeType={config.nodeType}
-            color={nodeInFlow?.data?.handleColor || styleConfig.backgroundColor}
+            color={UnifiedStyleManager.calculateHandleColor(config, styleConfig)}
           />
           {renderHeader()}
           {renderContent()}
