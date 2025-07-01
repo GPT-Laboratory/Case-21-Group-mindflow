@@ -1,34 +1,47 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { getNodeIcon } from '../nodeConfigs';
+import { IconResolver } from '../../Node/factory';
+import { getNodeType } from '../../Node/store/unifiedNodeTypeStoreInitializer';
 import { NodeConfig } from '../types';
+
 
 interface PanelHeaderProps {
   activeNode: any;
   nodeConfig: NodeConfig;
 }
 
-export const PanelHeader: React.FC<PanelHeaderProps> = ({ activeNode, nodeConfig }) => {
+export const PanelHeader: React.FC<PanelHeaderProps> = ({ 
+  activeNode, 
+  nodeConfig, 
+}) => {
+  const iconResolver = new IconResolver();
+  
+  // Get icon from the actual node configuration
+  const getIconForNodeType = (nodeType: string) => {
+    const nodeConfig = getNodeType(nodeType);
+    
+    if (nodeConfig?.visual?.icon) {
+      return iconResolver.resolveIcon(nodeConfig.visual.icon, { className: 'w-4 h-4' });
+    }
+    
+    // Fallback to default icon if no configuration found
+    return iconResolver.resolveIcon({
+      type: 'builtin',
+      value: 'Settings',
+      className: 'w-4 h-4'
+    });
+  };
+
   return (
-    <>
-      <div className="flex items-center space-x-4">
-        {getNodeIcon(activeNode.type)}
-        <div>
-          <h2 className="text-lg font-semibold leading-none tracking-tight">
-            {nodeConfig.metadata.title}
-          </h2>
+    <div className="flex flex-col">
+      {/* Top row: Node info and menu */}
+      <div className="flex items-center justify-between py-1 px-2">
+        <div
+          title={`Type: ${activeNode.type} | Category: ${nodeConfig.metadata.category} | ID: ${activeNode.id}`}
+          className="flex items-center gap-2"
+        >
+          {getIconForNodeType(activeNode.type)}
         </div>
       </div>
-      
-      <div className="flex items-center space-x-3">
-        <Badge variant="secondary">{activeNode.type}</Badge>
-        <Badge variant="outline">{nodeConfig.metadata.category}</Badge>
-        {activeNode.id && (
-          <Badge variant="outline" className="font-mono text-xs">
-            {activeNode.id}
-          </Badge>
-        )}
-      </div>
-    </>
+    </div>
   );
 };
