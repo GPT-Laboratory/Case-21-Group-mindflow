@@ -108,7 +108,6 @@ export const SharedEditor: React.FC<EditorProps> = ({
   };
 
   return (
-    <div className="h-full">
       <Editor
         height={height}
         language={language}
@@ -118,6 +117,5 @@ export const SharedEditor: React.FC<EditorProps> = ({
         onMount={handleMount}
         beforeMount={handleBeforeMount}
       />
-    </div>
   );
 }; 
