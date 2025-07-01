@@ -1,13 +1,6 @@
 import { getNodeType } from '../Node/store/unifiedNodeTypeStoreInitializer';
 import { NodeConfig, FieldConfig } from './types';
 import { ProcessParameter } from '../Node/factory//types/UnifiedFrameJSON';
-import { 
-  Database, 
-  Globe, 
-  FileText, 
-  Workflow,
-  Settings
-} from 'lucide-react';
 
 // Helper function to convert ProcessParameter to FieldConfig
 const convertProcessParameterToFieldConfig = (param: ProcessParameter): FieldConfig => {
@@ -358,17 +351,7 @@ export const mockConfigurations: Record<string, NodeConfig> = {
   }
 };
 
-// Icon mapping for node types
-export const getNodeIcon = (nodeType: string) => {
-  switch (nodeType) {
-    case 'restnode': return <Globe className="w-4 h-4" />;
-    case 'datanode': return <Database className="w-4 h-4" />;
-    case 'pagenode': return <FileText className="w-4 h-4" />;
-    case 'contentnode': return <FileText className="w-4 h-4" />;
-    case 'conditionalnode': return <Workflow className="w-4 h-4" />;
-    default: return <Settings className="w-4 h-4" />;
-  }
-};
+
 
 // Utility function to get node configuration - now factory-aware
 export const getNodeConfig = (nodeType: string, nodeData: any): NodeConfig => {
