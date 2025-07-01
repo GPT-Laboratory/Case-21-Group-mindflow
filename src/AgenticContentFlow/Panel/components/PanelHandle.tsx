@@ -52,7 +52,7 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
   const getButtonStyles = () => {
     const baseStyle = {
       position: 'fixed' as const,
-      zIndex: 100,
+      zIndex: 1000,
       transition: isDragging ? 'none' : 'all 0.3s ease-in-out',
       background: 'var(--background)',
       display: 'flex',
