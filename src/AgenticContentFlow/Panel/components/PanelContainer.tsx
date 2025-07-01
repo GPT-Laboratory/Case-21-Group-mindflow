@@ -19,64 +19,29 @@ export const PanelContainer: React.FC<PanelContainerProps> = ({
 }) => {
   const getPositionStyles = () => {
     const baseStyle = {
-      position: 'fixed' as const,
+      position: 'relative' as const,
       backgroundColor: 'var(--background)',
       borderColor: 'var(--border)',
       zIndex: 100,
       transition: isResizing ? 'none' : 'all 0.3s ease-in-out',
-      boxShadow: isExpanded ? '0 4px 12px rgba(0, 0, 0, 0.15)' : 'none',
+      height: '100%',
+      overflow: 'visible' as const,
+      paddingLeft: '10px',
     };
 
-    switch (position) {
-      case 'top':
-        return {
-          ...baseStyle,
-          top: '100px', // Add offset to avoid overlapping with Controls Panel
-          left: 0,
-          right: 0,
-          height: isExpanded ? `${size.height}px` : '0px',
-          overflow: 'hidden' as const,
-        };
-      case 'bottom':
-        return {
-          ...baseStyle,
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: isExpanded ? `${size.height}px` : '0px',
-          overflow: 'hidden' as const,
-        };
-      case 'left':
-        return {
-          ...baseStyle,
-          top: 70,
-          left: 0,
-          bottom: 0,
-          width: isExpanded ? `${size.width}px` : '0px',
-          overflow: 'hidden' as const,
-        };
-      case 'right':
-      default:
-        return {
-          ...baseStyle,
-          top: 30,
-          right: 0,
-          bottom: 0,
-          width: isExpanded ? `${size.width}px` : '0px',
-          overflow: 'hidden' as const,
-        };
-    }
+    // For side-by-side layout, we only support right position
+    return {
+      ...baseStyle,
+      width: isExpanded ? `${size.width}px` : '0px',
+      minWidth: isExpanded ? `${size.width}px` : '0px',
+      maxWidth: isExpanded ? `${size.width}px` : '0px',
+    };
   };
 
   return (
     <div style={getPositionStyles()}>
-      <div 
-        className={`h-full w-full transition-opacity duration-300 ${
-          isExpanded ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        {children}
-      </div>
+      {/* Handle and content are now separate */}
+      {children}
     </div>
   );
 };
