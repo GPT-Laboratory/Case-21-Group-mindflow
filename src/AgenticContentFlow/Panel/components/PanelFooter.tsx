@@ -25,24 +25,22 @@ export const PanelFooter: React.FC<PanelFooterProps> = ({
   onGenerate
 }) => {
   return (
-    <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 sm:space-x-2">
-      {/* Top row (or left side on wider screens) - Position selector */}
-      <div className="flex items-center justify-center sm:justify-start">
-        <PositionSelector 
-          position={position} 
-          onPositionChange={onPositionChange} 
-        />
-      </div>
+    <div className="flex items-center justify-between gap-2">
+      {/* Position selector */}
+      <PositionSelector 
+        position={position} 
+        onPositionChange={onPositionChange} 
+      />
       
-      {/* Bottom row (or right side on wider screens) - Action buttons */}
-      <div className="flex justify-center space-x-2 sm:justify-end">
+      {/* Action buttons */}
+      <div className="flex gap-1">
         {onGenerate && (
           <Button 
             variant="outline" 
             size="sm" 
             onClick={onGenerate}
             disabled={!hasDataChanges}
-            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+            className="text-blue-600 border-blue-200 hover:bg-blue-50 h-7 px-2"
           >
             <Sparkles className="w-3 h-3" />
           </Button>
@@ -52,6 +50,7 @@ export const PanelFooter: React.FC<PanelFooterProps> = ({
           size="sm" 
           onClick={onReset}
           disabled={!hasChanges}
+          className="h-7 px-2"
         >
           <RotateCcw className="w-3 h-3" />
         </Button>
@@ -59,6 +58,7 @@ export const PanelFooter: React.FC<PanelFooterProps> = ({
           size="sm" 
           onClick={onSave}
           disabled={!hasChanges}
+          className="h-7 px-2"
         >
           <Save className="w-3 h-3" />
         </Button>
