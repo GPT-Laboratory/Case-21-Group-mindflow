@@ -21,18 +21,18 @@ export const PositionSelector: React.FC<PositionSelectorProps> = ({
   onPositionChange,
 }) => {
   return (
-    <div className="flex items-center gap-2">
-      <Move className="w-4 h-4 text-muted-foreground" />
+    <div className="flex items-center gap-1">
+      <Move className="w-3 h-3 text-muted-foreground" />
       <Select value={position} onValueChange={onPositionChange}>
-        <SelectTrigger className="w-32 h-8">
+        <SelectTrigger className="w-24 h-7 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {positionOptions.map(({ value, label, icon: Icon }) => (
             <SelectItem key={value} value={value}>
               <div className="flex items-center gap-2">
-                <Icon className="w-4 h-4" />
-                <span>{label}</span>
+                <Icon className="w-3 h-3" />
+                <span className="text-xs">{label}</span>
               </div>
             </SelectItem>
           ))}
