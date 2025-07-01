@@ -33,10 +33,10 @@ export const useResizePanel = ({ position, defaultSizes }: UseResizePanelProps) 
       
       switch (position) {
         case 'right':
-          newSize.width = Math.max(300, Math.min(800, startSize.width - deltaX));
+          newSize.width = Math.max(200, Math.min(800, startSize.width - deltaX));
           break;
         case 'left':
-          newSize.width = Math.max(300, Math.min(800, startSize.width + deltaX));
+          newSize.width = Math.max(140, Math.min(800, startSize.width + deltaX));
           break;
         case 'bottom':
           newSize.height = Math.max(200, Math.min(600, startSize.height - deltaY));
