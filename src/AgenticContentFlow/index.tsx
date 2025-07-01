@@ -17,7 +17,6 @@ import Flow from "./Flow/Flow";
 import UnifiedControls from "./Controls";
 import SelectLogic from "./Select/SelectLogic";
 import Minimap from "./Minimap/Minimap";
-import TestControlsRegistration from "./test/TestControlsRegistration";
 import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
 import CopyWorkflowControlsRegistration from "./Flow/controls/CopyWorkflowControlsRegistration";
 import { ensureEdgeTypesRegistered } from "./Edges/registerBasicEdgeTypes";
@@ -26,6 +25,8 @@ import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
 import { NotificationProvider } from "./Notifications";
 import { GeneratorProvider } from "./Generator/context/GeneratorContext";
+import NodeConfigPanel from "./Panel/NodePanel";
+import { FlowsPanel } from "./FlowsPanel";
 
 import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React Flow
 import ReactStateHistory from "./History/ReactStateHistory";
@@ -33,6 +34,8 @@ import { LayoutProvider } from "@jalez/react-flow-automated-layout";
 import ShortcutsManager from "./ShortCuts/ShortcutsManager";
 import { APISetupControlsRegistration } from "./Generator";
 import GridControlsRegistration from "./Flow/controls/GridControlsRegistration";
+import UnifiedControlsPanel from "./Controls/registry/UnifiedControlsPanel";
+import { GenerationControl } from "./Generator/ui";
 
 // Register edge types before any rendering occurs
 ensureEdgeTypesRegistered();
@@ -67,6 +70,8 @@ export function AgenticContentFlowContent() {
     updateEdges(edges, false);
   }, [updateEdges]);
 
+
+
   return (
     <ProcessProvider
       initialConfig={{
@@ -98,28 +103,48 @@ export function AgenticContentFlowContent() {
             updateEdges={handleEdgeUpdate}
           >
             <ShortcutsManager>
-              <FlowContainer ref={flowWrapper} onWheel={handleWheel}>
-                  <UnifiedControls onToggleFullscreen={handleToggleFullscreen} />
-                <Flow>
-                  {showGrid && (
-                    <Background
-                      variant={gridVariant}
-                      gap={GRID_SETTINGS.BACKGROUND_GAP}
-                      size={GRID_SETTINGS.BACKGROUND_SIZE}
-                      color="var(--color-border)"
-                    />
-                  )}
-                  <SelectLogic />
-                  <Minimap />
+              <div className="flex h-full w-full overflow-visible">
+                {/* Flows Panel - Left side */}
+                <FlowsPanel />
+                
+                {/* Flow area (includes Controls Panel and Flow) */}
+                <div className="flex-1 flex flex-col">
+                  {/* Controls Panel - Full width of Flow area */}
+                  <UnifiedControlsPanel position="top" />
+                  
+                  {/* Flow takes up remaining space */}
+                  <div className="flex-1 border-2 border-border rounded-lg overflow-hidden">
+                    <FlowContainer ref={flowWrapper} onWheel={handleWheel}>
+                      <Flow>
+                        {showGrid && (
+                          <Background
+                            variant={gridVariant}
+                            gap={GRID_SETTINGS.BACKGROUND_GAP}
+                            size={GRID_SETTINGS.BACKGROUND_SIZE}
+                            color="var(--color-border)"
+                          />
+                        )}
+                        <SelectLogic />
+                        <Minimap />
 
-                  {/* Register available controls here */}
-                  <GridControlsRegistration />
-                  <TestControlsRegistration />
-                  <LayoutControlsRegistration />
-                  <CopyWorkflowControlsRegistration />
-                  <APISetupControlsRegistration />
-                </Flow>
-              </FlowContainer>
+                        {/* Register available controls here */}
+                        <GridControlsRegistration />
+                        <LayoutControlsRegistration />
+                        <CopyWorkflowControlsRegistration />
+                        <APISetupControlsRegistration />
+                      </Flow>
+                    </FlowContainer>
+                  </div>
+                  
+                  {/* Generation Panel - Full width of Flow area */}
+                  <GenerationControl 
+                    type="flow"
+                  />
+                </div>
+                
+                {/* Node Configuration Panel - Side by side */}
+                <NodeConfigPanel />
+              </div>
             </ShortcutsManager>
           </LayoutProvider>
         </GeneratorProvider>
