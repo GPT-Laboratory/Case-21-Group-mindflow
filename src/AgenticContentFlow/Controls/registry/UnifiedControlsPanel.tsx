@@ -18,7 +18,7 @@ interface UnifiedControlsPanelProps {
  *
  * A controls panel component that displays registered controls of different types.
  * Uses the controls registry system to dynamically render controls.
- * Now uses a simple, clean layout with shadcn styling.
+ * Now positioned in the main layout for full width coverage.
  */
 const UnifiedControlsPanel: React.FC<UnifiedControlsPanelProps> = memo(({
   position = "top",
@@ -33,24 +33,24 @@ const UnifiedControlsPanel: React.FC<UnifiedControlsPanelProps> = memo(({
   const positionClasses = useMemo(() => {
     switch (position) {
       case "top":
-        return "top-0 left-1/2 -translate-x-1/2";
+        return "top-0 left-0 right-0";
       case "bottom":
-        return "bottom-0 left-1/2 -translate-x-1/2";
+        return "bottom-0 left-0 right-0";
       case "left":
-        return "left-0 top-1/2 -translate-y-1/2";
+        return "left-0 top-0 bottom-0";
       case "right":
-        return "right-0 top-1/2 -translate-y-1/2";
+        return "right-0 top-0 bottom-0";
       default:
-        return "top-0 right-0";
+        return "top-0 left-0 right-0";
     }
   }, [position]);
 
   // Memoize the entire controls panel structure
   const controlsPanel = useMemo(() => (
-    <div className={cn("fixed z-50 w-full", positionClasses)}>
+    <div className={cn("w-full", positionClasses)}>
       <div className={cn(
-        "flex p-1 bg-background/95 backdrop-blur-sm border border-border",
-        "flex-cel justify-center items-center",
+        "flex p-1 bg-background/95 backdrop-blur-sm",
+        "justify-center items-center"
       )}>
         {controlTypes.map((type, index) => (
           <Fragment key={`control-type-${type}`}>
