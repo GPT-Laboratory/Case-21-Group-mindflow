@@ -242,7 +242,7 @@ export const GenerationPanel: React.FC<GenerationPanelProps> = ({
   };
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-0 sm:p-2">
+    <div className="bg-white/95 backdrop-blur-sm p-0 sm:p-2">
       {/* Main input and options row */}
       <div className="flex items-center gap-2 min-w-0">
         <GenerationInput
