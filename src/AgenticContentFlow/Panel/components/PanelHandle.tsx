@@ -51,7 +51,7 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
 
   const getButtonStyles = () => {
     const baseStyle = {
-      position: 'fixed' as const,
+      position: 'absolute' as const,
       zIndex: 1000,
       transition: isDragging ? 'none' : 'all 0.3s ease-in-out',
       background: 'var(--background)',
@@ -60,68 +60,41 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
       justifyContent: 'center',
       gap: '4px',
       cursor: isExpanded ? (position === 'top' || position === 'bottom' ? 'ns-resize' : 'ew-resize') : 'pointer',
+      border: '2px solid var(--border)',
     };
 
-    switch (position) {
-      case 'top':
-        return {
-          ...baseStyle,
-          top: isExpanded ? `${50 + size.height}px` : '50px', // Account for Controls Panel offset
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '80px',
-          height: '28px',
-          borderBottomLeftRadius: '8px',
-          borderBottomRightRadius: '8px',
-          borderTopLeftRadius: '0px',
-          borderTopRightRadius: '0px',
-          borderTop: 'none',
-          flexDirection: 'row' as const,
-        };
-      case 'bottom':
-        return {
-          ...baseStyle,
-          bottom: isExpanded ? `${size.height}px` : '0px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '80px',
-          height: '28px',
-          borderTopLeftRadius: '8px',
-          borderTopRightRadius: '8px',
-          borderBottomLeftRadius: '0px',
-          borderBottomRightRadius: '0px',
-          borderBottom: 'none',
-          flexDirection: 'row' as const,
-        };
-      case 'left':
-        return {
-          ...baseStyle,
-          left: isExpanded ? `${size.width}px` : '0px',
-          top: '16px',
-          width: '28px',
-          height: '80px',
-          borderTopRightRadius: '8px',
-          borderBottomRightRadius: '8px',
-          borderTopLeftRadius: '0px',
-          borderBottomLeftRadius: '0px',
-          borderLeft: 'none',
-          flexDirection: 'column' as const,
-        };
-      case 'right':
-      default:
-        return {
-          ...baseStyle,
-          right: isExpanded ? `${size.width}px` : '0px',
-          top: '50%',
-          width: '28px',
-          height: '80px',
-          borderTopLeftRadius: '8px',
-          borderBottomLeftRadius: '8px',
-          borderTopRightRadius: '0px',
-          borderBottomRightRadius: '0px',
-          borderRight: 'none',
-          flexDirection: 'column' as const,
-        };
+    // Handle positioning for left and right panels
+    if (position === 'left') {
+      return {
+        ...baseStyle,
+        right: '-28px', // Position outside the panel on the right side
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: '28px',
+        height: '80px',
+        borderTopRightRadius: '8px',
+        borderBottomRightRadius: '8px',
+        borderTopLeftRadius: '0px',
+        borderBottomLeftRadius: '0px',
+        borderLeft: 'none', // No left border since it's on the left edge
+        flexDirection: 'column' as const,
+      };
+    } else {
+      // Right position (existing logic)
+      return {
+        ...baseStyle,
+        left: '-28px', // Always positioned outside the panel (between Flow and panel)
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: '28px',
+        height: '80px',
+        borderTopLeftRadius: '8px',
+        borderBottomLeftRadius: '8px',
+        borderTopRightRadius: '0px',
+        borderBottomRightRadius: '0px',
+        borderRight: 'none',
+        flexDirection: 'column' as const,
+      };
     }
   };
 
@@ -171,16 +144,11 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
       {/* Change Indicator for Collapsed State */}
       {!isExpanded && hasChanges && (
         <div 
-          className="fixed w-2 h-2 bg-amber-400 rounded-full z-100 transition-opacity duration-300"
+          className="absolute w-2 h-2 bg-amber-400 rounded-full z-100 transition-opacity duration-300"
           style={{ 
-            ...(() => {
-              switch (position) {
-                case 'top': return { top: '32px', left: '50%', transform: 'translateX(-50%)' };
-                case 'bottom': return { bottom: '32px', left: '50%', transform: 'translateX(-50%)' };
-                case 'left': return { left: '32px', top: '50px' };
-                case 'right': return { right: '32px', top: '50px' };
-              }
-            })(),
+            [position === 'left' ? 'right' : 'left']: '-14px',
+            top: '50%',
+            transform: 'translateY(-50%)',
             pointerEvents: 'none' 
           }}
         />
