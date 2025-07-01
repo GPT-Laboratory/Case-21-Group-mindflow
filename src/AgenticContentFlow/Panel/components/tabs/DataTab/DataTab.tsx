@@ -3,7 +3,6 @@ import { Database } from 'lucide-react';
 import { 
   TabContainer, 
   SharedEditor,
-  InfoCard,
   Badge
 } from '../../shared';
 import { getNodeType } from '@/AgenticContentFlow/Node/store';
@@ -24,12 +23,7 @@ export const DataTab: React.FC<DataTabProps> = ({
 }) => {
   // Core state
   const [factoryConfig, setFactoryConfig] = useState<any>(null);
-  
-  // JSON editing state
-  const [isEditing, setIsEditing] = useState(false);
   const [editedJson, setEditedJson] = useState('');
-  const [validationResult, setValidationResult] = useState<any>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Load factory configuration
   useEffect(() => {
@@ -52,95 +46,31 @@ export const DataTab: React.FC<DataTabProps> = ({
     loadFactoryConfig();
   }, [nodeType, formData]);
 
-  // Validate JSON
-  const validateJson = () => {
-    if (!editedJson.trim()) {
-      setValidationResult({ isValid: true, errors: [], warnings: [] });
-      return;
-    }
-
+  // Update formData when JSON changes
+  const handleJsonChange = (newValue: string) => {
+    setEditedJson(newValue);
+    
     try {
-      JSON.parse(editedJson);
-      setValidationResult({ isValid: true, errors: [], warnings: [] });
-    } catch (error) {
-      setValidationResult({ 
-        isValid: false, 
-        errors: [`Invalid JSON: ${error}`], 
-        warnings: [] 
-      });
-    }
-  };
-
-  // Save JSON changes
-  const saveJsonChanges = async () => {
-    setIsSaving(true);
-    try {
-      validateJson();
+      const parsedData = newValue.trim() ? JSON.parse(newValue) : {};
       
-      if (validationResult?.isValid) {
-        const parsedData = editedJson.trim() ? JSON.parse(editedJson) : {};
-        
-        // Update all fields in formData with the parsed data, but preserve instanceCode
-        Object.keys(parsedData).forEach(key => {
-          if (key !== 'instanceCode') { // Don't overwrite instanceCode
-            onFieldChange(key, parsedData[key]);
-          }
-        });
-        
-        setIsEditing(false);
-      }
+      // Update all fields in formData with the parsed data, but preserve instanceCode
+      Object.keys(parsedData).forEach(key => {
+        if (key !== 'instanceCode') { // Don't overwrite instanceCode
+          onFieldChange(key, parsedData[key]);
+        }
+      });
     } catch (error) {
-      console.error('Failed to save data:', error);
-    } finally {
-      setIsSaving(false);
+      // Invalid JSON, don't update formData
+      console.warn('Invalid JSON:', error);
     }
   };
-
-  // Reset to defaults
-  const resetToDefaults = () => {
-    // Reset to factory defaults but preserve instanceCode
-    const defaultData: Record<string, any> = {
-      nodeType: formData.nodeType,
-      nodeId: formData.nodeId,
-      // Keep other essential fields but reset to defaults
-      templateData: {},
-      instanceCodeMetadata: undefined,
-      instanceData: {},
-      metadata: {
-        created: new Date().toISOString(),
-        modified: new Date().toISOString()
-      }
-    };
-    
-    setEditedJson(JSON.stringify(defaultData, null, 2));
-    setValidationResult(null);
-    
-    // Apply the reset but preserve instanceCode
-    Object.keys(defaultData).forEach(key => {
-      if (key !== 'instanceCode') { // Don't reset instanceCode
-        onFieldChange(key, defaultData[key]);
-      }
-    });
-  };
-
-  // Auto-validate when JSON changes
-  useEffect(() => {
-    if (editedJson && isEditing) {
-      const timeoutId = setTimeout(validateJson, 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [editedJson, isEditing]);
 
   if (!factoryConfig) {
     return (
-      <TabContainer
-        title="Node Data"
-        description="Loading node configuration..."
-        icon={Database}
-      >
-        <div className="text-center text-gray-500 py-8">
-          <Database className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Loading node configuration...</p>
+      <TabContainer compact>
+        <div className="text-center text-gray-500 py-4">
+          <Database className="w-6 h-6 mx-auto mb-1 opacity-50" />
+          <p className="text-xs">Loading...</p>
         </div>
       </TabContainer>
     );
@@ -157,7 +87,7 @@ export const DataTab: React.FC<DataTabProps> = ({
   const badges = [
     nodeType && <Badge key="type" variant="outline" className="text-xs">{nodeType}</Badge>,
     hasChanges && <Badge key="changes" variant="secondary" className="text-xs">Modified</Badge>,
-    hasCustomData && <Badge key="custom" variant="default" className="text-xs">Custom Data</Badge>
+    hasCustomData && <Badge key="custom" variant="default" className="text-xs">Custom</Badge>
   ].filter(Boolean);
 
   // Create JSON schema for autocomplete based on factory config (excluding instanceCode)
@@ -197,39 +127,22 @@ export const DataTab: React.FC<DataTabProps> = ({
   };
 
   return (
-    <TabContainer
-      title="Node Data"
-      description="View and edit node configuration data (code is edited in the Code tab)"
-      icon={Database}
-      badges={badges}
-    >
+    <TabContainer>
       <SharedEditor
-        value={isEditing ? editedJson : JSON.stringify(dataToShow, null, 2)}
-        onChange={setEditedJson}
+        value={editedJson}
+        onChange={handleJsonChange}
         language="json"
-        title="Node Data"
-        description="View and edit node configuration data (code is edited in the Code tab)"
-        icon={Database}
-        isEditing={isEditing}
-        setIsEditing={setIsEditing}
-        validationResult={validationResult}
-        isSaving={isSaving}
-        hasCustomContent={hasCustomData}
-        onSave={saveJsonChanges}
-        onReset={resetToDefaults}
-        schema={schema}
+        beforeMount={(monaco) => {
+          monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+            validate: true,
+            schemas: [{
+              uri: 'http://myschema/1',
+              fileMatch: ['*'],
+              schema: schema
+            }]
+          });
+        }}
       />
-
-      {/* Data Info - Compact */}
-      {hasCustomData && (
-        <div className="mt-3">
-          <InfoCard
-            title="Custom Data Active"
-            type="info"
-            content={`${Object.keys(dataToShow).length} data fields configured (excluding code)`}
-          />
-        </div>
-      )}
     </TabContainer>
   );
 };
