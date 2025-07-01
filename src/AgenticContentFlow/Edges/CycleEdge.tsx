@@ -75,7 +75,6 @@ export function CycleEdge({
   const nodes = [
     ...parents,
     ...(sourceParentChildren || []), ...(targetParentChildren || [])];
-  console.log("NODES", nodes);
 
   const [isHovered, setIsHovered] = useState(false);
 
