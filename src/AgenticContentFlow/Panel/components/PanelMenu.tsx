@@ -10,8 +10,6 @@ interface PanelMenuProps {
   onSave?: () => void;
   onReset?: () => void;
   onGenerate?: () => void;
-  position?: PanelPosition;
-  onPositionChange?: (position: PanelPosition) => void;
 }
 
 export const PanelMenu: React.FC<PanelMenuProps> = ({ 
@@ -20,8 +18,6 @@ export const PanelMenu: React.FC<PanelMenuProps> = ({
   onSave,
   onReset,
   onGenerate,
-  position = 'right',
-  onPositionChange
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -102,26 +98,7 @@ export const PanelMenu: React.FC<PanelMenuProps> = ({
           <div className="border-t my-1" />
           
           {/* Position */}
-          {onPositionChange && (
-            <>
-              <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                Panel Position
-              </div>
-              {positionOptions.map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => {
-                    onPositionChange(value);
-                    setShowMenu(false);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center ${position === value ? 'bg-accent' : ''}`}
-                >
-                  <Icon className="w-3 h-3 mr-2" />
-                  {label}
-                </button>
-              ))}
-            </>
-          )}
+          {/* Position section removed as per instructions */}
         </div>
       )}
       
