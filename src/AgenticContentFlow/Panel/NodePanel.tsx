@@ -12,6 +12,7 @@ import { ErrorsTab } from './components/tabs/ErrorsTab/ErrorsTab';
 import { ResponsiveTabs } from './components/ResponsiveTabs';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
 import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
+import { GenerationPanel } from '../Generator/ui/generation/GenerationPanel';
 
 // LLM Generation System imports
 import { apiKeyManager } from '../Generator/providers/management/APIKeyManager';
@@ -34,8 +35,8 @@ const DEFAULT_SIZES = {
 export const NodeConfigPanel: React.FC = () => {
   const { selectedNodes } = useSelect();
   const { updateNode, nodeMap } = useNodeContext();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [position, setPosition] = useState<PanelPosition>('right');
+  const [isExpanded, setIsExpanded] = useState(false); // Start collapsed to show handle
+  const [position] = useState<PanelPosition>('right'); // Fixed to right for side-by-side layout
   const [activeNode, setActiveNode] = useState<any>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -249,16 +250,6 @@ export const NodeConfigPanel: React.FC = () => {
 
   return (
     <>
-      {/* Toggle/Drag Handle */}
-      <PanelToggleDragHandle
-        isExpanded={isExpanded}
-        position={position}
-        size={size}
-        hasChanges={hasChanges}
-        onToggle={() => setIsExpanded(!isExpanded)}
-        onResizeStart={handleResizeStart}
-      />
-
       {/* Panel Container */}
       <PanelContainer
         isExpanded={isExpanded}
@@ -266,86 +257,104 @@ export const NodeConfigPanel: React.FC = () => {
         size={size}
         isResizing={isResizing}
       >
-        <div className="flex flex-col h-full">
-          {/* Content */}
-          {!activeNode ? (
-            <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-              Select a node to configure
-            </div>
-          ) : (
-            <div className="flex flex-col flex-1 overflow-hidden">
-              {/* Header */}
-          
+        {/* Toggle/Drag Handle - always visible */}
+        <PanelToggleDragHandle
+          isExpanded={isExpanded}
+          position={position}
+          size={size}
+          hasChanges={hasChanges}
+          onToggle={() => setIsExpanded(!isExpanded)}
+          onResizeStart={handleResizeStart}
+        />
+        
+        {/* Content - hidden when collapsed */}
+        <div 
+          className={`h-full transition-opacity duration-300 ${
+            isExpanded ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{
+            overflow: isExpanded ? 'auto' : 'hidden',
+            width: isExpanded ? '100%' : '0px',
+            pointerEvents: isExpanded ? 'auto' : 'none',
+          }}
+        >
+          <div className="flex flex-col h-full">
+            {/* Content */}
+            {!activeNode ? (
+              <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                Select a node to configure
+              </div>
+            ) : (
+              <div className="flex flex-col flex-1 overflow-hidden">
+                {/* Header */}
+              
 
-              {/* Tabs */}
-              <Tabs defaultValue="data" className="flex flex-col flex-1">
-              <div className="flex items-center justify-between py-1 px-2 flex-nowrap w-full">
-                <PanelHeader 
-                  activeNode={activeNode} 
-                  nodeConfig={nodeConfig!}
-                />
-                <TabsList className="w-full flex bg-transparent min-w-0">
-                  <ResponsiveTabs />
-                </TabsList>
-                <div className="flex-shrink-0">
-                  <PanelMenu
-                    hasChanges={hasChanges}
-                    hasDataChanges={hasDataChanges}
-                    onSave={handleSave}
-                    onReset={handleReset}
-                    onGenerate={handleGenerate}
-                    position={position}
-                    onPositionChange={setPosition}
+                {/* Tabs */}
+                <Tabs defaultValue="data" className="flex flex-col flex-1 gap-0 m-0 p-0">
+                <div className="flex items-center justify-between p-0 m-0 flex-nowrap w-full">
+                  <PanelHeader 
+                    activeNode={activeNode} 
+                    nodeConfig={nodeConfig!}
                   />
-                </div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto">
-                  <TabsContent value="data" className="m-0 h-full">
-                    <DataTab 
-                      formData={formData}
-                      onFieldChange={handleFieldChange}
-                      nodeId={activeNode.id}
-                      nodeType={activeNode.type}
+                  <TabsList className="w-full flex bg-transparent min-w-0">
+                    <ResponsiveTabs />
+                  </TabsList>
+                  <div className="flex-shrink-0">
+                    <PanelMenu
                       hasChanges={hasChanges}
+                      hasDataChanges={hasDataChanges}
+                      onSave={handleSave}
+                      onReset={handleReset}
+                      onGenerate={handleGenerate}
                     />
-                  </TabsContent>
+                  </div>
+                  </div>
                   
-                  {/* Code Editor Tab - available for all nodes */}
-                  <TabsContent value="code" className="m-0 h-full">
-                    <CodeEditorTab 
-                      nodeType={activeNode.type}
-                      formData={formData} 
-                      onFieldChange={handleFieldChange} 
-                    />
-                  </TabsContent>
-                  
-                  {/* Content Preview Tab - available for all nodes */}
-                  <TabsContent value="preview" className="m-0 h-full">
-                    <ContentPreviewTab 
-                      nodeId={activeNode.id} 
-                      formData={formData} 
-                    />
-                  </TabsContent>
-                  
-                  {/* Universal Input/Output Tab */}
-                  <TabsContent value="inputoutput" className="m-0 h-full">
-                    <InputOutputTab 
-                      nodeId={activeNode.id} 
-                      nodeType={activeNode.type}
-                      formData={formData} 
-                      onFieldChange={handleFieldChange}
-                    />
-                  </TabsContent>
-                  
-                  {/* Universal Errors Tab */}
-                  <TabsContent value="errors" className="m-0 h-full">
-                    <ErrorsTab nodeId={activeNode.id} formData={formData} />
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </div>
-          )}
+                    <TabsContent value="data" className="m-0 h-full">
+                      <DataTab 
+                        formData={formData}
+                        onFieldChange={handleFieldChange}
+                        nodeId={activeNode.id}
+                        nodeType={activeNode.type}
+                        hasChanges={hasChanges}
+                      />
+                    </TabsContent>
+                    
+                    {/* Code Editor Tab - available for all nodes */}
+                    <TabsContent value="code" className="m-0 h-full">
+                      <CodeEditorTab 
+                        nodeType={activeNode.type}
+                        formData={formData} 
+                        onFieldChange={handleFieldChange} 
+                      />
+                    </TabsContent>
+                    
+                    {/* Content Preview Tab - available for all nodes */}
+                    <TabsContent value="preview" className="m-0 h-full">
+                      <ContentPreviewTab 
+                        nodeId={activeNode.id} 
+                        formData={formData} 
+                      />
+                    </TabsContent>
+                    
+                    {/* Universal Input/Output Tab */}
+                    <TabsContent value="inputoutput" className="m-0 h-full">
+                      <InputOutputTab 
+                        nodeId={activeNode.id} 
+                        nodeType={activeNode.type}
+                        formData={formData} 
+                        onFieldChange={handleFieldChange}
+                      />
+                    </TabsContent>
+                    
+                    {/* Universal Errors Tab */}
+                    <TabsContent value="errors" className="m-0 h-full">
+                      <ErrorsTab nodeId={activeNode.id} formData={formData} />
+                    </TabsContent>
+                </Tabs>
+              </div>
+            )}
+          </div>
         </div>
       </PanelContainer>
     </>
