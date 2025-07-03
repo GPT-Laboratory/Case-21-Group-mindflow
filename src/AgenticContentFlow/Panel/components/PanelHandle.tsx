@@ -70,7 +70,7 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
         right: '-28px', // Position outside the panel on the right side
         top: '50%',
         transform: 'translateY(-50%)',
-        width: '28px',
+        width: '29px',
         height: '80px',
         borderTopRightRadius: '8px',
         borderBottomRightRadius: '8px',
@@ -86,7 +86,7 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
         left: '-28px', // Always positioned outside the panel (between Flow and panel)
         top: '50%',
         transform: 'translateY(-50%)',
-        width: '28px',
+        width: '29px',
         height: '80px',
         borderTopLeftRadius: '8px',
         borderBottomLeftRadius: '8px',
