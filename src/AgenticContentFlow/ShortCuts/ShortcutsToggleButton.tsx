@@ -1,6 +1,6 @@
 import { Keyboard } from "lucide-react";
-import { useShortcuts } from "../context/ShortcutsContext";
-import ControlButton from "../../Controls/Components/ControlButton";
+import ControlButton from "../Controls/Components/ControlButton";
+import { useShortcuts } from "@jalez/react-shortcuts-provider";
 
 /**
  * Decoupled shortcuts toggle button that uses the shortcuts context

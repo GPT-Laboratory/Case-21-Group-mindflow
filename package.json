@@ -14,9 +14,9 @@
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
     "@jalez/react-flow-automated-layout": "^1.2.3",
-    "@jalez/react-state-history": "^0.4.0",
     "@jalez/react-flow-smart-edge": "file:../react-flow-smart-edge",
-
+    "@jalez/react-shortcuts-provider": "^0.1.1",
+    "@jalez/react-state-history": "^0.4.0",
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-accordion": "^1.2.10",
     "@radix-ui/react-dialog": "^1.1.14",

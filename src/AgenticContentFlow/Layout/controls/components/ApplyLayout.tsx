@@ -2,7 +2,7 @@ import React, { useCallback, useEffect } from "react";
 import { Wand2 } from "lucide-react"; 
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import ControlButton from "../../../Controls/Components/ControlButton";
-import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../../ShortCuts/registry/shortcutsRegistry";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "@jalez/react-shortcuts-provider";
 
 const ApplyLayout: React.FC = () => {
   const { layoutInProgress, applyLayout } = useLayoutContext();

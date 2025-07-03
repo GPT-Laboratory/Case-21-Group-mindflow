@@ -4,7 +4,7 @@ import { useReactFlow } from "@xyflow/react";
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import { VIEWPORT_CONSTRAINTS } from "../../../constants";
 import ControlButton from "../../../Controls/Components/ControlButton";
-import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../../ShortCuts/registry/shortcutsRegistry";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "@jalez/react-shortcuts-provider";
 
 const FitAllNodes: React.FC = () => {
   const reactFlowInstance = useReactFlow();

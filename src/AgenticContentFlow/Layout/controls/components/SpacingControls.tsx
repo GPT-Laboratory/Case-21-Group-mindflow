@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../../ShortCuts/registry/shortcutsRegistry";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "@jalez/react-shortcuts-provider";
 import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import ControlButton from "../../../Controls/Components/ControlButton";
 import {

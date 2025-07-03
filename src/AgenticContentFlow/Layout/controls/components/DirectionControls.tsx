@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { LayoutDirection, useLayoutContext } from "@jalez/react-flow-automated-layout";
 import ControlDropdown from "../../../Controls/Components/ControlDropdown";
-import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../../ShortCuts/registry/shortcutsRegistry";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "@jalez/react-shortcuts-provider";
 
 const DirectionControls: React.FC = () => {
   const { direction, setDirection } = useLayoutContext();

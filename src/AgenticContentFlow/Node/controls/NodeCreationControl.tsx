@@ -6,7 +6,7 @@ import NodePlacementOverlay from "./components/NodePlacementOverlay";
 import PlacementIndicator from "./components/PlacementIndicator";
 import { useNodePlacement } from "./hooks/useNodePlacement";
 import { useNodeTypeData } from "./hooks/useNodeTypeData";
-import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../../ShortCuts/registry/shortcutsRegistry";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "@jalez/react-shortcuts-provider";
 
 interface NodeCreationControlProps {
   availableNodeTypes?: string[]; // Keep for backward compatibility

@@ -18,7 +18,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { Redo2, Save, Undo2 } from "lucide-react";
 import { useEffect } from "react";
-import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "../ShortCuts/registry/shortcutsRegistry";
+import { registerShortcut, DEFAULT_SHORTCUT_CATEGORIES } from "@jalez/react-shortcuts-provider";
 import { CONTROL_TYPES } from "../constants";
 import { registerControl, unregisterControl } from "../Controls";
 import ControlButton from "../Controls/Components/ControlButton";

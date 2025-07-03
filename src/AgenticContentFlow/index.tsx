@@ -14,7 +14,6 @@ import { useViewportManager } from "./Flow/hooks/useViewportManager";
 import { GRID_SETTINGS } from "./constants";
 import { FlowContainer } from "./Flow/FlowContainer";
 import Flow from "./Flow/Flow";
-import UnifiedControls from "./Controls";
 import SelectLogic from "./Select/SelectLogic";
 import Minimap from "./Minimap/Minimap";
 import LayoutControlsRegistration from "./Layout/LayoutControlsRegistration";
@@ -31,11 +30,13 @@ import { FlowsPanel } from "./FlowsPanel";
 import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React Flow
 import ReactStateHistory from "./History/ReactStateHistory";
 import { LayoutProvider } from "@jalez/react-flow-automated-layout";
-import ShortcutsManager from "./ShortCuts/ShortcutsManager";
 import { APISetupControlsRegistration } from "./Generator";
 import GridControlsRegistration from "./Flow/controls/GridControlsRegistration";
 import UnifiedControlsPanel from "./Controls/registry/UnifiedControlsPanel";
 import { GenerationControl } from "./Generator/ui";
+import { ShortcutsRegistration } from "./ShortCuts/ShortcutControlRegistration";
+import { ShortcutsDisplayPanel } from "./ShortCuts/ShortcutsDisplayPanel";
+import { ShortcutsProvider } from "@jalez/react-shortcuts-provider";
 
 // Register edge types before any rendering occurs
 ensureEdgeTypesRegistered();
@@ -102,7 +103,7 @@ export function AgenticContentFlowContent() {
             updateNodes={handleNodeUpdate}
             updateEdges={handleEdgeUpdate}
           >
-            <ShortcutsManager>
+            <ShortcutsProvider>
               <div className="flex h-full w-full overflow-visible">
                 {/* Flows Panel - Left side */}
                 <FlowsPanel />
@@ -126,12 +127,14 @@ export function AgenticContentFlowContent() {
                         )}
                         <SelectLogic />
                         <Minimap />
+                        <ShortcutsDisplayPanel/>
 
                         {/* Register available controls here */}
                         <GridControlsRegistration />
                         <LayoutControlsRegistration />
                         <CopyWorkflowControlsRegistration />
                         <APISetupControlsRegistration />
+                        <ShortcutsRegistration />
                       </Flow>
                     </FlowContainer>
                   </div>
@@ -145,7 +148,7 @@ export function AgenticContentFlowContent() {
                 {/* Node Configuration Panel - Side by side */}
                 <NodeConfigPanel />
               </div>
-            </ShortcutsManager>
+            </ShortcutsProvider>
           </LayoutProvider>
         </GeneratorProvider>
       </NotificationProvider>
