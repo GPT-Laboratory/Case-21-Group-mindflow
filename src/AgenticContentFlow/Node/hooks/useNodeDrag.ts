@@ -4,7 +4,7 @@ import { Node, useReactFlow, useViewport } from "@xyflow/react";
 import { NodeData } from "../../types";
 import { updateNodeExtentInLocalNodes } from "./utils/dragUtils";
 import { useDragWorker } from "./useDragWorker";
-import { calculateIntersections as syncCalculateIntersections, calculateParentCandidate as syncCalculateParentCandidate } from "./utils/sharedDragUtils";
+import { calculateParentCandidate as syncCalculateParentCandidate } from "./utils/sharedDragUtils";
 
 // Define the root indicator string as a constant
 const ROOT_INDICATOR = "no-parent";
@@ -19,7 +19,7 @@ export const useNodeDrag = (
   nodeParentIdMapWithChildIdSet: Map<string, Set<string>>,
   onDraggingStateChange?: (isDragging: boolean) => void
 ) => {
-  const { updateNode } = useReactFlow();
+  const { updateNode, getIntersectingNodes } = useReactFlow();
   const { x, y, zoom } = useViewport();
   const { calculateIntersections, calculateParentCandidate } = useDragWorker();
 
@@ -165,7 +165,10 @@ export const useNodeDrag = (
 
       // Use synchronous calculations for drag stop (like the old version) to prevent glitching
       try {
-        const intersectingNodes = syncCalculateIntersections(draggedNode, nodes, { x, y, zoom });
+
+        const intersectingNodes = getIntersectingNodes(draggedNode);
+
+    
         const potentialParentId = syncCalculateParentCandidate(
           draggedNode,
           intersectingNodes,

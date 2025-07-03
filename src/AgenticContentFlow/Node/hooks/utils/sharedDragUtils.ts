@@ -90,50 +90,7 @@ export const getDistance = (nodeA: any, nodeB: any): number => {
 };
 
 /**
- * Calculate intersecting nodes
- */
-export const calculateIntersections = (draggedNode: any, allNodes: any[], viewport: { x: number; y: number; zoom: number }) => {
-  const intersectingNodes: any[] = [];
-  
-  // Convert viewport coordinates to world coordinates
-  const worldX = (draggedNode.position.x - viewport.x) / viewport.zoom;
-  const worldY = (draggedNode.position.y - viewport.y) / viewport.zoom;
-  const worldWidth = (draggedNode.width || draggedNode.measured?.width || 0) / viewport.zoom;
-  const worldHeight = (draggedNode.height || draggedNode.measured?.height || 0) / viewport.zoom;
-  
-  const draggedBounds = {
-    left: worldX,
-    right: worldX + worldWidth,
-    top: worldY,
-    bottom: worldY + worldHeight
-  };
-  
-  for (const node of allNodes) {
-    if (node.id === draggedNode.id) continue;
-    
-    const nodeWorldX = (node.position.x - viewport.x) / viewport.zoom;
-    const nodeWorldY = (node.position.y - viewport.y) / viewport.zoom;
-    const nodeWorldWidth = (node.width || node.measured?.width || 0) / viewport.zoom;
-    const nodeWorldHeight = (node.height || node.measured?.height || 0) / viewport.zoom;
-    
-    const nodeBounds = {
-      left: nodeWorldX,
-      right: nodeWorldX + nodeWorldWidth,
-      top: nodeWorldY,
-      bottom: nodeWorldY + nodeWorldHeight
-    };
-    
-    // Check for intersection
-    if (draggedBounds.left < nodeBounds.right &&
-        draggedBounds.right > nodeBounds.left &&
-        draggedBounds.top < nodeBounds.bottom &&
-        draggedBounds.bottom > nodeBounds.top) {
-      intersectingNodes.push(node);
-    }
-  }
-  
-  return intersectingNodes;
-};
+
 
 /**
  * Calculate potential parent candidate
