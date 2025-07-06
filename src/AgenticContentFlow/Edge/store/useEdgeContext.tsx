@@ -8,7 +8,6 @@ import React, {
   useMemo,
 } from "react";
 import { Edge, Connection } from "@xyflow/react";
-import { edgesData } from "../../test/default/edgeData"; // Adjust path as needed
 import { rebuildEdgeMapState } from "./utils/rebuildEdgeMapState";
 import { EdgeAction, edgeReducer } from "./reducer/edgeReducer";
 // Import useEdgeStateImpl to use in EdgeProvider
@@ -22,7 +21,7 @@ export interface EdgeStoreState {
 }
 
 // Initial state based on existing setup
-const initialEdges = edgesData;
+const initialEdges: Edge[] = [];
 const initialStateMaps = rebuildEdgeMapState(initialEdges);
 
 export const defaultInitialState: EdgeStoreState = {

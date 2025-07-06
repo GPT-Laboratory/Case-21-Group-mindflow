@@ -7,7 +7,7 @@ import {
 } from '../../types/handleTypes';
 
 // Import unified system instead of old cell factory
-import { getNodeType, getAvailableNodeTypes } from '../../Node/store/unifiedNodeTypeStoreInitializer';
+import { getNodeType, getAvailableNodeTypes } from '../../Node/store/NodeTypeStoreInitializer';
 
 // Import container factory - you'll need to create this or import from the correct location
 // For now, I'll create a placeholder that returns empty results

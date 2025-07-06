@@ -7,7 +7,5 @@ import { Panel } from "@xyflow/react";
 export const ShortcutsDisplayPanel: React.FC = () => {
   const { showShortcuts } = useShortcuts();
 
-  return showShortcuts ? <Panel
- 
-  ><ShortcutsDisplay    className="h-50 overflow-y-auto" /></Panel> : null;
+  return showShortcuts ? <Panel><ShortcutsDisplay className="h-50 overflow-y-auto" /></Panel> : null;
 };

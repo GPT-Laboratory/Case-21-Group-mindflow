@@ -16,7 +16,6 @@ interface PanelToggleDragHandleProps {
 export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
   isExpanded,
   position,
-  size,
   hasChanges,
   onToggle,
   onResizeStart,

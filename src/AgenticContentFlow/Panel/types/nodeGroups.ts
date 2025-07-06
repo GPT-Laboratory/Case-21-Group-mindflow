@@ -1,4 +1,4 @@
-import { getNodeType } from "@/AgenticContentFlow/Node/store/unifiedNodeTypeStoreInitializer";
+import { getNodeType } from "@/AgenticContentFlow/Node/store/NodeTypeStoreInitializer";
 
 // Node type groupings for better organization
 // Only groups matter in the unified system: 'cell' and 'container'

@@ -26,7 +26,7 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
   useEffect(() => {
     const loadFactoryConfig = async () => {
       try {
-        const { getNodeType } = await import('@/AgenticContentFlow/Node/store/unifiedNodeTypeStoreInitializer');
+        const { getNodeType } = await import('@/AgenticContentFlow/Node/store/NodeTypeStoreInitializer');
         const config = getNodeType(nodeType);
         setFactoryConfig(config);
 

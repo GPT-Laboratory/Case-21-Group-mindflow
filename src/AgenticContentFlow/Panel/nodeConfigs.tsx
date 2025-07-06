@@ -1,6 +1,6 @@
-import { getNodeType } from '../Node/store/unifiedNodeTypeStoreInitializer';
+import { getNodeType } from '../Node/store/NodeTypeStoreInitializer';
 import { NodeConfig, FieldConfig } from './types';
-import { ProcessParameter } from '../Node/factory//types/UnifiedFrameJSON';
+import { ProcessParameter } from '../Node/factory/types/FrameJSON';
 
 // Helper function to convert ProcessParameter to FieldConfig
 const convertProcessParameterToFieldConfig = (param: ProcessParameter): FieldConfig => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { IconResolver } from '../../Node/factory';
-import { getNodeType } from '../../Node/store/unifiedNodeTypeStoreInitializer';
+import { getNodeType } from '../../Node/store/NodeTypeStoreInitializer';
 import { NodeConfig } from '../types';
 
 

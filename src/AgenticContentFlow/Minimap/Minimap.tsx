@@ -6,7 +6,7 @@ import MinimapToggle from "./Controls/MinimapToggle";
 import { CONTROL_PRIORITIES, CONTROL_TYPES } from "../constants";
 import { useNodeContext } from "../Node/context/useNodeContext";
 import { UnifiedStyleManager } from "../Node/factory/utils/UnifiedStyleManager";
-import { getNodeType } from "../Node/store/unifiedNodeTypeStoreInitializer";
+import { getNodeType } from "../Node/store/NodeTypeStoreInitializer";
 
 // Custom MiniMap wrapper
 const CustomMiniMap = () => {
