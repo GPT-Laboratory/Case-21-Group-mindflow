@@ -14,7 +14,7 @@ import {
   ValidationWarning,
   FlowGenerationResult
 } from '../../generatortypes';
-import { useUnifiedNodeTypeStore } from '../../../Node/store/useUnifiedNodeTypeStore';
+import { useUnifiedNodeTypeStore } from '../../../Node/store/useNodeTypeStore';
 
 // Enhanced constants for validation and correction
 export const VALID_HANDLE_POSITIONS = ['top', 'bottom', 'left', 'right'] as const;
