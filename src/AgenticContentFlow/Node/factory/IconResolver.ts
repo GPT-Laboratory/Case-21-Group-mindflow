@@ -2,7 +2,7 @@
 
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
-import { IconReference } from './types/UnifiedFrameJSON';
+import { IconReference } from './types/FrameJSON';
 
 // Import custom icon components used in the original nodes
 import CircleStackIcon from '@/components/icons/circle-stack';

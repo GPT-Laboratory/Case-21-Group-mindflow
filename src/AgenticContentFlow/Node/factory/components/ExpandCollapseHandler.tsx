@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Node } from '@xyflow/react';
 import { useNodeContext } from '../../context/useNodeContext';
-import { UnifiedFrameJSON } from '../types/UnifiedFrameJSON';
+import { FrameJSON } from '../types/FrameJSON';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -16,7 +16,7 @@ interface ExpandCollapseState {
 }
 
 interface ExpandCollapseHandlerProps {
-  config: UnifiedFrameJSON;
+  config: FrameJSON;
   node: Node;
   onStateChange?: (state: ExpandCollapseState) => void;
 }
@@ -142,7 +142,7 @@ export const ExpandCollapseHandler: React.FC<ExpandCollapseHandlerProps> = ({
  * Hook for managing expand/collapse state externally
  */
 export const useExpandCollapseState = (
-  config: UnifiedFrameJSON,
+  config: FrameJSON,
   node: Node
 ) => {
   const { nodeParentIdMapWithChildIdSet, nodeMap, updateNodes } = useNodeContext();

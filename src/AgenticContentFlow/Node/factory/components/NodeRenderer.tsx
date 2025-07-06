@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useUpdateNodeInternals } from '@xyflow/react';
-import { UnifiedFrameJSON } from '../types/UnifiedFrameJSON';
+import { FrameJSON } from '../types/FrameJSON';
 import { IconResolver } from '../IconResolver';
 import { NodeHeader } from './NodeHeader';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ import { UnifiedStyleManager } from '../utils/UnifiedStyleManager';
 interface BaseNodeRendererProps {
   id: string;
   selected: boolean;
-  config: UnifiedFrameJSON;
+  config: FrameJSON;
   nodeInFlow: any;
   customContent?: React.ReactNode;
   isProcessing?: boolean;

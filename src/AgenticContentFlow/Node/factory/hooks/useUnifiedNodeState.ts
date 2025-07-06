@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useReactFlow } from '@xyflow/react';
-import { UnifiedFrameJSON, UnifiedNodeInstanceData, ExpandCollapseState } from '../types/UnifiedFrameJSON';
+import { FrameJSON, UnifiedNodeInstanceData, ExpandCollapseState } from '../types/FrameJSON';
 import { UnifiedStyleManager } from '../utils/UnifiedStyleManager';
 
 interface UseUnifiedNodeStateProps {
   id: string;
   data: any;
-  config: UnifiedFrameJSON;
+  config: FrameJSON;
   onMenuAction?: (action: string, nodeData: any) => void;
 }
 

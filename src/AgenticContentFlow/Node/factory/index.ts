@@ -7,7 +7,7 @@ export { default as ProcessControls } from './components/ProcessControls';
 export { ExpandCollapseHandler, useExpandCollapseState } from './components/ExpandCollapseHandler';
 
 // Export unified types
-export type { UnifiedFrameJSON, UnifiedNodeInstanceData, UnifiedStyleConfig, ExpandCollapseState } from './types/UnifiedFrameJSON';
+export type { FrameJSON, UnifiedNodeInstanceData, UnifiedStyleConfig, ExpandCollapseState } from './types/FrameJSON';
 
 // Export unified utilities
 export { UnifiedStyleManager } from './utils/UnifiedStyleManager';
@@ -22,19 +22,11 @@ export { BaseNodeContainer } from './components/NodeStyles';
 export { default as ScrollingText } from './components/ScrollingText';
 
 // Export unified factory
-export { UnifiedNodeFactory, createUnifiedNode, createCustomUnifiedNode } from './UnifiedNodeFactory';
+export { UnifiedNodeFactory, createUnifiedNode, createCustomUnifiedNode } from './NodeFactory';
 
 // Export unified registration
-export { UnifiedNodeRegistration } from './UnifiedNodeRegistration';
+export { UnifiedNodeRegistration } from './NodeRegistration';
 
 // Export unified hooks
 export { useUnifiedNodeState } from './hooks/useUnifiedNodeState';
 
-// Export example frames
-export { unifiedRestNodeFrame } from '../store/frames/unifiedRestNodeFrame';
-export { unifiedDataNodeFrame } from '../store/frames/unifiedDataNodeFrame';
-export { unifiedContentNodeFrame } from '../store/frames/unifiedContentNodeFrame';
-export { unifiedLogicNodeFrame } from '../store/frames/unifiedLogicNodeFrame';
-export { unifiedPageNodeFrame } from '../store/frames/unifiedPageNodeFrame';
-export { unifiedStatisticsNodeFrame } from '../store/frames/unifiedStatisticsNodeFrame';
-export { unifiedInvisibleNodeFrame } from '../store/frames/unifiedInvisibleNodeFrame';

@@ -5,7 +5,7 @@ import { NodeProps, useReactFlow, useUpdateNodeInternals } from '@xyflow/react';
 import { UnifiedStyleManager } from '../utils/UnifiedStyleManager';
 import { useUnifiedNodeState } from '../hooks/useUnifiedNodeState';
 import { BaseNodeRenderer } from './NodeRenderer';
-import { getNodeType } from '../../store/unifiedNodeTypeStoreInitializer';
+import { getNodeType } from '../../store/NodeTypeStoreInitializer';
 import { useNodeProcess } from '../../../Process/useNodeProcess';
 import { useGenerator } from '../../../Generator/context/GeneratorContext';
 

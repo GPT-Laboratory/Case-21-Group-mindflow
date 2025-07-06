@@ -1,6 +1,6 @@
 /** @format */
 
-import { UnifiedFrameJSON, UnifiedStyleConfig } from '../types/UnifiedFrameJSON';
+import { FrameJSON, UnifiedStyleConfig } from '../types/FrameJSON';
 
 /**
  * Unified Style Manager - handles styling logic for all node types
@@ -12,7 +12,7 @@ export class UnifiedStyleManager {
    * Generate unified style configuration based on frame config and node state
    */
   static generateStyleConfig(
-    config: UnifiedFrameJSON,
+    config: FrameJSON,
     nodeData: any,
     state: {
       selected: boolean;
@@ -118,7 +118,7 @@ export class UnifiedStyleManager {
   /**
    * Get variant-based badge color if variants are configured
    */
-  private static getVariantBadgeColor(config: UnifiedFrameJSON, nodeData: any): string | undefined {
+  private static getVariantBadgeColor(config: FrameJSON, nodeData: any): string | undefined {
     const variants = config.visual.variants;
     if (!variants) return undefined;
 
@@ -132,7 +132,7 @@ export class UnifiedStyleManager {
   /**
    * Get variant badge text if variants are configured
    */
-  static getVariantBadgeText(config: UnifiedFrameJSON, nodeData: any): string {
+  static getVariantBadgeText(config: FrameJSON, nodeData: any): string {
     const variants = config.visual.variants;
     if (!variants) return '';
 
@@ -146,7 +146,7 @@ export class UnifiedStyleManager {
   /**
    * Get variant description if variants are configured
    */
-  static getVariantDescription(config: UnifiedFrameJSON, nodeData: any): string | undefined {
+  static getVariantDescription(config: FrameJSON, nodeData: any): string | undefined {
     const variants = config.visual.variants;
     if (!variants) return undefined;
 
@@ -160,7 +160,7 @@ export class UnifiedStyleManager {
   /**
    * Check if node has variants configured
    */
-  static hasVariants(config: UnifiedFrameJSON): boolean {
+  static hasVariants(config: FrameJSON): boolean {
     return Boolean(config.visual.variants);
   }
 
@@ -194,7 +194,7 @@ export class UnifiedStyleManager {
    * Calculate the actual visual color for minimap representation
    * Takes into account special styling like transparent backgrounds and header gradients
    */
-  static calculateMinimapColor(config: UnifiedFrameJSON, styleConfig: UnifiedStyleConfig): string {
+  static calculateMinimapColor(config: FrameJSON, styleConfig: UnifiedStyleConfig): string {
     // Check if the node has transparent background styling
     if (config.visual.style?.customStyles?.backgroundColor === 'transparent') {
       // Use a light gray for transparent nodes in minimap
@@ -226,7 +226,7 @@ export class UnifiedStyleManager {
    * Calculate the actual visual color for handle representation
    * Uses the same logic as minimap color to ensure consistency
    */
-  static calculateHandleColor(config: UnifiedFrameJSON, styleConfig: UnifiedStyleConfig): string {
+  static calculateHandleColor(config: FrameJSON, styleConfig: UnifiedStyleConfig): string {
     return this.calculateMinimapColor(config, styleConfig);
   }
 } 
