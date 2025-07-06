@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { UnifiedFrameJSON } from '../../factory/types/UnifiedFrameJSON';
+import { FrameJSON } from '../../factory/types/FrameJSON';
 import { Badge } from '@/components/ui/badge';
 import { IconResolver } from '../../factory/IconResolver';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface NodeTypeListProps {
-  nodeTypes: UnifiedFrameJSON[];
+  nodeTypes: FrameJSON[];
   onNodeTypeSelect: (nodeType: string) => void;
   className?: string;
   isOpen?: boolean;
 }
 
 interface GroupedNodeTypes {
-  cell: UnifiedFrameJSON[];
-  container: UnifiedFrameJSON[];
+  cell: FrameJSON[];
+  container: FrameJSON[];
 }
 
 const NodeTypeList: React.FC<NodeTypeListProps> = ({
@@ -116,7 +116,7 @@ const NodeTypeList: React.FC<NodeTypeListProps> = ({
     }
   };
 
-  const renderNodeTypeItem = (nodeType: UnifiedFrameJSON, index: number) => {
+  const renderNodeTypeItem = (nodeType: FrameJSON, index: number) => {
     const iconElement = iconResolver.resolveIcon(nodeType.visual.icon, {
       className: "w-5 h-5",
       size: nodeType.visual.icon.size || 20
@@ -164,7 +164,7 @@ const NodeTypeList: React.FC<NodeTypeListProps> = ({
     );
   };
 
-  const renderNodeTypeGroup = (nodeTypes: UnifiedFrameJSON[], groupName: string) => {
+  const renderNodeTypeGroup = (nodeTypes: FrameJSON[], groupName: string) => {
     if (nodeTypes.length === 0) {
       return (
         <div className="p-4 text-center text-muted-foreground text-sm">

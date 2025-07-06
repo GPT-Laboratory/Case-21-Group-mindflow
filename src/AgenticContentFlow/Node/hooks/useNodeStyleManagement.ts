@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { UnifiedStyleManager } from '../factory/utils/UnifiedStyleManager';
-import { UnifiedFrameJSON } from '../factory/types/UnifiedFrameJSON';
+import { FrameJSON } from '../factory/types/FrameJSON';
 
 interface UseNodeStyleManagementProps {
-  config: UnifiedFrameJSON;
+  config: FrameJSON;
   data: any;
   selected: boolean;
   expanded: boolean;

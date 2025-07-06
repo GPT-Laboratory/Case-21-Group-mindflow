@@ -1,19 +1,19 @@
 import { useMemo } from 'react';
-import { useUnifiedNodeTypeStore } from '../../store/useUnifiedNodeTypeStore';
-import { UnifiedFrameJSON } from '../../factory/types/UnifiedFrameJSON';
+import { useUnifiedNodeTypeStore } from '../../store/useNodeTypeStore';
+import { FrameJSON } from '../../factory/types/FrameJSON';
 
 interface UseNodeTypeDataReturn {
-  nodeTypes: UnifiedFrameJSON[];
-  getNodeTypeConfig: (nodeType: string) => UnifiedFrameJSON | undefined;
+  nodeTypes: FrameJSON[];
+  getNodeTypeConfig: (nodeType: string) => FrameJSON | undefined;
 }
 
 export const useNodeTypeData = (): UseNodeTypeDataReturn => {
   const { getAllNodeTypes } = useUnifiedNodeTypeStore();
   const nodeTypeMap = getAllNodeTypes();
 
-  // Convert node type map to array of UnifiedFrameJSON objects
+  // Convert node type map to array of FrameJSON objects
   const nodeTypes = useMemo(() => {
-    const types: UnifiedFrameJSON[] = [];
+    const types: FrameJSON[] = [];
     nodeTypeMap.forEach((config) => {
       types.push(config);
     });
@@ -21,7 +21,7 @@ export const useNodeTypeData = (): UseNodeTypeDataReturn => {
   }, [nodeTypeMap]);
 
   const getNodeTypeConfig = useMemo(() => {
-    return (nodeType: string): UnifiedFrameJSON | undefined => {
+    return (nodeType: string): FrameJSON | undefined => {
       return nodeTypeMap.get(nodeType);
     };
   }, [nodeTypeMap]);

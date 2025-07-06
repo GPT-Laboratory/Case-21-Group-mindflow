@@ -1,11 +1,11 @@
 import React from 'react';
-import { UnifiedFrameJSON } from '../../factory/types/UnifiedFrameJSON';
+import { FrameJSON } from '../../factory/types/FrameJSON';
 import { IconResolver } from '../../factory/IconResolver';
 
 interface NodePlacementOverlayProps {
   isVisible: boolean;
   mousePosition: { x: number; y: number };
-  nodeType: UnifiedFrameJSON;
+  nodeType: FrameJSON;
 }
 
 const NodePlacementOverlay: React.FC<NodePlacementOverlayProps> = ({

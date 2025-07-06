@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import { Node } from "@xyflow/react";
 // Assuming these imports are available in your project
-import { childNodesData, parentNodesData } from "../../test/default/nodesData"; // Adjust path as needed
 import { getOrganizedNodeParents } from "./utils/getOrganizedNodeParents"; // Adjust path as needed
 import { rebuildMapState } from "./utils/rebuildMapState";
 import { NodeData } from "../../types";
@@ -34,8 +33,8 @@ export interface NodeStoreState {
 
 
 // Initial state based on your existing setup
-const initialParentNodes = parentNodesData; // Load default data
-const initialChildNodes = childNodesData; // Load default data
+const initialParentNodes: Node<any>[] = [];
+const initialChildNodes: Node<any>[] = [];
 const defaultInitialNodes = [...initialParentNodes, ...initialChildNodes];
 const defaultInitialStateMaps = rebuildMapState(defaultInitialNodes);
 

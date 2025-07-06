@@ -59,10 +59,20 @@ const updateRegistry = () => {
   });
 
   const store = useNodeTypeRegistryStore.getState();
-  store.setNodeTypes(types);
-  store.incrementVersion();
-
-  console.log(`🔄 Registry updated with ${Object.keys(types).length} node types:`, Object.keys(types));
+  const currentTypes = store.nodeTypes;
+  
+  // Only update if the types have actually changed
+  const currentKeys = Object.keys(currentTypes);
+  const newKeys = Object.keys(types);
+  
+  if (currentKeys.length !== newKeys.length || 
+      !currentKeys.every(key => types[key] === currentTypes[key])) {
+    store.setNodeTypes(types);
+    store.incrementVersion();
+    console.log(`🔄 Registry updated with ${newKeys.length} node types:`, newKeys);
+  } else {
+    console.log(`⏭️ Registry unchanged, skipping update`);
+  }
 };
 
 // Force immediate registry update (for critical nodes like factory nodes)
@@ -196,9 +206,6 @@ export function useNodeTypeRegistry() {
     }))
   );
 
-  // Keep a stable reference to nodeTypes
-  const cachedTypes = useMemo(() => nodeTypes, [nodeTypes]);
-
   // Use initialization ref to ensure we only initialize once
   const initialized = useRef(false);
 
@@ -206,21 +213,21 @@ export function useNodeTypeRegistry() {
   useEffect(() => {
     if (
       !initialized.current &&
-      Object.keys(cachedTypes).length === 0 &&
+      Object.keys(nodeTypes).length === 0 &&
       nodeTypeRegistry.size > 0
     ) {
       initialized.current = true;
       updateRegistry();
     }
-  }, [cachedTypes]);
+  }, [nodeTypes]);
 
-  // Return stable reference
+  // Return stable reference - only recreate when version changes
   return useMemo(
     () => ({
-      nodeTypes: cachedTypes,
+      nodeTypes,
       version,
     }),
-    [cachedTypes, version]
+    [version] // Only depend on version, not nodeTypes object reference
   );
 }
 

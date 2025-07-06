@@ -1,11 +1,11 @@
 import { useCallback, useEffect } from 'react';
 import { useReactFlow, Node } from '@xyflow/react';
 import { UnifiedStyleManager } from '../factory/utils/UnifiedStyleManager';
-import { UnifiedFrameJSON } from '../factory/types/UnifiedFrameJSON';
+import { FrameJSON } from '../factory/types/FrameJSON';
 
 interface UseNodeColorSyncProps {
   id: string;
-  config: UnifiedFrameJSON;
+  config: FrameJSON;
   data: any;
   styleConfig: any;
 }

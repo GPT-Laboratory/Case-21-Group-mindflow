@@ -1,8 +1,8 @@
 /** @format */
 
 // Export unified store
-export { useUnifiedNodeTypeStore } from './useUnifiedNodeTypeStore';
-export type { UnifiedNodeTypeStore } from './useUnifiedNodeTypeStore';
+export { useUnifiedNodeTypeStore } from './useNodeTypeStore';
+export type { UnifiedNodeTypeStore } from './useNodeTypeStore';
 
 // Export unified store initializer
 export {
@@ -17,17 +17,14 @@ export {
   isUnifiedNodeTypeStoreInitialized,
   addCustomNodeType,
   removeNodeType
-} from './unifiedNodeTypeStoreInitializer';
+} from './NodeTypeStoreInitializer';
 
-// Export unified frames
-export { unifiedRestNodeFrame } from './frames/unifiedRestNodeFrame';
-export { unifiedDataNodeFrame } from './frames/unifiedDataNodeFrame';
 
 // Export unified factory
 export {
   UnifiedNodeFactory,
   createUnifiedNode,
   createCustomUnifiedNode
-} from '../factory//UnifiedNodeFactory';
+} from '../factory/NodeFactory';
 
 // Legacy exports for backward compatibility
