@@ -35,6 +35,7 @@ import GridControlsRegistration from "./Flow/controls/GridControlsRegistration";
 import UnifiedControlsPanel from "./Controls/registry/UnifiedControlsPanel";
 import { GenerationControl } from "./Generator/ui";
 import { ShortcutsRegistration } from "./ShortCuts/ShortcutControlRegistration";
+import { SaveFlowControlRegistration } from "./Controls/SaveFlowControlRegistration";
 import { ShortcutsDisplayPanel } from "./ShortCuts/ShortcutsDisplayPanel";
 import { ShortcutsProvider } from "@jalez/react-shortcuts-provider";
 
@@ -135,6 +136,7 @@ export function AgenticContentFlowContent() {
                         <CopyWorkflowControlsRegistration />
                         <APISetupControlsRegistration />
                         <ShortcutsRegistration />
+                        <SaveFlowControlRegistration />
                       </Flow>
                     </FlowContainer>
                   </div>

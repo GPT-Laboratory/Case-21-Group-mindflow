@@ -7,10 +7,10 @@ import NodeCreationControl from "../Node/controls/NodeCreationControl";
 import { 
   initializeUnifiedNodeTypeStore, 
   isUnifiedNodeTypeStoreInitialized 
-} from "../Node/store/unifiedNodeTypeStoreInitializer";
+} from "../Node/store/NodeTypeStoreInitializer";
 
 // Import unified node registration
-import { initializeUnifiedNodes } from "../Node/factory//UnifiedNodeRegistration";
+import { initializeUnifiedNodes } from "../Node/factory/NodeRegistration";
 
 // Track initialization state
 let registered = false;
@@ -22,9 +22,9 @@ export async function ensureNodeTypesRegistered(): Promise<void> {
   if (registered) return;
   registered = true;
 
-  // Step 1: Initialize the unified node type store with built-in templates
+  // Step 1: Initialize the unified node type store with API data
   try {
-    initializeUnifiedNodeTypeStore();
+    await initializeUnifiedNodeTypeStore();
     console.log("✅ Unified node type store initialized successfully");
   } catch (error) {
     console.error("❌ Failed to initialize unified node type store:", error);
