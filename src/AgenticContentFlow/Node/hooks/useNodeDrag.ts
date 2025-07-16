@@ -29,7 +29,7 @@ export const useNodeDrag = (
 
   // Handle drag start
   const onNodeDragStart = useCallback(
-    (event: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
+    (_: React.MouseEvent, __: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
       isDraggingRef.current = true;
       onDraggingStateChange?.(true);
       
@@ -151,7 +151,7 @@ export const useNodeDrag = (
    * Handle drag stop
    */
   const onNodeDragStop = useCallback(
-    (event: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
+    (_: React.MouseEvent, draggedNode: Node<NodeData>, draggedNodes: Node<NodeData>[]) => {
       isDraggingRef.current = false;
       onDraggingStateChange?.(false);
 
