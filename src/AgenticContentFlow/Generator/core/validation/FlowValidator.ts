@@ -185,7 +185,7 @@ export class FlowValidator {
         }
 
         // Check instanceCode for processing nodes
-        if (!node.data.instanceCode && node.type !== 'invisiblenode') {
+        if (!node.data.instanceCode && node.type !== 'flownode') {
           errors.push({
             type: 'missing_required_field',
             message: `Node ${node.id} missing required field: data.instanceCode`,
@@ -337,7 +337,7 @@ export class FlowValidator {
     });
 
     const isolatedNodes = nodes.filter(node => 
-      !connectedNodes.has(node.id) && node.type !== 'invisiblenode'
+      !connectedNodes.has(node.id) && node.type !== 'flownode'
     );
 
     if (isolatedNodes.length > 0) {
