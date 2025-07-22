@@ -3,7 +3,7 @@ import { Node, Edge } from '@xyflow/react';
 export const apiFlowNodesData: Node[] = [
   {
     id: 'invisible-lr-rest',
-    type: 'invisiblenode',
+    type: 'flownode',
     position: { x: 0, y: 0 },
     data: {
       label: 'LR Container',

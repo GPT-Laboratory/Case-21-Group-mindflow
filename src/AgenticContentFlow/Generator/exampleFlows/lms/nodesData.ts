@@ -4,7 +4,7 @@ import { Node } from "@xyflow/react";
 export const lmsParentNodesData: Array<Node> = [
   {
     id: 'container-course-lr-lms', // ID for the container
-    type: 'invisiblenode',
+    type: 'flownode',
     position: { x: 0, y: 0 }, // Initial position doesn't matter, layout will set it
     data: {
       label: 'LR Container',
@@ -97,7 +97,7 @@ export const lmsParentNodesData: Array<Node> = [
   },
   {
     id: 'container-instance-1-module-1-data-lr', // ID for the container
-    type: 'invisiblenode',
+    type: 'flownode',
     position: { x: 0, y: 0 }, // Initial position doesn't matter, layout will set it
     data: {
       label: 'LR Container',
@@ -114,7 +114,7 @@ export const lmsParentNodesData: Array<Node> = [
   },
   {
     id: 'container-instance-0-module-2-data-lr', // ID for the container
-    type: 'invisiblenode',
+    type: 'flownode',
     position: { x: 0, y: 0 }, // Initial position doesn't matter, layout will set it
     data: {
       label: 'LR Container',
