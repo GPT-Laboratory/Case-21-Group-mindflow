@@ -67,7 +67,7 @@ export const TypedHandle = forwardRef<HTMLDivElement, TypedHandleProps>(
     const [isHovered, setIsHovered] = useState(false);
     const handleRef = useRef<HTMLDivElement>(null);
     
-    // Use similar hover logic as InvisibleNode - track mouse position globally
+    // Use similar hover logic as Flownode - track mouse position globally
     useEffect(() => {
       const handleMouseMove = (e: MouseEvent) => {
         if (!handleRef.current) return;
