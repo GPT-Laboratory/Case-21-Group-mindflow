@@ -122,6 +122,15 @@ export interface UnifiedNodeInstanceData {
   depth?: number;
   isParent?: boolean;
   canContainChildren?: boolean;
+  childNodeIds?: string[];
+  
+  // Enhanced container functionality
+  scope?: {
+    level: number;
+    variables: string[];
+    parentScope?: any;
+    functionName?: string;
+  };
   
   // Layout data
   layoutDirection?: 'LR' | 'TB' | 'RL' | 'BT';
