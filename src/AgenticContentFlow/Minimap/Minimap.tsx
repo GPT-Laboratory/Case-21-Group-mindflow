@@ -77,7 +77,7 @@ const CustomMiniMap = () => {
   // Helper function to check if node should inherit parent's color
   const shouldInheritParentColor = useCallback((node: Node): boolean => {
     // Invisible nodes should inherit parent colors
-    if (node.type === 'invisiblenode') return true;
+    if (node.type === 'flownode') return true;
     
     // Get node config and check if it has transparent background
     const config = getNodeType(node.type || '');
@@ -101,9 +101,9 @@ const CustomMiniMap = () => {
   }, []);
 
   // Helper function to get appropriate color for root invisible nodes
-  const getRootInvisibleNodeColor = useCallback((node: Node): string => {
+  const getRootFlownodeColor = useCallback((node: Node): string => {
     // Root invisible nodes (no parent) should use white color
-    if (node.type === 'invisiblenode' && !node.parentId) {
+    if (node.type === 'flownode' && !node.parentId) {
       return '#ffffff'; // white
     }
     return '';
@@ -120,7 +120,7 @@ const CustomMiniMap = () => {
 
   const getNodeColor = useCallback((node: Node): string => {
     // Check for root invisible node color first
-    const rootColor = getRootInvisibleNodeColor(node);
+    const rootColor = getRootFlownodeColor(node);
     if (rootColor) return rootColor;
     
     // If node should inherit parent color, check for parent color first
@@ -148,7 +148,7 @@ const CustomMiniMap = () => {
     
     // Fallback to default colors
     return node.selected ? 'var(--color-primary-foreground)' : 'var(--color-card)';
-  }, [getParentNodeColor, shouldInheritParentColor, getRootInvisibleNodeColor]);
+  }, [getParentNodeColor, shouldInheritParentColor, getRootFlownodeColor]);
   
   const miniMapComponent = useMemo(
     () =>

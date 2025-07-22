@@ -59,7 +59,7 @@
       "nodes": [
         {
           "id": "container-course-lr-lms",
-          "type": "invisiblenode",
+          "type": "flownode",
           "position": {
             "x": 0,
             "y": 0
@@ -168,7 +168,7 @@
         },
         {
           "id": "container-instance-1-module-1-data-lr",
-          "type": "invisiblenode",
+          "type": "flownode",
           "position": {
             "x": 0,
             "y": 0
@@ -186,7 +186,7 @@
         },
         {
           "id": "container-instance-0-module-2-data-lr",
-          "type": "invisiblenode",
+          "type": "flownode",
           "position": {
             "x": 0,
             "y": 0
@@ -522,7 +522,7 @@
       "nodes": [
         {
           "id": "invisible-lr-rest",
-          "type": "invisiblenode",
+          "type": "flownode",
           "position": {
             "x": 0,
             "y": 0

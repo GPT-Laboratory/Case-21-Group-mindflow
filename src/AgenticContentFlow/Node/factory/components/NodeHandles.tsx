@@ -15,7 +15,7 @@ interface ConnectionHandlesProps {
 
 const ConnectionHandles = ({ nodeType, color }: ConnectionHandlesProps) => {
     // List of node types that are intentionally designed without handles
-    const noHandleNodeTypes = ['invisiblenode'];
+    const noHandleNodeTypes = ['flownode'];
     
     // If this is a node type that shouldn't have handles, render nothing silently
     if (noHandleNodeTypes.includes(nodeType)) {

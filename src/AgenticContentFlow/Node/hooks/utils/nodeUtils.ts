@@ -107,7 +107,7 @@ export const handleContainerization = (
 
     if (!isHorizontalConnection(edge.sourceHandle, edge.targetHandle)) {
         const parentNode = nodeMap.get(fromNode.parentId || "");
-        if (parentNode && parentNode.type !== 'invisiblenode') {
+        if (parentNode && parentNode.type !== 'flownode') {
             updatedToNode = {
                 ...toNode,
                 parentId: fromNode.parentId,
@@ -124,9 +124,9 @@ export const handleContainerization = (
         return { updatedToNode, updatedFromNode, containerToAdd: null, containerToRemove: undefined, updatedToNodeSiblings: [] };
     }
 
-    //First, check if the toNode has a parent of type "invisiblenode"
-    const toNodeParent = getNodeParentIfType(toNode?.id || "", nodeMap, "invisiblenode");
-    const fromNodeParent = getNodeParentIfType(fromNode.id, nodeMap, "invisiblenode");
+    //First, check if the toNode has a parent of type "flownode"
+    const toNodeParent = getNodeParentIfType(toNode?.id || "", nodeMap, "flownode");
+    const fromNodeParent = getNodeParentIfType(fromNode.id, nodeMap, "flownode");
 
     if (toNodeParent && fromNodeParent) {
         const childrenSet = nodeParentIdMapWithChildIdSet.get(toNodeParent.id);
@@ -162,7 +162,7 @@ export const handleContainerization = (
     // Otherwise, create a new LR container for both nodes
     else {
         const containerPosition = calculateInitialContainerNodePosition([fromNode, toNode]);
-        containerToAdd = createNodeFromTemplate("invisiblenode", {
+        containerToAdd = createNodeFromTemplate("flownode", {
             id: generateUniqueId("invisible"),
             position: containerPosition,
             data: {}

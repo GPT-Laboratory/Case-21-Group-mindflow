@@ -8,7 +8,7 @@ import { generateUniqueId } from "./nodeUtils";
 interface ProcessedGraphData {
   nodes: Node<NodeData>[];
   edges: Edge[];
-  newInvisibleNodes: Node<NodeData>[];
+  newFlownodes: Node<NodeData>[];
 }
 
 /**
@@ -20,7 +20,7 @@ export const processInitialGraphData = (
 ): ProcessedGraphData => {
   const processedNodes = [...initialNodes];
   const processedEdges = [...initialEdges];
-  const newInvisibleNodes: Node<NodeData>[] = [];
+  const newFlownodes: Node<NodeData>[] = [];
   const nodeMap = new Map(initialNodes.map(node => [node.id, node]));
   
   // Group horizontal edges by their connected nodes
@@ -81,7 +81,7 @@ export const processInitialGraphData = (
     // If all nodes have the same parent and it's an LR invisible node, skip
     if (uniqueParents.length === 1 && uniqueParents[0]) {
       const commonParent = nodeMap.get(uniqueParents[0]);
-      if (commonParent?.type === 'invisiblenode' && commonParent.data.layoutDirection === 'LR') {
+      if (commonParent?.type === 'flownode' && commonParent.data.layoutDirection === 'LR') {
         return;
       }
     }
@@ -91,7 +91,7 @@ export const processInitialGraphData = (
     
     // Create invisible container
     const containerId = generateUniqueId("container-lr-auto");
-    const invisibleContainer = createNodeFromTemplate('invisiblenode', {
+    const invisibleContainer = createNodeFromTemplate('flownode', {
       id: containerId,
       position: containerPosition,
       eventNode: groupNodes[0],
@@ -112,7 +112,7 @@ export const processInitialGraphData = (
       invisibleContainer.extent = "parent" as const;
     }
 
-    newInvisibleNodes.push(invisibleContainer as Node<NodeData>);
+    newFlownodes.push(invisibleContainer as Node<NodeData>);
     nodeMap.set(containerId, invisibleContainer as Node<NodeData>);
 
     // Update all nodes in the group to be children of the container
@@ -130,9 +130,9 @@ export const processInitialGraphData = (
   });
 
   return {
-    nodes: [...processedNodes, ...newInvisibleNodes],
+    nodes: [...processedNodes, ...newFlownodes],
     edges: processedEdges,
-    newInvisibleNodes
+    newFlownodes
   };
 };
 
@@ -254,7 +254,7 @@ const findLRInvisibleParentInChain = (
     const parent = nodeMap.get(currentNode.parentId);
     if (!parent) break;
     
-    if (parent.type === 'invisiblenode' && parent.data.layoutDirection === 'LR') {
+    if (parent.type === 'flownode' && parent.data.layoutDirection === 'LR') {
       return parent.id;
     }
     
