@@ -12,6 +12,8 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@babel/standalone": "^7.28.1",
+    "@babel/types": "^7.28.1",
     "@hookform/resolvers": "^5.0.1",
     "@jalez/react-flow-automated-layout": "^1.2.3",
     "@jalez/react-flow-smart-edge": "file:../react-flow-smart-edge",
