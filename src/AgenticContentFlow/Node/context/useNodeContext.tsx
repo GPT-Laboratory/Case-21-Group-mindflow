@@ -17,6 +17,14 @@ import { normalizeNodeExpandedState } from "./utils/normalizeNodeExpandedState";
 import { NodeAction, nodeReducer } from "./reducer/nodeReducer";
 // Import useNodeHistoryState to use in NodeProvider
 import { useNodeHistoryStateImpl } from "../hooks/useNodeState";
+// Import enhanced container functionality
+import { 
+  EnhancedContainerNode, 
+  ChildNodeManager, 
+  ScopeContext,
+  EnhancedNodeData 
+} from "../interfaces/ContainerNodeInterfaces";
+import { childNodeManager } from "../services/ChildNodeManager";
 
 
 // 1. Define the State Interface (same as Zustand)
@@ -81,6 +89,17 @@ interface NodeContextType {
   onNodeDragStop: (event: any, node: Node<NodeData>, draggedNodes: Node<NodeData>[]) => void;
   isDragging: boolean;
   localNodes: Node<any>[];
+  
+  // Enhanced container functionality
+  childNodeManager: ChildNodeManager;
+  addChildNode: (parentId: string, childNode: EnhancedContainerNode) => void;
+  removeChildNode: (parentId: string, childNodeId: string) => void;
+  getChildNodes: (parentId: string) => EnhancedContainerNode[];
+  getParentNode: (childNodeId: string) => EnhancedContainerNode | undefined;
+  canNodeContainChildren: (nodeId: string) => boolean;
+  enableContainerFunctionality: (nodeId: string) => void;
+  disableContainerFunctionality: (nodeId: string) => void;
+  updateNodeScope: (nodeId: string, scope: ScopeContext) => void;
 }
 
 const NodeContext = createContext<NodeContextType | undefined>(undefined);
