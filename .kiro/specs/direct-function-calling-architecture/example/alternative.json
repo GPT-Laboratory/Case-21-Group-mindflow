@@ -1,0 +1,119 @@
+[
+    {
+      "id": "1",
+      "name": "StringStats Flow",
+      "description": "Provides string statistics utilities with logging",
+      "lastModified": "2025-07-17",
+      "nodes": [
+        {
+          "id": "container",
+          "type": "flownode",
+          "data": {
+            "label": "StringStats Module",
+            "isContainer": true,
+            "layoutDirection": "TB",
+            "variables": {
+              "defaultDelimiter": " ' ' "
+            }
+          },
+          "position": { "x": 0, "y": 0 },
+          "style": { "width": 250, "height": 300 }
+        },
+        {
+          "id": "sanitizeString",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 120 },
+          "data": {
+            "label": "sanitizeString",
+            "description": "Removes punctuation and converts a string to lowercase",
+            "code": "function sanitizeString(str) { const result = str.replace(/[^\\w\\s]|_/g, '').toLowerCase().trim(); log('sanitizeString', { input: str, output: result }); return result; }"
+          }
+        },
+        {
+          "id": "countWords",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 190 },
+          "data": {
+            "label": "countWords",
+            "description": "Counts the number of words in a string",
+            "code": "function countWords(str, delimiter = defaultDelimiter) { const sanitized = sanitizeString(str); const count = sanitized ? sanitized.split(delimiter).length : 0; log('countWords', { input: str, count }); return count; }"
+          }
+        },
+        {
+          "id": "sumWordLengths",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 260 },
+          "data": {
+            "label": "sumWordLengths",
+            "description": "Sums the lengths of all words in a string",
+            "code": "function sumWordLengths(str, delimiter = defaultDelimiter) { const sanitized = sanitizeString(str); const words = sanitized ? sanitized.split(delimiter) : []; const totalLength = words.reduce((sum, word) => sum + word.length, 0); log('sumWordLengths', { input: str, totalLength }); return totalLength; }"
+          }
+        },
+        {
+          "id": "averageWordLength",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 330 },
+          "data": {
+            "label": "averageWordLength",
+            "description": "Calculates the average word length in a string",
+            "code": "function averageWordLength(str, delimiter = defaultDelimiter) { const totalWords = countWords(str, delimiter); if (!totalWords) { log('averageWordLength', { input: str, average: 0 }); return 0; } const totalLength = sumWordLengths(str, delimiter); const avg = totalLength / totalWords; log('averageWordLength', { input: str, average: avg }); return avg; }"
+          }
+        },
+        {
+          "id": "logger",
+          "type": "childnode",
+          "parentId": "sanitizeString",
+          "position": { "x": 300, "y": 120 },
+          "data": {
+            "label": "log",
+            "description": "External logging function from logger.js",
+            "ref": { "flowId": "2", "nodeId": "log" }
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "countWords", "target": "sanitizeString" },
+        { "id": "e2", "source": "sumWordLengths", "target": "sanitizeString" },
+        { "id": "e3", "source": "averageWordLength", "target": "countWords" },
+        { "id": "e4", "source": "averageWordLength", "target": "sumWordLengths" },
+        { "id": "e5", "source": "sanitizeString", "target": "logger" },
+        { "id": "e6", "source": "countWords", "target": "logger" },
+        { "id": "e7", "source": "sumWordLengths", "target": "logger" },
+        { "id": "e8", "source": "averageWordLength", "target": "logger" }
+      ],
+      "type": "module"
+    },
+    {
+      "id": "2",
+      "name": "Logger Flow",
+      "description": "Provides logging utilities",
+      "lastModified": "2025-07-17",
+      "nodes": [
+        {
+          "id": "container",
+          "type": "flownode",
+          "data": { "label": "Logger Module", "isContainer": true, "layoutDirection": "TB" },
+          "position": { "x": 0, "y": 0 },
+          "style": { "width": 200, "height": 150 }
+        },
+        {
+          "id": "log",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 100, "y": 80 },
+          "data": {
+            "label": "log",
+            "description": "Logs operation name and payload",
+            "code": "function log(operation, data) { console.log(`[${operation}]`, JSON.stringify(data)); }"
+          }
+        }
+      ],
+      "edges": [],
+      "type": "module"
+    }
+  ]
+  

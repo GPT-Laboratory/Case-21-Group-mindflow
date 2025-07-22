@@ -1,0 +1,131 @@
+[
+    {
+      "id": "1",
+      "name": "StringStats Flow",
+      "description": "Provides string statistics utilities with logging",
+      "lastModified": "2025-07-17",
+      "nodes": [
+        {
+          "id": "container",
+          "type": "flownode",
+          "data": {
+            "label": "StringStats Module",
+            "fileName": "stringStatsStandard.js",
+            "isContainer": true,
+            "layoutDirection": "TB",
+            "variables": {
+              "defaultDelimiter": " ' ' "
+            }
+          },
+          "position": { "x": 0, "y": 0 },
+          "style": { "width": 250, "height": 300 }
+        },
+        {
+          "id": "sanitizeString",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 120 },
+          "data": {
+            "label": "sanitizeString",
+            "description": "Removes punctuation and converts a string to lowercase",
+            "fileName": "stringStatsStandard.js",
+            "functionName": "sanitizeString"
+          }
+        },
+        {
+          "id": "countWords",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 190 },
+          "data": {
+            "label": "countWords",
+            "description": "Counts the number of words in a string",
+            "fileName": "stringStatsStandard.js",
+            "functionName": "countWords"
+          }
+        },
+        {
+          "id": "sumWordLengths",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 260 },
+          "data": {
+            "label": "sumWordLengths",
+            "description": "Sums the lengths of all words in a string",
+            "fileName": "stringStatsStandard.js",
+            "functionName": "sumWordLengths"
+          }
+        },
+        {
+          "id": "averageWordLength",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 150, "y": 330 },
+          "data": {
+            "label": "averageWordLength",
+            "description": "Calculates the average word length in a string",
+            "fileName": "stringStatsStandard.js",
+            "functionName": "averageWordLength"
+          }
+        },
+        {
+          "id": "logger",
+          "type": "childnode",
+          "parentId": "sanitizeString",
+          "position": { "x": 300, "y": 120 },
+          "data": {
+            "label": "log",
+            "description": "External logging function",
+            "fileName": "logger.js",
+            "functionName": "log"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "countWords", "target": "sanitizeString" },
+        { "id": "e2", "source": "sumWordLengths", "target": "sanitizeString" },
+        { "id": "e3", "source": "averageWordLength", "target": "countWords" },
+        { "id": "e4", "source": "averageWordLength", "target": "sumWordLengths" },
+        { "id": "e5", "source": "sanitizeString", "target": "logger" },
+        { "id": "e6", "source": "countWords", "target": "logger" },
+        { "id": "e7", "source": "sumWordLengths", "target": "logger" },
+        { "id": "e8", "source": "averageWordLength", "target": "logger" }
+      ],
+      "type": "module"
+    },
+    {
+      "id": "2",
+      "name": "Logger Flow",
+      "description": "Provides logging utilities",
+      "lastModified": "2025-07-17",
+      "nodes": [
+        {
+          "id": "container",
+          "type": "flownode",
+          "data": {
+            "label": "Logger Module",
+            "fileName": "logger.js",
+            "isContainer": true,
+            "layoutDirection": "TB"
+          },
+          "position": { "x": 0, "y": 0 },
+          "style": { "width": 200, "height": 150 }
+        },
+        {
+          "id": "log",
+          "type": "functionnode",
+          "parentId": "container",
+          "position": { "x": 100, "y": 80 },
+          "data": {
+            "label": "log",
+            "description": "Logs operation name and payload",
+            "fileName": "logger.js",
+            "functionName": "log"
+          }
+        }
+      ],
+      "edges": [],
+      "type": "module"
+    }
+  ]
+  
