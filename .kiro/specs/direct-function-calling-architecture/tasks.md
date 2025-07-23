@@ -7,22 +7,22 @@
   - Write unit tests for basic parsing functionality
   - _Requirements: 7.1, 7.2, 7.3_
 
-- [-] 2. Implement enhanced container node system
-  - [-] 2.1 Extend existing container functionality for all nodes
+- [x] 2. Implement enhanced container node system
+  - [x] 2.1 Extend existing container functionality for all nodes
     - Modify existing container node system to allow any node to contain child nodes
     - Add canContainChildren property and child node management methods
     - Create interfaces for parent-child node relationships
     - Write tests for container functionality extension
     - _Requirements: 1.1, 1.2_
 
-  - [ ] 2.2 Implement nested function representation
+  - [x] 2.2 Implement nested function representation
     - Create logic to detect nested functions in AST
     - Implement parent-child node creation for nested functions
     - Add proper scoping context for nested function nodes
     - Write tests for nested function visualization
     - _Requirements: 1.2, 1.4_
 
-  - [ ] 2.3 Implement external dependency visualization as child nodes
+  - [x] 2.3 Implement external dependency visualization as child nodes
     - Detect external function calls in AST parsing
     - Create child nodes for external function calls within calling function nodes
     - Implement external dependency tracking and display
