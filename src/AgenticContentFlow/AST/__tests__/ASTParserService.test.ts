@@ -313,6 +313,112 @@ function second() {
     });
   });
 
+  describe('external dependency processing', () => {
+    it('should process external dependencies for a function', () => {
+      const code = `
+        function testFunction() {
+          console.log('Hello, world!');
+          setTimeout(() => {}, 1000);
+        }
+      `;
+
+      const result = parser.processExternalDependencies(code, 'test-parent');
+
+      expect(result.dependencies).toHaveLength(2);
+      expect(result.childNodes).toHaveLength(2);
+      expect(result.relationships).toHaveLength(2);
+
+      const consoleLogDep = result.dependencies.find(dep => dep.name === 'console.log');
+      expect(consoleLogDep).toBeDefined();
+      expect(consoleLogDep?.type).toBe('function_call');
+      expect(consoleLogDep?.isBuiltIn).toBe(true);
+
+      const consoleLogNode = result.childNodes.find(node => node.data.functionName === 'console.log');
+      expect(consoleLogNode).toBeDefined();
+      expect(consoleLogNode?.type).toBe('external-function');
+      expect(consoleLogNode?.parentId).toBe('test-parent');
+    });
+
+    it('should parse file with child nodes for external dependencies', () => {
+      const code = `
+        /**
+         * Main function
+         */
+        function mainFunction() {
+          console.log('Starting');
+          Math.random();
+        }
+
+        /**
+         * Helper function
+         */
+        function helperFunction() {
+          JSON.parse('{}');
+        }
+      `;
+
+      const result = parser.parseFileWithChildNodes(code);
+
+      expect(result.functions).toHaveLength(2);
+      expect(result.externalDependencyResults.size).toBe(2);
+
+      const mainFuncId = result.functions.find(f => f.name === 'mainFunction')?.id;
+      const helperFuncId = result.functions.find(f => f.name === 'helperFunction')?.id;
+
+      expect(mainFuncId).toBeDefined();
+      expect(helperFuncId).toBeDefined();
+
+      const mainDeps = result.externalDependencyResults.get(mainFuncId!);
+      const helperDeps = result.externalDependencyResults.get(helperFuncId!);
+
+      expect(mainDeps?.dependencies).toHaveLength(2);
+      expect(helperDeps?.dependencies).toHaveLength(1);
+
+      expect(mainDeps?.dependencies.some(dep => dep.name === 'console.log')).toBe(true);
+      expect(mainDeps?.dependencies.some(dep => dep.name === 'Math.random')).toBe(true);
+      expect(helperDeps?.dependencies.some(dep => dep.name === 'JSON.parse')).toBe(true);
+    });
+
+    it('should handle functions with no external dependencies', () => {
+      const code = `
+        function pureFunction(a, b) {
+          const result = a + b;
+          return result;
+        }
+      `;
+
+      const result = parser.processExternalDependencies(code, 'pure-parent');
+
+      expect(result.dependencies).toHaveLength(0);
+      expect(result.childNodes).toHaveLength(0);
+      expect(result.relationships).toHaveLength(0);
+    });
+
+    it('should create proper scope context for child nodes', () => {
+      const code = `
+        function parentFunction(param1, param2) {
+          console.log('test', param1);
+        }
+      `;
+
+      const parentScope = {
+        level: 0,
+        variables: ['param1', 'param2'],
+        functionName: 'parentFunction'
+      };
+
+      const result = parser.processExternalDependencies(code, 'parent-id', parentScope);
+
+      expect(result.childNodes).toHaveLength(1);
+      const childNode = result.childNodes[0];
+
+      expect(childNode.scope).toBeDefined();
+      expect(childNode.scope?.level).toBe(1);
+      expect(childNode.scope?.parentScope).toBe(parentScope);
+      expect(childNode.scope?.functionName).toBe('console.log');
+    });
+  });
+
   describe('error handling', () => {
     it('should throw error for invalid JavaScript', () => {
       const invalidCode = `
@@ -346,6 +452,16 @@ function second() {
 
       expect(result.functions).toHaveLength(0);
       expect(result.comments).toHaveLength(2);
+    });
+
+    it('should handle external dependency processing errors gracefully', () => {
+      const invalidCode = `
+        function invalid( {
+          console.log('test');
+        }
+      `;
+
+      expect(() => parser.processExternalDependencies(invalidCode, 'test-parent')).toThrow();
     });
   });
 });
