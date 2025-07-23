@@ -36,6 +36,9 @@ interface BaseNodeRendererProps {
   isHovered?: boolean;
   containerRef?: React.RefObject<HTMLDivElement>;
   onExpandToggle?: (state?: any) => void;
+  // Enhanced container props
+  childNodes?: any[];
+  canContainChildren?: boolean;
   // Process control props
   isLooping?: boolean;
   loopInterval?: number;
@@ -222,7 +225,46 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         <div style={{ flex: 1, padding: '1rem' }}>
           {customContent || (
             <div className="text-gray-500">
-              {/* Default content would go here */}
+              {/* Enhanced container content */}
+              {canContainChildren && childNodes && childNodes.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-gray-700">
+                    Child Nodes ({childNodes.length})
+                  </div>
+                  <div className="space-y-1">
+                    {childNodes.map((child, index) => (
+                      <div 
+                        key={child.id || index}
+                        className="p-2 bg-gray-50 rounded border text-xs"
+                      >
+                        <div className="font-medium">{child.data?.functionName || child.data?.label || 'Unnamed'}</div>
+                        {child.data?.functionDescription && (
+                          <div className="text-gray-600 mt-1">{child.data.functionDescription}</div>
+                        )}
+                        {child.scope && (
+                          <div className="text-gray-500 mt-1">
+                            Scope Level: {child.scope.level}
+                            {child.scope.variables && child.scope.variables.length > 0 && (
+                              <span className="ml-2">
+                                Variables: {child.scope.variables.join(', ')}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : canContainChildren ? (
+                <div className="text-center text-gray-400">
+                  <div className="text-sm">This container can hold child nodes</div>
+                  <div className="text-xs mt-1">Drop nodes here or use the AST parser to populate</div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-400">
+                  <div className="text-sm">Container content</div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -8,6 +8,8 @@ import { BaseNodeRenderer } from './NodeRenderer';
 import { getNodeType } from '../../store/NodeTypeStoreInitializer';
 import { useNodeProcess } from '../../../Process/useNodeProcess';
 import { useGenerator } from '../../../Generator/context/GeneratorContext';
+import { useNodeContext } from '../../context/useNodeContext';
+import { EnhancedContainerNode } from '../../interfaces/ContainerNodeInterfaces';
 
 interface UnifiedNodeWrapperProps extends NodeProps {
   customContent?: React.ReactNode;
@@ -250,6 +252,18 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
     }
   }, [config, data, completeProcess, setError, id, getEdges, getNode]);
 
+  // Get enhanced container functionality from node context
+  const {
+    getChildNodes,
+    getParentNode,
+    canNodeContainChildren,
+    enableContainerFunctionality,
+    disableContainerFunctionality,
+    addChildNode,
+    removeChildNode,
+    updateNodeScope
+  } = useNodeContext();
+
   // Use custom hook for common state logic
   const {
     nodeInFlow,
@@ -270,6 +284,28 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
     config,
     onMenuAction
   });
+
+  // Enhanced container functionality - check if this node can contain children
+  const canContainChildren = React.useMemo(() => {
+    return canNodeContainChildren(id) || config.group === 'container' || data?.canContainChildren === true;
+  }, [id, canNodeContainChildren, config.group, data?.canContainChildren]);
+
+  // Get child nodes for this container
+  const childNodes = React.useMemo(() => {
+    return canContainChildren ? getChildNodes(id) : [];
+  }, [id, canContainChildren, getChildNodes]);
+
+  // Get parent node if this is a child
+  const parentNode = React.useMemo(() => {
+    return getParentNode(id);
+  }, [id, getParentNode]);
+
+  // Enable container functionality if needed
+  React.useEffect(() => {
+    if (config.group === 'container' && !canNodeContainChildren(id)) {
+      enableContainerFunctionality(id);
+    }
+  }, [id, config.group, canNodeContainChildren, enableContainerFunctionality]);
 
   // Early return if node not found
   if (!nodeInFlow) {
@@ -411,6 +447,9 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
       isHovered={isHovered}
       containerRef={containerRef as React.RefObject<HTMLDivElement>}
       onExpandToggle={handleExpandToggle}
+      // Enhanced container props
+      childNodes={childNodes}
+      canContainChildren={canContainChildren}
       // Process control props - use process system values
       isLooping={isLooping}
       loopInterval={loopInterval}

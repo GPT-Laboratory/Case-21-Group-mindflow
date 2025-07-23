@@ -20,7 +20,7 @@ export interface ScopeContext {
  * Enhanced container node interface that extends the base Node
  * This allows any node to contain child nodes
  */
-export interface EnhancedContainerNode<T = any> extends Node<T> {
+export interface EnhancedContainerNode<T extends Record<string, unknown> = Record<string, unknown>> extends Node<T> {
   /** Array of child node IDs */
   childNodeIds?: string[];
   /** Parent node ID (already exists in React Flow Node) */
@@ -33,6 +33,8 @@ export interface EnhancedContainerNode<T = any> extends Node<T> {
   expanded?: boolean;
   /** Depth level in the hierarchy */
   depth?: number;
+  /** Container configuration for this node */
+  containerConfig?: ContainerNodeConfig;
 }
 
 /**

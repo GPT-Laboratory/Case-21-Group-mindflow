@@ -4,6 +4,7 @@ import { useNodeContext } from '../../context/useNodeContext';
 import { FrameJSON } from '../types/FrameJSON';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EnhancedContainerNode } from '../../interfaces/ContainerNodeInterfaces';
 
 interface ExpandCollapseState {
   expanded: boolean;
@@ -29,11 +30,20 @@ export const ExpandCollapseHandler: React.FC<ExpandCollapseHandlerProps> = ({
   node,
   onStateChange
 }) => {
-  const { nodeParentIdMapWithChildIdSet, nodeMap, updateNodes } = useNodeContext();
+  const { 
+    nodeParentIdMapWithChildIdSet, 
+    nodeMap, 
+    updateNodes,
+    getChildNodes,
+    canNodeContainChildren 
+  } = useNodeContext();
   
-  // Get child count for badge display
-  const childIdSet = nodeParentIdMapWithChildIdSet.get(node.id) || new Set();
-  const childCount = childIdSet.size;
+  // Get child count using enhanced container functionality
+  const enhancedChildNodes = getChildNodes(node.id);
+  const legacyChildIdSet = nodeParentIdMapWithChildIdSet.get(node.id) || new Set();
+  
+  // Use enhanced container child count if available, otherwise fall back to legacy
+  const childCount = enhancedChildNodes.length > 0 ? enhancedChildNodes.length : legacyChildIdSet.size;
   
   // Local state for expanded status - default to false for unified system
   const [expanded, setExpanded] = useState(Boolean(node.data?.expanded) || false);

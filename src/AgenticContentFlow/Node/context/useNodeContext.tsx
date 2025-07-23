@@ -219,10 +219,99 @@ export const NodeProvider: React.FC<NodeProviderProps> = ({ children }) => {
     }
   }, [state.nodes]); // Dependency array: save whenever the nodes array changes
 
+  // Initialize child node manager with current nodes
+  useEffect(() => {
+    const enhancedNodes = state.nodes.map(node => ({
+      ...node,
+      canContainChildren: node.data?.canContainChildren ?? false,
+      childNodeIds: node.data?.childNodeIds ?? [],
+      scope: node.data?.scope
+    })) as EnhancedContainerNode[];
+    
+    childNodeManager.initializeNodes(enhancedNodes);
+  }, [state.nodes]);
+
+  // Enhanced container functionality methods
+  const enhancedContainerMethods = useMemo(() => ({
+    addChildNode: (parentId: string, childNode: EnhancedContainerNode) => {
+      try {
+        childNodeManager.addChildNode(parentId, childNode);
+        
+        // Update the nodes in the context
+        const updatedNodes = childNodeManager.getAllNodes();
+        historyActions.setNodes(updatedNodes);
+      } catch (error) {
+        console.error('Error adding child node:', error);
+      }
+    },
+    
+    removeChildNode: (parentId: string, childNodeId: string) => {
+      try {
+        childNodeManager.removeChildNode(parentId, childNodeId);
+        
+        // Update the nodes in the context
+        const updatedNodes = childNodeManager.getAllNodes();
+        historyActions.setNodes(updatedNodes);
+      } catch (error) {
+        console.error('Error removing child node:', error);
+      }
+    },
+    
+    getChildNodes: (parentId: string): EnhancedContainerNode[] => {
+      return childNodeManager.getChildNodes(parentId);
+    },
+    
+    getParentNode: (childNodeId: string): EnhancedContainerNode | undefined => {
+      return childNodeManager.getParentNode(childNodeId);
+    },
+    
+    canNodeContainChildren: (nodeId: string): boolean => {
+      return childNodeManager.canNodeContainChildren(nodeId);
+    },
+    
+    enableContainerFunctionality: (nodeId: string) => {
+      try {
+        childNodeManager.enableContainerFunctionality(nodeId);
+        
+        // Update the specific node in the context
+        const updatedNode = childNodeManager.getNode(nodeId);
+        if (updatedNode) {
+          historyActions.updateNode(updatedNode);
+        }
+      } catch (error) {
+        console.error('Error enabling container functionality:', error);
+      }
+    },
+    
+    disableContainerFunctionality: (nodeId: string) => {
+      try {
+        childNodeManager.disableContainerFunctionality(nodeId);
+        
+        // Update the nodes in the context
+        const updatedNodes = childNodeManager.getAllNodes();
+        historyActions.setNodes(updatedNodes);
+      } catch (error) {
+        console.error('Error disabling container functionality:', error);
+      }
+    },
+    
+    updateNodeScope: (nodeId: string, scope: ScopeContext) => {
+      try {
+        childNodeManager.updateNodeScope(nodeId, scope);
+        
+        // Update the specific node in the context
+        const updatedNode = childNodeManager.getNode(nodeId);
+        if (updatedNode) {
+          historyActions.updateNode(updatedNode);
+        }
+      } catch (error) {
+        console.error('Error updating node scope:', error);
+      }
+    }
+  }), [historyActions]);
+
   // Create the context value with state and history-tracked actions
   const contextValue = useMemo(() => {
-
-
     return {
       // State properties from state
       nodes: state.nodes,
@@ -252,8 +341,11 @@ export const NodeProvider: React.FC<NodeProviderProps> = ({ children }) => {
       isDragging: historyActions.isDragging,
       localNodes: historyActions.localNodes,
       
+      // Enhanced container functionality
+      childNodeManager,
+      ...enhancedContainerMethods
     };
-  }, [state, dispatch, baseActions, historyActions]);
+  }, [state, dispatch, baseActions, historyActions, enhancedContainerMethods]);
 
   return (
     <NodeContext.Provider value={contextValue}>

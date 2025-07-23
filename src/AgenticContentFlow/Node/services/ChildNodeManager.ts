@@ -1,6 +1,5 @@
 /** @format */
 
-import { Node } from '@xyflow/react';
 import { 
   EnhancedContainerNode, 
   ChildNodeManager, 
@@ -68,7 +67,7 @@ export class ChildNodeManagerService implements ChildNodeManager {
       ...childNode,
       parentId: parentId,
       depth: (parent.depth || 0) + 1,
-      scope: this.createChildScope(parent.scope, childNode.data?.functionName)
+      scope: this.createChildScope(parent.scope, (childNode.data as any)?.functionName)
     };
 
     // Store updated nodes
@@ -244,6 +243,21 @@ export class ChildNodeManagerService implements ChildNodeManager {
   }
 
   /**
+   * Convert a regular node to an enhanced container node
+   */
+  convertToEnhancedNode(node: any): EnhancedContainerNode {
+    return {
+      ...node,
+      canContainChildren: node.canContainChildren ?? node.data?.canContainChildren ?? false,
+      childNodeIds: node.childNodeIds ?? node.data?.childNodeIds ?? [],
+      scope: node.scope ?? node.data?.scope,
+      expanded: node.expanded ?? node.data?.expanded ?? false,
+      depth: node.depth ?? node.data?.depth ?? 0,
+      containerConfig: node.containerConfig ?? node.data?.containerConfig
+    };
+  }
+
+  /**
    * Private method to add a relationship
    */
   private addRelationship(relationship: ParentChildRelationship): void {
@@ -280,7 +294,7 @@ export class ChildNodeManagerService implements ChildNodeManager {
     const childNodes = this.getChildNodes(parentId);
     
     childNodes.forEach(child => {
-      const childScope = this.createChildScope(parentScope, child.data?.functionName);
+      const childScope = this.createChildScope(parentScope, (child.data as any)?.functionName);
       this.updateNodeScope(child.id, childScope);
     });
   }
