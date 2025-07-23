@@ -1,0 +1,229 @@
+[
+    {
+        "id": "1",
+        "name": "String Statistics with Logging",
+        "description": "Provides functions to sanitize strings, compute statistics, and log each operation via an external logger.",
+        "lastModified": "2025-07-23",
+        "nodes": [
+            {
+                "id": "container",
+                "type": "flownode",
+                "data": {
+                    "label": "String Statistics with Logging",
+                    "description": "Provides functions to sanitize strings, compute statistics, and log each operation via an external logger.",
+                    "fileName": "stringStatsStandard.js",
+                    "isContainer": true,
+                    "layoutDirection": "TB"
+                },
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "style": {
+                    "width": 300,
+                    "height": 400
+                }
+            },
+            {
+                "id": "sanitizeString_0",
+                "type": "functionnode",
+                "parentId": "container",
+                "position": {
+                    "x": 150,
+                    "y": 80
+                },
+                "data": {
+                    "label": "sanitizeString",
+                    "description": "Removes punctuation and converts a string to lowercase",
+                    "functionName": "sanitizeString"
+                }
+            },
+            {
+                "id": "countWords_1",
+                "type": "functionnode",
+                "parentId": "container",
+                "position": {
+                    "x": 150,
+                    "y": 150
+                },
+                "data": {
+                    "label": "countWords",
+                    "description": "Counts the number of words in a string",
+                    "functionName": "countWords"
+                }
+            },
+            {
+                "id": "sumWordLengths_2",
+                "type": "functionnode",
+                "parentId": "container",
+                "position": {
+                    "x": 150,
+                    "y": 220
+                },
+                "data": {
+                    "label": "sumWordLengths",
+                    "description": "Sums the lengths of all words in a string",
+                    "functionName": "sumWordLengths"
+                }
+            },
+            {
+                "id": "averageWordLength_4",
+                "type": "functionnode",
+                "parentId": "container",
+                "position": {
+                    "x": 150,
+                    "y": 360
+                },
+                "data": {
+                    "label": "averageWordLength",
+                    "description": "Calculates the average word length in a string",
+                    "functionName": "averageWordLength"
+                }
+            },
+            {
+                "id": "log-external",
+                "type": "childnode",
+                "parentId": "sanitizeString_0",
+                "position": {
+                    "x": 300,
+                    "y": 80
+                },
+                "data": {
+                    "label": "log",
+                    "description": "External logging function",
+                    "functionName": "log",
+                    "dependencyType": "function_call"
+                }
+            }
+        ],
+        "edges": [
+            {
+                "id": "e1",
+                "source": "countWords_1",
+                "target": "sanitizeString_0"
+            },
+            {
+                "id": "e2",
+                "source": "sumWordLengths_2",
+                "target": "sanitizeString_0"
+            },
+            {
+                "id": "e3",
+                "source": "averageWordLength_4",
+                "target": "countWords_1"
+            },
+            {
+                "id": "e4",
+                "source": "averageWordLength_4",
+                "target": "sumWordLengths_2"
+            },
+            {
+                "id": "e5",
+                "source": "sanitizeString_0",
+                "target": "log-external"
+            },
+            {
+                "id": "e6",
+                "source": "countWords_1",
+                "target": "log-external"
+            },
+            {
+                "id": "e7",
+                "source": "sumWordLengths_2",
+                "target": "log-external"
+            },
+            {
+                "id": "e8",
+                "source": "averageWordLength_4",
+                "target": "log-external"
+            }
+        ],
+        "type": "module"
+    },
+    {
+        "id": "2",
+        "name": "Logger Utilities",
+        "description": "Provides a `log` function to record operation names and payloads, sending them to the console or an external monitoring service.",
+        "lastModified": "2025-07-23",
+        "nodes": [
+            {
+                "id": "container",
+                "type": "flownode",
+                "data": {
+                    "label": "Logger Utilities",
+                    "description": "Provides a `log` function to record operation names and payloads, sending them to the console or an external monitoring service.",
+                    "fileName": "logger.js",
+                    "isContainer": true,
+                    "layoutDirection": "TB"
+                },
+                "position": {
+                    "x": 0,
+                    "y": 0
+                },
+                "style": {
+                    "width": 300,
+                    "height": 400
+                }
+            },
+            {
+                "id": "log_0",
+                "type": "functionnode",
+                "parentId": "container",
+                "position": {
+                    "x": 150,
+                    "y": 80
+                },
+                "data": {
+                    "label": "log",
+                    "description": "Logs a given operation name and associated data",
+                    "functionName": "log"
+                }
+            },
+            {
+                "id": "console-log-external",
+                "type": "childnode",
+                "parentId": "log_0",
+                "position": {
+                    "x": 300,
+                    "y": 80
+                },
+                "data": {
+                    "label": "console.log",
+                    "description": "External console logging function",
+                    "functionName": "console.log",
+                    "dependencyType": "function_call",
+                    "isBuiltIn": true
+                }
+            },
+            {
+                "id": "json-stringify-external",
+                "type": "childnode",
+                "parentId": "log_0",
+                "position": {
+                    "x": 300,
+                    "y": 110
+                },
+                "data": {
+                    "label": "JSON.stringify",
+                    "description": "External JSON stringify function",
+                    "functionName": "JSON.stringify",
+                    "dependencyType": "function_call",
+                    "isBuiltIn": true
+                }
+            }
+        ],
+        "edges": [
+            {
+                "id": "e1",
+                "source": "log_0",
+                "target": "console-log-external"
+            },
+            {
+                "id": "e2",
+                "source": "log_0",
+                "target": "json-stringify-external"
+            }
+        ],
+        "type": "module"
+    }
+]
