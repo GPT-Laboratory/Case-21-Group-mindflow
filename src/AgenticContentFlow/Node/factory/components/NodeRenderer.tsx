@@ -86,6 +86,9 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
   isHovered = false,
   containerRef,
   onExpandToggle,
+  // Enhanced container props
+  childNodes,
+  canContainChildren = false,
   // Process control props
   isLooping = false,
   loopInterval = 5,
@@ -257,12 +260,9 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
                 </div>
               ) : canContainChildren ? (
                 <div className="text-center text-gray-400">
-                  <div className="text-sm">This container can hold child nodes</div>
-                  <div className="text-xs mt-1">Drop nodes here or use the AST parser to populate</div>
                 </div>
               ) : (
                 <div className="text-center text-gray-400">
-                  <div className="text-sm">Container content</div>
                 </div>
               )}
             </div>

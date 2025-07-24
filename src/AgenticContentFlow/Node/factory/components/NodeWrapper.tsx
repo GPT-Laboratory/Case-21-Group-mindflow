@@ -82,22 +82,22 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
 
   // Get React Flow functions for building node maps
   const { getEdges, getNode, setNodes } = useReactFlow();
-  
+
   // Force React Flow to update the node when instanceCode changes
   const updateNodeInternals = useUpdateNodeInternals();
-  
+
   // Force update when instanceCode changes
   React.useEffect(() => {
     if (data?.instanceCode) {
       console.log('🔄 [NodeWrapper] Force updating React Flow node internals for:', id);
       updateNodeInternals(id);
     }
-  }, [id, data?.instanceCode, updateNodeInternals]);
-  
+  }, [id, data?.instanceCode]);
+
   // Check if this node is being updated
   const { updatingNodes } = useGenerator();
   const isNodeUpdating = updatingNodes.has(id);
-  
+
   // Look up the config from the unified store using the type prop
   const config = type && typeof type === 'string' ? getNodeType(type) : null;
 
@@ -108,12 +108,12 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
   }
 
   // Use the process execution system for cell-like nodes
-  const { 
-    isProcessing: processIsProcessing, 
-    isCompleted: processIsCompleted, 
+  const {
+    isProcessing: processIsProcessing,
+    isCompleted: processIsCompleted,
     hasError: processHasError,
-    startProcess, 
-    completeProcess, 
+    startProcess,
+    completeProcess,
     setError,
     availableData,
     // Approval system
@@ -125,7 +125,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
     setPendingApproval,
     approveAndContinue,
     declineAndStop
-  } = useNodeProcess({ 
+  } = useNodeProcess({
     nodeId: id,
     autoStartOnData: true,
     enhancedCompleteProcess: true
@@ -149,14 +149,14 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
 
     try {
       console.log(`🔧 Unified node ${config.nodeType} (${id}) executing process...`);
-      
+
       // Build proper target and source maps using React Flow
       const edges = getEdges();
       const targetMap = new Map();
       const sourceMap = new Map();
       const edgeMap = new Map();
       const edgeMetadataMap = new Map();
-      
+
       // Build target map (outgoing edges)
       edges
         .filter(edge => edge.source === id)
@@ -170,7 +170,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
             }
           }
         });
-      
+
       // Build source map (incoming edges)
       edges
         .filter(edge => edge.target === id)
@@ -180,19 +180,19 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
             sourceMap.set(edge.source, sourceNode);
           }
         });
-      
+
       console.log(`🗺️ Built node maps for ${id}:`, {
         targets: targetMap.size,
         sources: sourceMap.size,
         targetIds: Array.from(targetMap.keys()),
         sourceIds: Array.from(sourceMap.keys())
       });
-      
+
       // Combine templateData and instanceData for the process function
       const templateData = data?.templateData || {};
       const instanceData = data?.instanceData || {};
       const templateDefaults = config.process?.parameters || {};
-      
+
       // Build the process node data by combining all sources
       const processNodeData: Record<string, any> = {
         ...templateDefaults,           // Start with template defaults
@@ -205,7 +205,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
         category: config.category,
         group: config.group
       };
-      
+
       console.log(`🔧 Process node data built:`, {
         templateDefaults: Object.keys(templateDefaults),
         templateData: Object.keys(templateData),
@@ -215,14 +215,14 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
         url: processNodeData.url,
         method: processNodeData.method
       });
-      
+
       // Execute the process function directly
       const processCode = data?.instanceCode || config.process?.templateCode || '';
       const processFunction = new Function(`
         'use strict';
         return (${processCode});
       `)();
-      
+
       console.log(`🔧 Process function inputs:`, {
         incomingData,
         nodeData: processNodeData,
@@ -230,7 +230,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
         targetMapSize: targetMap.size,
         sourceMapSize: sourceMap.size
       });
-      
+
       const result = await processFunction(
         incomingData, // Use the actual incoming data
         processNodeData, // Use the combined process node data
@@ -238,12 +238,12 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
         targetMap,
         sourceMap
       );
-      
+
       console.log(`🔧 Process function execution completed, result:`, result);
       console.log(`🔧 Result type:`, typeof result);
       console.log(`🔧 Result is undefined:`, result === undefined);
       console.log(`🔧 Result is null:`, result === null);
-      
+
       completeProcess(result);
     } catch (error) {
       console.error(`❌ Unified node ${config.nodeType} (${id}) process execution failed:`, error);
@@ -305,7 +305,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
     if (config.group === 'container' && !canNodeContainChildren(id)) {
       enableContainerFunctionality(id);
     }
-  }, [id, config.group, canNodeContainChildren, enableContainerFunctionality]);
+  }, [id, config.group]); // Removed unstable dependencies to prevent infinite loops
 
   // Early return if node not found
   if (!nodeInFlow) {
@@ -316,7 +316,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
   // Handle manual execution for cell-like nodes
   const handleManualExecution = React.useCallback(async () => {
     console.log('🚀 handleManualExecution called for node:', id, 'type:', config.nodeType);
-    
+
     if (!config.process?.templateCode && !data?.instanceCode) {
       console.warn(`Node ${id} does not have a process function`);
       return;
@@ -324,7 +324,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
 
     try {
       startProcess({ action: 'manual_execution', source: config.nodeType });
-      
+
       // Use the shared process execution function
       await executeProcessFunction({ action: 'manual_execution', source: config.nodeType });
     } catch (error) {
@@ -343,7 +343,7 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
   }, [setAutoApprove, processAutoApprove]);
 
   // Update style config with current state
-  const updatedStyleConfig = UnifiedStyleManager.generateStyleConfig(
+  const updatedStyleConfig = React.useMemo(() => UnifiedStyleManager.generateStyleConfig(
     config,
     data,
     {
@@ -353,41 +353,69 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
       hasError: processHasError,
       isCompleted: processIsCompleted
     }
-  );
+  ), [config, data, selected, expanded, processIsProcessing, isNodeUpdating, processHasError, processIsCompleted]);
 
   // Update processing styles with current state
-  const updatedProcessingStyles = UnifiedStyleManager.getProcessingStateStyles(
+  const updatedProcessingStyles = React.useMemo(() => UnifiedStyleManager.getProcessingStateStyles(
     updatedStyleConfig,
     isNodeUpdating ? 'processing' : processingState
-  );
+  ), [updatedStyleConfig, isNodeUpdating, processingState]);
 
-  // Update node data with current background color for minimap
+  // TEMPORARILY DISABLED: Node color updates to prevent infinite loops
+  // TODO: Re-enable once the root cause of infinite loops is identified
+  /*
+  const updateTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const lastUpdateColorRef = React.useRef<string>();
+  
   React.useEffect(() => {
     const currentColor = data?.nodeColor;
     const newColor = updatedStyleConfig.backgroundColor;
     
-    if (currentColor !== newColor) {
-      setNodes((nodes) =>
-        nodes.map((node) =>
-          node.id === id
-            ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  nodeColor: newColor
+    // Only proceed if color actually changed and we haven't just updated to this color
+    if (currentColor !== newColor && lastUpdateColorRef.current !== newColor) {
+      // Clear any pending update
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+      
+      // Debounce the update to prevent rapid successive calls
+      updateTimeoutRef.current = setTimeout(() => {
+        lastUpdateColorRef.current = newColor;
+        setNodes((nodes) =>
+          nodes.map((node) =>
+            node.id === id
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    nodeColor: newColor
+                  }
                 }
-              }
-            : node
-        )
-      );
+              : node
+          )
+        );
+      }, 50); // 50ms debounce
     }
-  }, [updatedStyleConfig.backgroundColor, data?.nodeColor, id, setNodes]);
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, [updatedStyleConfig.backgroundColor, data?.nodeColor, id]);
+  */
 
 
 
 
 
-  // Update node data with current process state for minimap border color
+  // TEMPORARILY DISABLED: Process state updates to prevent infinite loops
+  // TODO: Re-enable once the root cause of infinite loops is identified
+  /*
+  const processUpdateTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const lastUpdateProcessStateRef = React.useRef<string>();
+  
   React.useEffect(() => {
     const currentProcessState = data?.processState;
     let newProcessState: 'idle' | 'processing' | 'completed' | 'error' = 'idle';
@@ -400,22 +428,40 @@ export const UnifiedNodeWrapper: React.FC<UnifiedNodeWrapperProps> = ({
       newProcessState = 'error';
     }
     
-    if (currentProcessState !== newProcessState) {
-      setNodes((nodes) =>
-        nodes.map((node) =>
-          node.id === id
-            ? {
-                ...node,
-                data: {
-                  ...node.data,
-                  processState: newProcessState
+    // Only update if the state actually changed and we haven't just updated to this state
+    if (currentProcessState !== newProcessState && lastUpdateProcessStateRef.current !== newProcessState) {
+      // Clear any pending update
+      if (processUpdateTimeoutRef.current) {
+        clearTimeout(processUpdateTimeoutRef.current);
+      }
+      
+      // Debounce the update to prevent rapid successive calls
+      processUpdateTimeoutRef.current = setTimeout(() => {
+        lastUpdateProcessStateRef.current = newProcessState;
+        setNodes((nodes) =>
+          nodes.map((node) =>
+            node.id === id
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    processState: newProcessState
+                  }
                 }
-              }
-            : node
-        )
-      );
+              : node
+          )
+        );
+      }, 50); // 50ms debounce
     }
-  }, [processIsProcessing, processIsCompleted, processHasError, data?.processState, id, setNodes]);
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (processUpdateTimeoutRef.current) {
+        clearTimeout(processUpdateTimeoutRef.current);
+      }
+    };
+  }, [processIsProcessing, processIsCompleted, processHasError, data?.processState, id]);
+  */
 
   // Handle expand/collapse state change
   const handleExpandToggle = (newState: any) => {

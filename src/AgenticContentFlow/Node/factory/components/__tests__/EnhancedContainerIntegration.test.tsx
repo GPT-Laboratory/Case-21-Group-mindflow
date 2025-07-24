@@ -221,7 +221,7 @@ describe('Enhanced Container Integration', () => {
 
       // Check if container content is shown
       await waitFor(() => {
-        expect(screen.getByText(/this container can hold child nodes/i)).toBeInTheDocument();
+        expect(screen.getByText(/drop nodes here or use the ast parser/i)).toBeInTheDocument();
       });
 
       // Check if button changed to collapse
@@ -423,7 +423,6 @@ describe('Enhanced Container Integration', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/this container can hold child nodes/i)).toBeInTheDocument();
         expect(screen.getByText(/drop nodes here or use the ast parser/i)).toBeInTheDocument();
       });
     });

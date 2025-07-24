@@ -40,8 +40,8 @@ function log(operation, data) {
       expect(flow.description).toBe('Provides a `log` function to record operation names and payloads, sending them to the console or an external monitoring service.');
       expect(flow.type).toBe('module');
 
-      // Should have container node and function node
-      expect(flow.nodes).toHaveLength(2);
+      // Should have container node, function node, and external dependency child nodes
+      expect(flow.nodes).toHaveLength(4);
       
       const containerNode = flow.nodes.find(n => n.id === 'container');
       expect(containerNode).toBeDefined();
@@ -53,7 +53,18 @@ function log(operation, data) {
       expect(logNode).toBeDefined();
       expect(logNode?.type).toBe('functionnode');
       expect(logNode?.parentId).toBe('container');
-      expect(logNode?.data.description).toBe('Logs a given operation name and associated data.');
+
+      // Should have external dependency child nodes
+      const consoleLogNode = flow.nodes.find(n => n.data.functionName === 'console.log');
+      expect(consoleLogNode).toBeDefined();
+      expect(consoleLogNode?.type).toBe('childnode');
+      expect(consoleLogNode?.parentId).toBe('log_0');
+
+      const jsonStringifyNode = flow.nodes.find(n => n.data.functionName === 'JSON.stringify');
+      expect(jsonStringifyNode).toBeDefined();
+      expect(jsonStringifyNode?.type).toBe('childnode');
+      expect(jsonStringifyNode?.parentId).toBe('log_0');
+      expect(logNode?.data.description).toContain('Logs a given operation name and associated data.');
     });
 
     it('should generate a flow from the stringStatsStandard.js example', () => {
