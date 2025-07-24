@@ -221,3 +221,6 @@ npm test -- src/AgenticContentFlow/AST/services/__tests__/FlowGenerationDemo.tes
 ```
 
 This will demonstrate the complete workflow from JavaScript code to flow JSON generation, showing how the implemented tasks work together to achieve the project goals.
+
+dont function calls also mean data flow? I dont understand this separation. What I was thinking is that specific types of nodes, like a node whose type is logicnode (example, dont hardcode logicnode), is always connected from a specific handle to another logicnodes specific handle. Thats the best way I could explain handle specificity. 
+

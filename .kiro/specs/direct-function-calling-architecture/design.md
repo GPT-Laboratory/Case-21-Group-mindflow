@@ -60,6 +60,23 @@ The core innovation is that flows execute through direct function calls rather t
   - Prevent invalid connection attempts
   - Provide visual feedback for valid/invalid connection targets
 
+#### 7. Node Execution Control System
+- **Responsibility**: Control function execution on a per-node basis with permissions and state management
+- **Key Features**:
+  - Node activation/deactivation controls
+  - Permission-based execution filtering
+  - Execution mode switching (normal/visualization/blocked)
+  - Course sequencing without unwanted execution
+  - Clear feedback for blocked executions
+
+#### 8. Course Structure Support System
+- **Responsibility**: Enable course and content creation workflows within JavaScript files
+- **Key Features**:
+  - Function pattern recognition (courses, modules, utilities)
+  - Sequential relationship visualization
+  - Content generation function execution
+  - Visual distinction between sequencing and functional calls
+
 ## Components and Interfaces
 
 ### AST Parser Interface
@@ -109,6 +126,83 @@ interface DirectExecutionEngine {
   enableVisualization(enabled: boolean): void;
   pauseForVisualization(duration: number): Promise<void>;
 }
+```
+
+### Node Execution Control Interface
+```typescript
+interface NodeExecutionController {
+  setNodeActive(nodeId: string, isActive: boolean): void;
+  setNodePermissions(nodeId: string, permissions: NodePermissions): void;
+  setExecutionMode(nodeId: string, mode: ExecutionMode): void;
+  canExecuteNode(nodeId: string): ExecutionCheckResult;
+  interceptExecution(functionName: string, context: ExecutionContext): Promise<ExecutionDecision>;
+}
+
+interface NodePermissions {
+  canExecute: boolean;
+  requiredRoles: string[];
+  userId?: string;
+}
+
+interface ExecutionCheckResult {
+  canExecute: boolean;
+  reason?: string;
+  suggestedAction?: string;
+}
+
+interface ExecutionDecision {
+  shouldExecute: boolean;
+  shouldVisualize: boolean;
+  reason?: string;
+}
+
+type ExecutionMode = 'normal' | 'visualization' | 'blocked';
+```
+
+### Course Structure Interface
+```typescript
+interface CourseStructureManager {
+  identifyFunctionType(functionName: string): FunctionType;
+  validateCourseSequence(courseFlow: CourseNode[]): ValidationResult;
+  createCourseFlow(functions: FunctionMetadata[]): CourseFlow;
+  distinguishConnectionTypes(edge: Edge): ConnectionSemantics;
+}
+
+interface CourseFlow {
+  courses: CourseNode[];
+  modules: ModuleNode[];
+  utilities: UtilityNode[];
+  sequences: SequenceEdge[];
+  dependencies: DependencyEdge[];
+}
+
+interface CourseNode {
+  id: string;
+  name: string;
+  type: 'course';
+  prerequisites: string[];
+  modules: string[];
+  duration?: string;
+}
+
+interface ModuleNode {
+  id: string;
+  name: string;
+  type: 'module';
+  courseId: string;
+  utilities: string[];
+  order: number;
+}
+
+interface UtilityNode {
+  id: string;
+  name: string;
+  type: 'utility';
+  category: 'grading' | 'content-generation' | 'assessment' | 'other';
+}
+
+type FunctionType = 'course' | 'module' | 'utility' | 'unknown';
+type ConnectionSemantics = 'sequence' | 'dependency' | 'function-call';
 ```
 
 ## Data Models
@@ -282,4 +376,28 @@ interface ExecutionContext {
 - Reduces user errors in maintaining flow accuracy
 - Enables real-time visual feedback during code editing
 
-This design provides a foundation for transforming visual flows into direct code representations while maintaining the educational and visualization benefits of the existing system. The architecture prioritizes code fidelity and developer workflow integration while preserving the visual advantages that make complex code relationships more understandable.
+### 7. Node Execution Control with Permissions
+**Decision**: Implement per-node execution control with permission-based access and execution modes
+**Rationale**:
+- Enables course sequencing visualization without unwanted execution (course1 → course2 shows sequence but doesn't auto-execute course2)
+- Supports educational content creation where different users have different access levels
+- Allows "visualization only" mode for design and planning phases
+- Maintains code execution integrity while providing flexible control mechanisms
+
+### 8. Course Structure Support within JavaScript Files
+**Decision**: Support course and content creation workflows within standard JavaScript files using function naming patterns
+**Rationale**:
+- Keeps the system JavaScript-file-based while supporting course structure use cases
+- Enables real executable code for course content (generateMCQQuestions, gradeAssignments, etc.)
+- Allows visual distinction between sequential relationships (course1 → course2) and functional calls (course1 → createModule)
+- Provides flexibility to build both code representations and course structures in the same system
+
+### 9. Function Pattern Recognition for Course Elements
+**Decision**: Use function naming patterns to automatically identify course, module, and utility functions
+**Rationale**:
+- Enables automatic categorization without requiring special syntax or metadata
+- Maintains standard JavaScript while providing semantic meaning
+- Allows different validation rules for different function types
+- Supports mixed-purpose files with both course structure and utility functions
+
+This design provides a foundation for transforming visual flows into direct code representations while maintaining the educational and visualization benefits of the existing system. The architecture prioritizes code fidelity and developer workflow integration while preserving the visual advantages that make complex code relationships more understandable. The addition of execution control and course structure support enables the system to serve both traditional code visualization and educational content creation use cases.

@@ -125,3 +125,30 @@ This feature transforms the visual code generation platform to represent code fi
 3. WHEN function calls are removed THEN the system SHALL remove obsolete edges automatically
 4. WHEN node names change THEN the system SHALL update all references and function calls accordingly
 5. WHEN scope violations are detected THEN the system SHALL highlight the issues and suggest corrections
+
+### Requirement 11
+
+**User Story:** As a content creator, I want to control function execution on a per-node basis, so that I can create course structures and content flows without unwanted execution during design and visualization.
+
+#### Acceptance Criteria
+
+1. WHEN a node is marked as inactive THEN the system SHALL prevent its function from executing while maintaining visual flow representation
+2. WHEN a user lacks permissions for a specific node THEN the system SHALL block execution of that node's function
+3. WHEN execution mode is set to "visualization only" THEN the system SHALL show visual transitions without executing the actual function calls
+4. WHEN course functions call subsequent courses (e.g., course1() → course2()) THEN the system SHALL allow visual sequence representation without automatic execution of subsequent courses
+5. WHEN a node has execution guards enabled THEN the system SHALL check permissions and active status before allowing function execution
+6. WHEN execution is blocked THEN the system SHALL provide clear feedback about why the function was not executed
+7. WHEN switching between execution modes THEN the system SHALL maintain visual flow consistency while respecting execution controls
+
+### Requirement 12
+
+**User Story:** As a content creator, I want to build course structures and content generation systems using JavaScript functions, so that I can create educational content with proper sequencing and utility functions.
+
+#### Acceptance Criteria
+
+1. WHEN creating course structure files THEN the system SHALL support functions that represent courses, modules, and content utilities
+2. WHEN course functions call other course functions THEN the system SHALL represent sequential relationships visually while allowing execution control
+3. WHEN course functions call content utility functions (e.g., generateMCQQuestions, gradeAssignments) THEN the system SHALL represent these as functional dependencies with normal execution
+4. WHEN building course sequences THEN the system SHALL distinguish between sequential relationships (course1 → course2) and functional calls (course1 → createModule)
+5. WHEN content utility functions are called THEN the system SHALL execute them normally as they perform actual content generation work
+6. WHEN visualizing course structures THEN the system SHALL provide clear visual distinction between course sequencing and content creation functions
