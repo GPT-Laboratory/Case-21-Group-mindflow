@@ -66,37 +66,37 @@
     - Write tests for connection constraint enforcement
     - _Requirements: Design requirement for connection constraints_
 
-- [ ] 5. Create flow-code synchronization engine
-  - [ ] 5.1 Implement code-to-flow synchronization
+- [x] 5. Create flow-code synchronization engine
+  - [x] 5.1 Implement code-to-flow synchronization
     - Parse JavaScript files and create corresponding flow structures
     - Map functions to nodes and function calls to edges
     - Preserve metadata and comments in flow representation
     - Write tests for code-to-flow conversion
     - _Requirements: 4.1, 4.2, 5.1_
 
-  - [ ] 5.2 Implement flow-to-code synchronization
+  - [x] 5.2 Implement flow-to-code synchronization
     - Generate JavaScript code from flow modifications
     - Maintain code file as single source of truth
     - Implement real-time code updates from visual changes
     - Write tests for flow-to-code conversion
     - _Requirements: 5.2, 5.3_
 
-  - [ ] 5.3 Implement automatic code analysis and re-synchronization
+  - [x] 5.3 Implement automatic code analysis and re-synchronization
     - Monitor node code changes and re-analyze function calls
     - Update edges automatically when code is modified
     - Handle node name changes and reference updates
     - Write tests for automatic re-synchronization
     - _Requirements: 10.1, 10.2, 10.4_
 
-- [ ] 6. Implement direct execution engine
-  - [ ] 6.1 Create function call interception system
+- [x] 6. Implement direct execution engine
+  - [x] 6.1 Create function call interception system
     - Implement function call interception for visualization
     - Create execution context tracking for call stack management
     - Add error handling that preserves stack traces
     - Write tests for function call interception
     - _Requirements: 3.1, 3.5_
 
-  - [ ] 6.2 Implement node execution control and permissions
+  - [x] 6.2 Implement node execution control and permissions
     - Create node execution state management (active/inactive status)
     - Implement permission-based execution control per node/function
     - Add execution mode controls (normal/visualization/blocked)
@@ -105,34 +105,36 @@
     - Write tests for execution control and permission systems
     - _Requirements: User-defined execution control for course structures_
 
-  - [ ] 6.3 Implement process visualization with execution sequencing
+  - [x] 6.3 Implement process visualization with execution sequencing
     - Create visual transition system that pauses execution
     - Implement edge animation and node highlighting during calls
     - Add execution sequencing for nested function calls
     - Write tests for visualization timing and sequencing
     - _Requirements: 6.1, 6.2, 6.3, 6.5, 6.6_
 
-  - [ ] 6.4 Implement visualization completion and execution resumption
+  - [x] 6.4 Implement visualization completion and execution resumption
     - Resume function execution after visual transitions complete
     - Maintain proper call stack and execution context
     - Handle error propagation after visualization sequences
     - Write tests for execution resumption and error handling
     - _Requirements: 6.4, 6.7_
 
-- [ ] 7. Implement flow-level variables and configuration
-  - [ ] 7.1 Create flow variable management system
-    - Implement flow-level variable detection and configuration
-    - Create interfaces for flow variable management
-    - Add variable scoping and access control
-    - Write tests for flow variable functionality
-    - _Requirements: 8.1, 8.5_
+- [ ] 7. Implement configurable variables within functions and flow wrapper functions
+  - [x] 7.1 Create variable detection and configuration system
+    - Extend AST parsing to detect variable declarations within functions
+    - Create interfaces for making function variables configurable through visual interface
+    - Implement variable value modification that updates underlying code
+    - Add support for detecting and discouraging global variables
+    - Write tests for variable detection and configuration functionality
+    - _Requirements: 8.1, 8.3, 8.4, 8.5_
 
-  - [ ] 7.2 Implement flow-as-node functionality
-    - Enable flows to be used as nodes in other flows
-    - Expose flow variables as configurable parameters
-    - Implement flow nesting and variable inheritance
-    - Write tests for flow-as-node functionality
-    - _Requirements: 8.2, 8.3_
+  - [x] 7.2 Implement flow wrapper function support
+    - Detect wrapper functions that contain all other functions in a code file
+    - Treat wrapper functions as "flow nodes" with flow-level variable configuration
+    - Expose wrapper function variables as configurable parameters when flow is used as node
+    - Implement proper variable scoping following JavaScript scoping rules
+    - Write tests for flow wrapper function functionality
+    - _Requirements: 8.2, 8.6, 8.7_
 
 - [ ] 8. Create simplified visual representation system
   - [ ] 8.1 Implement clean node display with essential information

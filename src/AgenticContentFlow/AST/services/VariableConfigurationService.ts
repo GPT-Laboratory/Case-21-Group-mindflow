@@ -1,0 +1,624 @@
+/**
+ * Variable Configuration Service
+ * 
+ * This service extends the existing AST variable extraction to provide
+ * configurable variables within functions and flow wrapper functions.
+ * It detects variables declared inside functions and makes them configurable
+ * through the visual interface while maintaining pure functionality.
+ */
+
+import * as t from '@babel/types';
+import { BabelParser } from '../parsers/BabelParser';
+import { VariableDeclaration, FunctionMetadata, SourceLocation } from '../types/ASTTypes';
+
+export interface ConfigurableVariable extends VariableDeclaration {
+  /** Unique identifier for the variable */
+  id: string;
+  /** Function that contains this variable */
+  containingFunction: string;
+  /** Initial value extracted from code */
+  initialValue?: any;
+  /** Current configured value */
+  currentValue?: any;
+  /** Whether this variable can be configured through UI */
+  isConfigurable: boolean;
+  /** Whether this variable is in a wrapper function (flow-level) */
+  isFlowLevel: boolean;
+  /** Suggested type based on initial value */
+  suggestedType?: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  /** Line of code where variable is declared */
+  declarationCode: string;
+}
+
+export interface WrapperFunctionInfo {
+  /** Function metadata for the wrapper function */
+  functionInfo: FunctionMetadata;
+  /** Variables declared in the wrapper function */
+  variables: ConfigurableVariable[];
+  /** Whether this appears to be a flow wrapper function */
+  isFlowWrapper: boolean;
+  /** Confidence score that this is a wrapper function (0-1) */
+  wrapperConfidence: number;
+}
+
+export interface GlobalVariableWarning {
+  /** Variable that is declared globally */
+  variable: VariableDeclaration;
+  /** Suggested function to move it to */
+  suggestedFunction?: string;
+  /** Warning message */
+  message: string;
+  /** Severity of the warning */
+  severity: 'warning' | 'error';
+}
+
+export interface VariableConfigurationResult {
+  /** All configurable variables found */
+  configurableVariables: ConfigurableVariable[];
+  /** Wrapper function information if found */
+  wrapperFunction?: WrapperFunctionInfo;
+  /** Warnings about global variables */
+  globalVariableWarnings: GlobalVariableWarning[];
+  /** Flow-level variables (from wrapper function) */
+  flowLevelVariables: ConfigurableVariable[];
+  /** Function-level variables (from individual functions) */
+  functionLevelVariables: ConfigurableVariable[];
+}
+
+export class VariableConfigurationService {
+  private babelParser: BabelParser;
+
+  constructor(babelParser: BabelParser) {
+    this.babelParser = babelParser;
+  }
+
+  /**
+   * Analyze code for configurable variables and wrapper functions
+   */
+  public analyzeVariableConfiguration(
+    code: string,
+    functions: FunctionMetadata[]
+  ): VariableConfigurationResult {
+    try {
+      const ast = this.babelParser.parse(code);
+      
+      // Extract all variables with enhanced information
+      const allVariables = this.extractConfigurableVariables(ast, code, functions);
+      
+      // Identify wrapper function
+      const wrapperFunction = this.identifyWrapperFunction(functions, allVariables);
+      
+      // Check for global variables and create warnings
+      const globalVariableWarnings = this.analyzeGlobalVariables(allVariables, functions);
+      
+      // Categorize variables
+      const flowLevelVariables = allVariables.filter(v => v.isFlowLevel);
+      const functionLevelVariables = allVariables.filter(v => !v.isFlowLevel && v.scope === 'function');
+      
+      return {
+        configurableVariables: allVariables,
+        wrapperFunction,
+        globalVariableWarnings,
+        flowLevelVariables,
+        functionLevelVariables
+      };
+    } catch (error) {
+      console.error('Variable configuration analysis error:', error);
+      throw new Error(`Failed to analyze variable configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Update variable value in code
+   */
+  public updateVariableValue(
+    code: string,
+    variable: ConfigurableVariable,
+    newValue: any
+  ): string {
+    try {
+      const ast = this.babelParser.parse(code);
+      let updatedCode = code;
+      
+      // Find and update the variable declaration
+      const lines = code.split('\n');
+      const targetLine = variable.sourceLocation.start.line - 1; // Convert to 0-based
+      
+      if (targetLine >= 0 && targetLine < lines.length) {
+        const originalLine = lines[targetLine];
+        const updatedLine = this.replaceVariableValue(originalLine, variable.name, newValue);
+        lines[targetLine] = updatedLine;
+        updatedCode = lines.join('\n');
+      }
+      
+      // Update the variable's current value
+      variable.currentValue = newValue;
+      
+      return updatedCode;
+    } catch (error) {
+      console.error('Variable update error:', error);
+      throw new Error(`Failed to update variable ${variable.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get configurable parameters for a flow when used as a node
+   */
+  public getFlowParameters(wrapperFunction: WrapperFunctionInfo): ConfigurableVariable[] {
+    return wrapperFunction.variables.filter(v => v.isConfigurable);
+  }
+
+  /**
+   * Create a flow node configuration from wrapper function
+   */
+  public createFlowNodeConfiguration(wrapperFunction: WrapperFunctionInfo): {
+    nodeId: string;
+    title: string;
+    description: string;
+    parameters: ConfigurableVariable[];
+    isFlowNode: boolean;
+  } {
+    return {
+      nodeId: `flow_${wrapperFunction.functionInfo.id}`,
+      title: wrapperFunction.functionInfo.name,
+      description: wrapperFunction.functionInfo.description || `Flow wrapper function: ${wrapperFunction.functionInfo.name}`,
+      parameters: this.getFlowParameters(wrapperFunction),
+      isFlowNode: true
+    };
+  }
+
+  /**
+   * Validate variable scoping according to JavaScript rules
+   */
+  public validateVariableScoping(
+    variables: ConfigurableVariable[],
+    functions: FunctionMetadata[]
+  ): {
+    isValid: boolean;
+    violations: Array<{
+      variable: ConfigurableVariable;
+      violation: 'scope_leak' | 'undefined_reference' | 'shadowing';
+      message: string;
+    }>;
+  } {
+    const violations: Array<{
+      variable: ConfigurableVariable;
+      violation: 'scope_leak' | 'undefined_reference' | 'shadowing';
+      message: string;
+    }> = [];
+
+    // Check for scope violations
+    for (const variable of variables) {
+      // Check for variable shadowing
+      const shadowingVars = variables.filter(v => 
+        v.name === variable.name && 
+        v.id !== variable.id &&
+        this.isInNestedScope(v, variable, functions)
+      );
+
+      if (shadowingVars.length > 0) {
+        violations.push({
+          variable,
+          violation: 'shadowing',
+          message: `Variable '${variable.name}' shadows another variable in outer scope`
+        });
+      }
+    }
+
+    return {
+      isValid: violations.length === 0,
+      violations
+    };
+  }
+
+  /**
+   * Generate wrapper function code with configurable parameters
+   */
+  public generateWrapperFunctionCode(
+    originalFunction: FunctionMetadata,
+    configurableVariables: ConfigurableVariable[]
+  ): string {
+    const parameters = configurableVariables
+      .filter(v => v.isConfigurable)
+      .map(v => `${v.name} = ${this.formatValueForCode(v.currentValue || v.initialValue)}`)
+      .join(', ');
+
+    const functionBody = this.replaceVariableDeclarationsWithParameters(
+      originalFunction.code,
+      configurableVariables
+    );
+
+    return `function ${originalFunction.name}(${parameters}) {
+${functionBody}
+}`;
+  }
+
+  /**
+   * Extract configurable variables from AST
+   */
+  private extractConfigurableVariables(
+    ast: t.Node,
+    code: string,
+    functions: FunctionMetadata[]
+  ): ConfigurableVariable[] {
+    const variables: ConfigurableVariable[] = [];
+    const lines = code.split('\n');
+    
+    const traverse = (node: t.Node, currentFunction?: string) => {
+      if (t.isVariableDeclaration(node)) {
+        node.declarations.forEach(declarator => {
+          if (t.isIdentifier(declarator.id)) {
+            const sourceLocation = this.babelParser.getSourceLocation(node);
+            const lineIndex = sourceLocation.start.line - 1;
+            const declarationCode = lineIndex >= 0 && lineIndex < lines.length 
+              ? lines[lineIndex].trim() 
+              : '';
+            
+            const initialValue = this.extractInitialValue(declarator.init);
+            const suggestedType = this.inferType(initialValue);
+            
+            const variable: ConfigurableVariable = {
+              id: `${currentFunction || 'global'}_${declarator.id.name}_${sourceLocation.start.line}`,
+              name: declarator.id.name,
+              type: node.kind as 'var' | 'let' | 'const',
+              sourceLocation,
+              scope: currentFunction ? 'function' : 'global',
+              containingFunction: currentFunction || 'global',
+              initialValue,
+              currentValue: initialValue,
+              isConfigurable: this.isVariableConfigurable(declarator, currentFunction),
+              isFlowLevel: false, // Will be updated when wrapper function is identified
+              suggestedType,
+              declarationCode
+            };
+            
+            variables.push(variable);
+          }
+        });
+      }
+
+      // Track function context
+      let functionName = currentFunction;
+      if (t.isFunctionDeclaration(node) && node.id) {
+        functionName = node.id.name;
+      }
+
+      // Traverse child nodes
+      this.traverseChildren(node, (child) => traverse(child, functionName));
+    };
+
+    // Start traversal
+    if (ast && (ast as any).program && (ast as any).program.body) {
+      (ast as any).program.body.forEach((node: t.Node) => traverse(node));
+    }
+
+    return variables;
+  }
+
+  /**
+   * Identify wrapper function that contains all other functions
+   */
+  private identifyWrapperFunction(
+    functions: FunctionMetadata[],
+    variables: ConfigurableVariable[]
+  ): WrapperFunctionInfo | undefined {
+    // Look for a function that contains most other functions
+    let bestCandidate: FunctionMetadata | undefined;
+    let highestScore = 0;
+
+    for (const func of functions) {
+      const score = this.calculateWrapperScore(func, functions, variables);
+      if (score > highestScore && score > 0.6) { // Threshold for wrapper confidence
+        highestScore = score;
+        bestCandidate = func;
+      }
+    }
+
+    if (bestCandidate) {
+      const wrapperVariables = variables.filter(v => v.containingFunction === bestCandidate!.name);
+      
+      // Mark wrapper function variables as flow-level
+      wrapperVariables.forEach(v => {
+        v.isFlowLevel = true;
+      });
+
+      return {
+        functionInfo: bestCandidate,
+        variables: wrapperVariables,
+        isFlowWrapper: true,
+        wrapperConfidence: highestScore
+      };
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Calculate wrapper function score
+   */
+  private calculateWrapperScore(
+    candidate: FunctionMetadata,
+    allFunctions: FunctionMetadata[],
+    variables: ConfigurableVariable[]
+  ): number {
+    let score = 0;
+    
+    // Check if function name suggests it's a wrapper (main, init, setup, etc.)
+    const wrapperNames = ['main', 'init', 'setup', 'run', 'start', 'flow', 'wrapper', 'entry', 'execute'];
+    if (wrapperNames.some(name => candidate.name.toLowerCase().includes(name))) {
+      score += 0.4;
+    }
+    
+    // Check if it has variables (configuration potential)
+    const candidateVariables = variables.filter(v => v.containingFunction === candidate.name);
+    if (candidateVariables.length > 0) {
+      score += 0.2;
+    }
+    
+    // Check if it's not nested (top-level function)
+    if (!candidate.isNested) {
+      score += 0.1;
+    }
+    
+    // Check if it has a good description indicating it's an entry point
+    if (candidate.description) {
+      const description = candidate.description.toLowerCase();
+      const entryPointKeywords = ['entry', 'main', 'start', 'flow', 'orchestrat', 'coordinat', 'control'];
+      if (entryPointKeywords.some(keyword => description.includes(keyword))) {
+        score += 0.2;
+      } else if (candidate.description.length > 10) {
+        score += 0.1;
+      }
+    }
+    
+    // Penalty for being just one of many similar functions
+    if (allFunctions.length > 1) {
+      const utilityFunctions = allFunctions.filter(f => {
+        const name = f.name.toLowerCase();
+        return name.includes('helper') || 
+               name.includes('util') ||
+               name.includes('get') ||
+               name.includes('create') ||
+               name.includes('generate') ||
+               name.includes('process');
+      });
+      
+      if (utilityFunctions.length > 1 && utilityFunctions.includes(candidate)) {
+        score -= 0.3; // Reduce score for utility-like functions
+      }
+    }
+    
+    // Check position in file - wrapper functions are often at the end or beginning
+    const functionIndex = allFunctions.indexOf(candidate);
+    const isAtEnd = functionIndex === allFunctions.length - 1;
+    const isAtBeginning = functionIndex === 0;
+    
+    if (isAtEnd && allFunctions.length > 1) {
+      score += 0.15; // End position is common for main/wrapper functions
+    } else if (isAtBeginning && allFunctions.length > 1) {
+      score += 0.1; // Beginning position is also possible
+    }
+    
+    // Check if it contains calls to other functions (more likely to be a wrapper)
+    const otherFunctionNames = allFunctions.filter(f => f.name !== candidate.name).map(f => f.name);
+    const functionCallsCount = otherFunctionNames.filter(name => 
+      candidate.code.includes(`${name}(`)
+    ).length;
+    
+    if (functionCallsCount > 0) {
+      // More calls = higher wrapper likelihood
+      const callRatio = functionCallsCount / Math.max(otherFunctionNames.length, 1);
+      score += Math.min(callRatio * 0.3, 0.3);
+    }
+    
+    // Check for try-catch blocks (common in wrapper functions)
+    if (candidate.code.includes('try') && candidate.code.includes('catch')) {
+      score += 0.1;
+    }
+    
+    // Check for console.log statements indicating orchestration
+    const logStatements = (candidate.code.match(/console\.(log|info|warn|error)/g) || []).length;
+    if (logStatements > 0) {
+      score += Math.min(logStatements * 0.05, 0.1);
+    }
+    
+    // Check for return statements that return results from other functions
+    if (candidate.code.includes('return') && functionCallsCount > 0) {
+      score += 0.1;
+    }
+    
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * Analyze global variables and create warnings
+   */
+  private analyzeGlobalVariables(
+    variables: ConfigurableVariable[],
+    functions: FunctionMetadata[]
+  ): GlobalVariableWarning[] {
+    const warnings: GlobalVariableWarning[] = [];
+    
+    const globalVariables = variables.filter(v => v.scope === 'global');
+    
+    for (const globalVar of globalVariables) {
+      // Suggest moving to the most appropriate function
+      const suggestedFunction = this.suggestFunctionForGlobalVariable(globalVar, functions);
+      
+      warnings.push({
+        variable: globalVar,
+        suggestedFunction,
+        message: `Global variable '${globalVar.name}' should be moved inside a function for better configurability and pure functionality`,
+        severity: 'warning'
+      });
+    }
+    
+    return warnings;
+  }
+
+  /**
+   * Suggest which function a global variable should be moved to
+   */
+  private suggestFunctionForGlobalVariable(
+    globalVar: ConfigurableVariable,
+    functions: FunctionMetadata[]
+  ): string | undefined {
+    // Simple heuristic: suggest the first function or a main/wrapper function
+    const wrapperFunction = functions.find(f => 
+      ['main', 'init', 'setup', 'run', 'start'].some(name => 
+        f.name.toLowerCase().includes(name)
+      )
+    );
+    
+    return wrapperFunction?.name || functions[0]?.name;
+  }
+
+  /**
+   * Check if a variable should be configurable
+   */
+  private isVariableConfigurable(
+    declarator: t.VariableDeclarator,
+    functionName?: string
+  ): boolean {
+    // Variables with initial values are more likely to be configurable
+    if (!declarator.init) {
+      return false;
+    }
+    
+    // Simple literals are good candidates for configuration
+    if (t.isStringLiteral(declarator.init) || 
+        t.isNumericLiteral(declarator.init) || 
+        t.isBooleanLiteral(declarator.init)) {
+      return true;
+    }
+    
+    // Object and array literals can also be configurable
+    if (t.isObjectExpression(declarator.init) || t.isArrayExpression(declarator.init)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Extract initial value from variable declarator
+   */
+  private extractInitialValue(init: t.Expression | null | undefined): any {
+    if (!init) return undefined;
+    
+    if (t.isStringLiteral(init)) return init.value;
+    if (t.isNumericLiteral(init)) return init.value;
+    if (t.isBooleanLiteral(init)) return init.value;
+    if (t.isNullLiteral(init)) return null;
+    
+    // For complex expressions, return the code representation
+    return undefined;
+  }
+
+  /**
+   * Infer type from initial value
+   */
+  private inferType(value: any): 'string' | 'number' | 'boolean' | 'object' | 'array' | undefined {
+    if (typeof value === 'string') return 'string';
+    if (typeof value === 'number') return 'number';
+    if (typeof value === 'boolean') return 'boolean';
+    if (Array.isArray(value)) return 'array';
+    if (value && typeof value === 'object') return 'object';
+    return undefined;
+  }
+
+  /**
+   * Replace variable value in a line of code
+   */
+  private replaceVariableValue(line: string, variableName: string, newValue: any): string {
+    // Simple regex-based replacement for variable assignment
+    const valueString = this.formatValueForCode(newValue);
+    const regex = new RegExp(`(${variableName}\\s*=\\s*)([^;,\\n]+)`, 'g');
+    return line.replace(regex, `$1${valueString}`);
+  }
+
+  /**
+   * Format value for insertion into code
+   */
+  private formatValueForCode(value: any): string {
+    if (typeof value === 'string') {
+      return `"${value.replace(/"/g, '\\"')}"`;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (value === null) {
+      return 'null';
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  }
+
+  /**
+   * Check if one variable is in a nested scope relative to another
+   */
+  private isInNestedScope(
+    inner: ConfigurableVariable,
+    outer: ConfigurableVariable,
+    functions: FunctionMetadata[]
+  ): boolean {
+    // If they're in the same function, check block scoping
+    if (inner.containingFunction === outer.containingFunction) {
+      return inner.sourceLocation.start.line > outer.sourceLocation.start.line;
+    }
+
+    // Check if inner function is nested within outer function
+    const innerFunction = functions.find(f => f.name === inner.containingFunction);
+    const outerFunction = functions.find(f => f.name === outer.containingFunction);
+
+    if (innerFunction && outerFunction) {
+      return innerFunction.isNested && innerFunction.parentFunction === outerFunction.name;
+    }
+
+    return false;
+  }
+
+  /**
+   * Replace variable declarations with parameters in function body
+   */
+  private replaceVariableDeclarationsWithParameters(
+    functionCode: string,
+    configurableVariables: ConfigurableVariable[]
+  ): string {
+    let modifiedCode = functionCode;
+
+    // Remove variable declarations that are now parameters
+    for (const variable of configurableVariables.filter(v => v.isConfigurable)) {
+      const declarationRegex = new RegExp(
+        `\\s*(const|let|var)\\s+${variable.name}\\s*=\\s*[^;\\n]+[;\\n]?`,
+        'g'
+      );
+      modifiedCode = modifiedCode.replace(declarationRegex, '');
+    }
+
+    // Clean up extra whitespace
+    modifiedCode = modifiedCode.replace(/\n\s*\n/g, '\n');
+
+    return modifiedCode;
+  }
+
+  /**
+   * Traverse child nodes of an AST node
+   */
+  private traverseChildren(node: t.Node, callback: (node: t.Node) => void) {
+    for (const key in node) {
+      const child = (node as any)[key];
+      if (Array.isArray(child)) {
+        child.forEach(item => {
+          if (item && typeof item === 'object' && item.type) {
+            callback(item);
+          }
+        });
+      } else if (child && typeof child === 'object' && child.type) {
+        callback(child);
+      }
+    }
+  }
+}
