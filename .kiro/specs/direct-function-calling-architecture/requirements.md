@@ -92,15 +92,17 @@ This feature transforms the visual code generation platform to represent code fi
 
 ### Requirement 8
 
-**User Story:** As a developer, I want flow-level variables and configuration, so that flows can be treated as nodes in other flows with configurable parameters.
+**User Story:** As a developer, I want configurable variables within functions (nodes) and flow wrapper functions, so that I can easily modify variable values without editing code directly while maintaining pure functionality.
 
 #### Acceptance Criteria
 
-1. WHEN a flow contains variables THEN the system SHALL make them configurable similar to node data configuration
-2. WHEN a flow is used as a node in another flow THEN the system SHALL expose its variables as configurable parameters
-3. WHEN flow variables are modified THEN the system SHALL update all dependent nodes and edges accordingly
-4. WHEN a flow has a description THEN the system SHALL display it prominently similar to node descriptions
-5. WHEN flows are nested THEN the system SHALL maintain proper variable scoping and access control
+1. WHEN a function contains variable declarations THEN the system SHALL detect them via AST parsing and make them configurable through the visual interface
+2. WHEN a code file has a wrapper function containing all other functions THEN the system SHALL treat it as the "flow node" and expose its variables as flow-level configuration
+3. WHEN variables are declared inside functions THEN the system SHALL provide a configuration interface to modify their values without direct code editing
+4. WHEN global variables are detected THEN the system SHALL discourage their use and suggest moving them inside functions for better configurability
+5. WHEN variable values are modified through the interface THEN the system SHALL update the underlying code while maintaining function purity
+6. WHEN a flow is used as a node in another flow THEN the wrapper function's variables SHALL be exposed as configurable parameters
+7. WHEN flows are nested THEN the system SHALL maintain proper variable scoping following JavaScript scoping rules
 
 ### Requirement 9
 
