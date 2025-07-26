@@ -6,14 +6,10 @@ Successfully implemented comprehensive flow wrapper function support that detect
 ## Key Features Implemented
 
 ### 1. Wrapper Function Detection
-- **Enhanced scoring algorithm** that identifies wrapper functions based on:
-  - Function naming patterns (main, init, setup, run, start, flow, wrapper, entry, execute)
-  - Function calls to other functions in the file
-  - Position in file (end or beginning)
-  - Presence of configuration variables
-  - Error handling patterns (try-catch blocks)
-  - Orchestration indicators (console.log statements)
-  - Return statements that aggregate results from other functions
+- **Simplified detection algorithm** that identifies wrapper functions based on:
+  - Single function files: Automatically treated as wrapper (confidence 1.0)
+  - Multiple function files: Function that calls other functions is the wrapper
+  - No clear wrapper: Provides helpful notifications with suggestions
 
 ### 2. Flow-Level Variable Configuration
 - **Automatic detection** of variables within wrapper functions
@@ -53,25 +49,32 @@ interface WrapperFunctionInfo {
   wrapperConfidence: number;
 }
 
+interface FlowStructureNotification {
+  type: 'missing_wrapper' | 'multiple_wrappers' | 'no_wrapper_needed';
+  message: string;
+  severity: 'info' | 'warning' | 'suggestion';
+  suggestedAction?: string;
+}
+
 // Key methods added
-- identifyWrapperFunction(): Detects wrapper functions with confidence scoring
-- calculateWrapperScore(): Advanced scoring algorithm for wrapper detection
+- identifyWrapperFunctionWithNotification(): Detects wrapper functions with notifications
+- calculateWrapperScore(): Simplified scoring based on function calls
 - createFlowNodeConfiguration(): Creates flow node config from wrapper
 - validateVariableScoping(): Validates JavaScript scoping rules
 - generateWrapperFunctionCode(): Generates parameterized wrapper functions
 ```
 
 ### Wrapper Function Detection Algorithm
-The scoring system evaluates functions based on:
+The simplified detection system follows the KISS principle:
 
-1. **Naming patterns** (40% weight): main, init, setup, run, start, flow, wrapper, entry, execute
-2. **Variable presence** (20% weight): Functions with configurable variables
-3. **Description quality** (20% weight): Entry point keywords and detailed descriptions
-4. **Function calls** (30% weight): Calls to other functions in the file
-5. **Position bonuses** (15% weight): End or beginning of file placement
-6. **Error handling** (10% weight): Try-catch blocks indicating orchestration
-7. **Logging patterns** (10% weight): Console statements for flow tracking
-8. **Result aggregation** (10% weight): Return statements combining other function results
+1. **Single function case**: If there's only one function in the file, it's automatically the wrapper (confidence 1.0)
+2. **Multiple function case**: The function that calls other functions in the file is identified as the wrapper
+3. **No clear wrapper**: When no function calls others, or multiple functions call others, helpful notifications are provided
+
+### Notification System
+- **`no_wrapper_needed`**: Single function detected (info level)
+- **`missing_wrapper`**: No function calls others - suggests adding main/start function (suggestion level)
+- **`multiple_wrappers`**: Multiple functions call others - suggests creating single orchestrator (suggestion level)
 
 ### Variable Configuration Features
 - **Flow-level variables**: Variables in wrapper functions marked for flow-level configuration
@@ -81,12 +84,13 @@ The scoring system evaluates functions based on:
 - **Value tracking**: Initial and current value management
 
 ## Test Coverage
-Comprehensive test suite with 10 test cases covering:
+Comprehensive test suite with 12 test cases covering:
 
 1. **Wrapper Function Detection**:
-   - Main/start naming pattern recognition
-   - Function call-based detection
-   - Utility function exclusion
+   - Function call-based detection (primary method)
+   - Single function automatic wrapper detection
+   - Multiple wrapper candidates with notifications
+   - Utility function exclusion with missing wrapper notifications
 
 2. **Flow-Level Variables**:
    - Wrapper function variable marking
@@ -103,6 +107,11 @@ Comprehensive test suite with 10 test cases covering:
 5. **Code Generation**:
    - Wrapper function parameterization
    - Variable declaration replacement
+
+6. **Notification System**:
+   - Missing wrapper notifications
+   - Multiple wrapper notifications
+   - Single function info notifications
 
 ## Integration Points
 
