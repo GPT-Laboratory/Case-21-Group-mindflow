@@ -13,6 +13,7 @@ import { BaseNodeContainer } from './NodeStyles';
 import ProcessControls from './ProcessControls';
 import { ExpandCollapseHandler } from './ExpandCollapseHandler';
 import { UnifiedStyleManager } from '../utils/UnifiedStyleManager';
+import { CleanNodeDisplay } from './CleanNodeDisplay';
 
 interface BaseNodeRendererProps {
   id: string;
@@ -199,6 +200,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         className={cn("dragHandle", config.visual.headerGradient || "", "border-none")}
         color={styleConfig.backgroundColor}
         icon={mainIcon}
+        label={hasASTData ? (nodeInFlow?.data?.functionName || nodeLabel) : nodeLabel}
         isProcessing={isProcessing}
         isCompleted={isCompleted}
         hasError={hasError}
@@ -219,6 +221,9 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
       </NodeHeader>
     );
   };
+
+  // Check if this node has AST-parsed function data
+  const hasASTData = nodeInFlow?.data?.functionName || nodeInFlow?.data?.functionDescription;
 
   // Determine content area
   const renderContent = () => {
@@ -271,7 +276,28 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
       );
     }
 
-    // Cell-like content for cell nodes and closed containers
+    // Use CleanNodeDisplay for AST-parsed function nodes
+    if (hasASTData) {
+      return (
+        <CleanNodeDisplay
+          functionName={nodeInFlow?.data?.functionName}
+          functionDescription={nodeInFlow?.data?.functionDescription}
+          label={nodeLabel}
+          details={nodeInFlow?.data?.details}
+          parameters={nodeInFlow?.data?.parameters}
+          isNested={nodeInFlow?.data?.isNestedFunction}
+          externalDependencies={nodeInFlow?.data?.externalDependencies}
+          isProcessing={isProcessing}
+          isCompleted={isCompleted}
+          hasError={hasError}
+          childNodes={childNodes}
+          canContainChildren={canContainChildren}
+          className="flex-1"
+        />
+      );
+    }
+
+    // Cell-like content for cell nodes and closed containers (legacy display)
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
         <ScrollingText 
@@ -288,8 +314,6 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
             </Badge>
           </div>
         )}
-        
- 
         
         {/* Process Controls for cell-like nodes and containers with processes */}
         {(() => {

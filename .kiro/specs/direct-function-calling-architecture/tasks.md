@@ -136,15 +136,15 @@
     - Write tests for flow wrapper function functionality
     - _Requirements: 8.2, 8.6, 8.7_
 
-- [ ] 8. Create simplified visual representation system
-  - [ ] 8.1 Implement clean node display with essential information
+- [-] 8. Create simplified visual representation system
+  - [x] 8.1 Implement clean node display with essential information
     - Display only function description and title by default
     - Use block comments as node descriptions and titles
     - Create expandable views for detailed information
     - Write tests for node display functionality
     - _Requirements: 9.1, 9.2, 9.3_
 
-  - [ ] 8.2 Implement filtering and complexity management
+  - [x] 8.2 Implement filtering and complexity management
     - Add filtering options for complex flows
     - Implement grouping and organization features
     - Create detail panels for selected nodes

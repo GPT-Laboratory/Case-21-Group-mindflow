@@ -6,6 +6,7 @@ import {
   Eye, 
   ArrowLeftRight, 
   AlertTriangle,
+  Info,
   LucideIcon 
 } from 'lucide-react';
 
@@ -22,6 +23,12 @@ const TAB_CONFIGS: TabConfig[] = [
     label: 'Data',
     icon: Database,
     abbreviation: 'D'
+  },
+  {
+    value: 'details',
+    label: 'Details',
+    icon: Info,
+    abbreviation: 'Det'
   },
   {
     value: 'code',
