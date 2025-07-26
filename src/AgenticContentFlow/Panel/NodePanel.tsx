@@ -22,6 +22,7 @@ import { useGenerator } from '../Generator/context/GeneratorContext';
 import { ProcessGenerationRequest } from '../Generator/generatortypes';
 import { InputOutputTab } from './components/tabs/InputOutput/InputOutputTab';
 import { PanelMenu } from './components/PanelMenu';
+import { FunctionDetailsTab } from './components/tabs/FunctionDetailsTab/FunctionDetailsTab';
 
 type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -344,6 +345,14 @@ export const NodeConfigPanel: React.FC = () => {
                         nodeType={activeNode.type}
                         formData={formData} 
                         onFieldChange={handleFieldChange}
+                      />
+                    </TabsContent>
+                    
+                    {/* Function Details Tab - for function-based nodes */}
+                    <TabsContent value="details" className="m-0 h-full">
+                      <FunctionDetailsTab 
+                        nodeId={activeNode.id} 
+                        formData={formData} 
                       />
                     </TabsContent>
                     
