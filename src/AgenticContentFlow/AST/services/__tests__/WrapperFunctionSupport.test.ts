@@ -206,8 +206,100 @@ describe('VariableConfigurationService - Wrapper Function Support', () => {
 
       const result = service.analyzeVariableConfiguration(code, functions);
 
-      // Should not identify any wrapper function since all are utility-like
+      // Should not identify any wrapper function since none call other functions
       expect(result.wrapperFunction).toBeUndefined();
+      expect(result.flowStructureNotification).toBeDefined();
+      expect(result.flowStructureNotification!.type).toBe('missing_wrapper');
+    });
+
+    it('should detect single function as wrapper automatically', () => {
+      const code = `
+        function singleFunction() {
+          const config = "production";
+          console.log("Running single function");
+          return { config };
+        }
+      `;
+
+      const functions: FunctionMetadata[] = [
+        {
+          id: 'singleFunction',
+          name: 'singleFunction',
+          description: 'Single function in file',
+          parameters: [],
+          sourceLocation: { start: { line: 2, column: 0 }, end: { line: 6, column: 1 } },
+          isNested: false,
+          scope: 'global',
+          code: code.trim()
+        }
+      ];
+
+      const result = service.analyzeVariableConfiguration(code, functions);
+
+      expect(result.wrapperFunction).toBeDefined();
+      expect(result.wrapperFunction!.functionInfo.name).toBe('singleFunction');
+      expect(result.wrapperFunction!.wrapperConfidence).toBe(1.0);
+      expect(result.flowStructureNotification).toBeDefined();
+      expect(result.flowStructureNotification!.type).toBe('no_wrapper_needed');
+    });
+
+    it('should detect multiple wrapper candidates and show notification', () => {
+      const code = `
+        function helper() {
+          return "help";
+        }
+        
+        function orchestrator1() {
+          const config1 = "config1";
+          return helper();
+        }
+        
+        function orchestrator2() {
+          const config2 = "config2";
+          return helper();
+        }
+      `;
+
+      const functions: FunctionMetadata[] = [
+        {
+          id: 'helper',
+          name: 'helper',
+          description: 'Helper function',
+          parameters: [],
+          sourceLocation: { start: { line: 2, column: 0 }, end: { line: 4, column: 1 } },
+          isNested: false,
+          scope: 'global',
+          code: 'function helper() {\n  return "help";\n}'
+        },
+        {
+          id: 'orchestrator1',
+          name: 'orchestrator1',
+          description: 'First orchestrator',
+          parameters: [],
+          sourceLocation: { start: { line: 6, column: 0 }, end: { line: 9, column: 1 } },
+          isNested: false,
+          scope: 'global',
+          code: 'function orchestrator1() {\n  const config1 = "config1";\n  return helper();\n}'
+        },
+        {
+          id: 'orchestrator2',
+          name: 'orchestrator2',
+          description: 'Second orchestrator',
+          parameters: [],
+          sourceLocation: { start: { line: 11, column: 0 }, end: { line: 14, column: 1 } },
+          isNested: false,
+          scope: 'global',
+          code: 'function orchestrator2() {\n  const config2 = "config2";\n  return helper();\n}'
+        }
+      ];
+
+      const result = service.analyzeVariableConfiguration(code, functions);
+
+      // Should not identify a single wrapper since multiple functions call others
+      expect(result.wrapperFunction).toBeUndefined();
+      expect(result.flowStructureNotification).toBeDefined();
+      expect(result.flowStructureNotification!.type).toBe('multiple_wrappers');
+      expect(result.flowStructureNotification!.severity).toBe('suggestion');
     });
   });
 
