@@ -36,6 +36,7 @@ import UnifiedControlsPanel from "./Controls/registry/UnifiedControlsPanel";
 import { GenerationControl } from "./Generator/ui";
 import { ShortcutsRegistration } from "./ShortCuts/ShortcutControlRegistration";
 import { SaveFlowControlRegistration } from "./Controls/SaveFlowControlRegistration";
+import { NodeSearchControlRegistration } from "./Controls/Components/NodeSearchControlRegistration";
 import { ShortcutsDisplayPanel } from "./ShortCuts/ShortcutsDisplayPanel";
 import { ShortcutsProvider } from "@jalez/react-shortcuts-provider";
 
@@ -137,6 +138,7 @@ export function AgenticContentFlowContent() {
                         <APISetupControlsRegistration />
                         <ShortcutsRegistration />
                         <SaveFlowControlRegistration />
+                        <NodeSearchControlRegistration />
                       </Flow>
                     </FlowContainer>
                   </div>
