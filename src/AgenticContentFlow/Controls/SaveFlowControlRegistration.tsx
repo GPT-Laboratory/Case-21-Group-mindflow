@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { registerControl, unregisterControl } from './registry/controlsRegistry';
 import { SaveFlowControl } from './Components/SaveFlowControl';
+import { CONTROL_TYPES } from '../constants';
 
 /**
  * Save Flow Control Registration
@@ -15,7 +16,7 @@ export const SaveFlowControlRegistration: React.FC = () => {
     // Register the save flow control
     registerControl(
       'tools',
-      'flow-management',
+      CONTROL_TYPES.MINDMAP,
       'save-flow',
       SaveFlowControl,
       {
@@ -27,7 +28,7 @@ export const SaveFlowControlRegistration: React.FC = () => {
 
     // Cleanup on unmount
     return () => {
-      unregisterControl('tools', 'flow-management', 'save-flow');
+      unregisterControl('tools', CONTROL_TYPES.MINDMAP, 'save-flow');
     };
   }, []);
 
