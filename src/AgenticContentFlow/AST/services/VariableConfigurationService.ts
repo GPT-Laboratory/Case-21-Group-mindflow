@@ -52,6 +52,17 @@ export interface GlobalVariableWarning {
   severity: 'warning' | 'error';
 }
 
+export interface FlowStructureNotification {
+  /** Type of notification */
+  type: 'missing_wrapper' | 'multiple_wrappers' | 'no_wrapper_needed';
+  /** Notification message */
+  message: string;
+  /** Severity level */
+  severity: 'info' | 'warning' | 'suggestion';
+  /** Suggested action */
+  suggestedAction?: string;
+}
+
 export interface VariableConfigurationResult {
   /** All configurable variables found */
   configurableVariables: ConfigurableVariable[];
@@ -63,6 +74,8 @@ export interface VariableConfigurationResult {
   flowLevelVariables: ConfigurableVariable[];
   /** Function-level variables (from individual functions) */
   functionLevelVariables: ConfigurableVariable[];
+  /** Flow structure notification */
+  flowStructureNotification?: FlowStructureNotification;
 }
 
 export class VariableConfigurationService {
@@ -85,8 +98,8 @@ export class VariableConfigurationService {
       // Extract all variables with enhanced information
       const allVariables = this.extractConfigurableVariables(ast, code, functions);
       
-      // Identify wrapper function
-      const wrapperFunction = this.identifyWrapperFunction(functions, allVariables);
+      // Identify wrapper function and generate flow structure notification
+      const { wrapperFunction, flowStructureNotification } = this.identifyWrapperFunctionWithNotification(functions, allVariables);
       
       // Check for global variables and create warnings
       const globalVariableWarnings = this.analyzeGlobalVariables(allVariables, functions);
@@ -100,7 +113,8 @@ export class VariableConfigurationService {
         wrapperFunction,
         globalVariableWarnings,
         flowLevelVariables,
-        functionLevelVariables
+        functionLevelVariables,
+        flowStructureNotification
       };
     } catch (error) {
       console.error('Variable configuration analysis error:', error);
@@ -296,138 +310,125 @@ ${functionBody}
   }
 
   /**
-   * Identify wrapper function that contains all other functions
+   * Identify wrapper function with notification - SIMPLIFIED APPROACH
    */
-  private identifyWrapperFunction(
+  private identifyWrapperFunctionWithNotification(
     functions: FunctionMetadata[],
     variables: ConfigurableVariable[]
-  ): WrapperFunctionInfo | undefined {
-    // Look for a function that contains most other functions
-    let bestCandidate: FunctionMetadata | undefined;
-    let highestScore = 0;
-
-    for (const func of functions) {
-      const score = this.calculateWrapperScore(func, functions, variables);
-      if (score > highestScore && score > 0.6) { // Threshold for wrapper confidence
-        highestScore = score;
-        bestCandidate = func;
-      }
-    }
-
-    if (bestCandidate) {
-      const wrapperVariables = variables.filter(v => v.containingFunction === bestCandidate!.name);
+  ): { wrapperFunction?: WrapperFunctionInfo; flowStructureNotification?: FlowStructureNotification } {
+    // Case 1: Only one function - it's automatically the wrapper
+    if (functions.length === 1) {
+      const singleFunction = functions[0];
+      const wrapperVariables = variables.filter(v => v.containingFunction === singleFunction.name);
       
-      // Mark wrapper function variables as flow-level
+      // Mark variables as flow-level
       wrapperVariables.forEach(v => {
         v.isFlowLevel = true;
       });
 
       return {
-        functionInfo: bestCandidate,
-        variables: wrapperVariables,
-        isFlowWrapper: true,
-        wrapperConfidence: highestScore
+        wrapperFunction: {
+          functionInfo: singleFunction,
+          variables: wrapperVariables,
+          isFlowWrapper: true,
+          wrapperConfidence: 1.0
+        },
+        flowStructureNotification: {
+          type: 'no_wrapper_needed',
+          message: 'Single function detected - automatically treated as flow wrapper',
+          severity: 'info'
+        }
       };
     }
 
-    return undefined;
+    // Case 2: Multiple functions - find the one that calls others
+    const candidatesWithCalls = functions.map(func => {
+      const otherFunctionNames = functions
+        .filter(f => f.name !== func.name)
+        .map(f => f.name);
+      
+      const callsCount = otherFunctionNames.filter(name => 
+        func.code.includes(`${name}(`)
+      ).length;
+
+      return { func, callsCount };
+    }).filter(candidate => candidate.callsCount > 0);
+
+    // Case 2a: Exactly one function calls others - perfect wrapper
+    if (candidatesWithCalls.length === 1) {
+      const wrapper = candidatesWithCalls[0].func;
+      const wrapperVariables = variables.filter(v => v.containingFunction === wrapper.name);
+      
+      // Mark variables as flow-level
+      wrapperVariables.forEach(v => {
+        v.isFlowLevel = true;
+      });
+
+      return {
+        wrapperFunction: {
+          functionInfo: wrapper,
+          variables: wrapperVariables,
+          isFlowWrapper: true,
+          wrapperConfidence: 1.0
+        }
+      };
+    }
+
+    // Case 2b: Multiple functions call others - ambiguous
+    if (candidatesWithCalls.length > 1) {
+      return {
+        flowStructureNotification: {
+          type: 'multiple_wrappers',
+          message: 'Multiple functions call other functions. Consider creating a single main wrapper function.',
+          severity: 'suggestion',
+          suggestedAction: 'Create a main() function that orchestrates your flow by calling the other functions in sequence.'
+        }
+      };
+    }
+
+    // Case 2c: No function calls others - missing wrapper
+    return {
+      flowStructureNotification: {
+        type: 'missing_wrapper',
+        message: 'No wrapper function detected. Consider creating a main function that calls your other functions.',
+        severity: 'suggestion',
+        suggestedAction: 'Add a main() or start() function that orchestrates your flow by calling the other functions.'
+      }
+    };
   }
 
   /**
-   * Calculate wrapper function score
+   * Calculate wrapper function score - SIMPLIFIED APPROACH
+   * A wrapper function is simply one that calls other functions in the file
    */
   private calculateWrapperScore(
     candidate: FunctionMetadata,
     allFunctions: FunctionMetadata[],
     variables: ConfigurableVariable[]
   ): number {
-    let score = 0;
-    
-    // Check if function name suggests it's a wrapper (main, init, setup, etc.)
-    const wrapperNames = ['main', 'init', 'setup', 'run', 'start', 'flow', 'wrapper', 'entry', 'execute'];
-    if (wrapperNames.some(name => candidate.name.toLowerCase().includes(name))) {
-      score += 0.4;
+    // If there's only one function, it's automatically the wrapper
+    if (allFunctions.length === 1) {
+      return 1.0;
     }
     
-    // Check if it has variables (configuration potential)
-    const candidateVariables = variables.filter(v => v.containingFunction === candidate.name);
-    if (candidateVariables.length > 0) {
-      score += 0.2;
-    }
+    // Check if this function calls other functions in the file
+    const otherFunctionNames = allFunctions
+      .filter(f => f.name !== candidate.name)
+      .map(f => f.name);
     
-    // Check if it's not nested (top-level function)
-    if (!candidate.isNested) {
-      score += 0.1;
-    }
-    
-    // Check if it has a good description indicating it's an entry point
-    if (candidate.description) {
-      const description = candidate.description.toLowerCase();
-      const entryPointKeywords = ['entry', 'main', 'start', 'flow', 'orchestrat', 'coordinat', 'control'];
-      if (entryPointKeywords.some(keyword => description.includes(keyword))) {
-        score += 0.2;
-      } else if (candidate.description.length > 10) {
-        score += 0.1;
-      }
-    }
-    
-    // Penalty for being just one of many similar functions
-    if (allFunctions.length > 1) {
-      const utilityFunctions = allFunctions.filter(f => {
-        const name = f.name.toLowerCase();
-        return name.includes('helper') || 
-               name.includes('util') ||
-               name.includes('get') ||
-               name.includes('create') ||
-               name.includes('generate') ||
-               name.includes('process');
-      });
-      
-      if (utilityFunctions.length > 1 && utilityFunctions.includes(candidate)) {
-        score -= 0.3; // Reduce score for utility-like functions
-      }
-    }
-    
-    // Check position in file - wrapper functions are often at the end or beginning
-    const functionIndex = allFunctions.indexOf(candidate);
-    const isAtEnd = functionIndex === allFunctions.length - 1;
-    const isAtBeginning = functionIndex === 0;
-    
-    if (isAtEnd && allFunctions.length > 1) {
-      score += 0.15; // End position is common for main/wrapper functions
-    } else if (isAtBeginning && allFunctions.length > 1) {
-      score += 0.1; // Beginning position is also possible
-    }
-    
-    // Check if it contains calls to other functions (more likely to be a wrapper)
-    const otherFunctionNames = allFunctions.filter(f => f.name !== candidate.name).map(f => f.name);
     const functionCallsCount = otherFunctionNames.filter(name => 
       candidate.code.includes(`${name}(`)
     ).length;
     
+    // If it calls other functions, it's likely a wrapper
     if (functionCallsCount > 0) {
-      // More calls = higher wrapper likelihood
-      const callRatio = functionCallsCount / Math.max(otherFunctionNames.length, 1);
-      score += Math.min(callRatio * 0.3, 0.3);
+      // The more functions it calls, the more likely it's a wrapper
+      const callRatio = functionCallsCount / otherFunctionNames.length;
+      return Math.min(callRatio + 0.5, 1.0); // Base score + call ratio
     }
     
-    // Check for try-catch blocks (common in wrapper functions)
-    if (candidate.code.includes('try') && candidate.code.includes('catch')) {
-      score += 0.1;
-    }
-    
-    // Check for console.log statements indicating orchestration
-    const logStatements = (candidate.code.match(/console\.(log|info|warn|error)/g) || []).length;
-    if (logStatements > 0) {
-      score += Math.min(logStatements * 0.05, 0.1);
-    }
-    
-    // Check for return statements that return results from other functions
-    if (candidate.code.includes('return') && functionCallsCount > 0) {
-      score += 0.1;
-    }
-    
-    return Math.min(score, 1.0);
+    // If it doesn't call other functions, it's probably not a wrapper
+    return 0.0;
   }
 
   /**
