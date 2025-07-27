@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NodeData } from '../../../../types';
 import { hasInfiniteExtent, isHorizontalConnection, updateNodeExtentInLocalNodes } from '../dragUtils';
 import { getDragResistance, dragStartTimes } from '../getDragResistance';
-import test from 'node:test';
 
 // Mock the Node type from React Flow
 const createMockNode = (id: string, width = 100, height = 40, position = { x: 0, y: 0 }) => ({
@@ -16,21 +15,21 @@ const createMockNode = (id: string, width = 100, height = 40, position = { x: 0,
 describe('dragUtils', () => {
 
   describe('isHorizontalConnection', () => {
-    test('should return true for left/right connections', () => {
+    it('should return true for left/right connections', () => {
       expect(isHorizontalConnection('left', 'right')).toBe(true);
       expect(isHorizontalConnection('right', 'left')).toBe(true);
       expect(isHorizontalConnection('left', null)).toBe(true);
       expect(isHorizontalConnection(null, 'right')).toBe(true);
     });
 
-    test('should return false for top/bottom connections', () => {
+    it('should return false for top/bottom connections', () => {
       expect(isHorizontalConnection('top', 'bottom')).toBe(false);
       expect(isHorizontalConnection('bottom', 'top')).toBe(false);
       expect(isHorizontalConnection('top', null)).toBe(false);
       expect(isHorizontalConnection(null, 'bottom')).toBe(false);
     });
 
-    test('should return false for null/undefined handles', () => {
+    it('should return false for null/undefined handles', () => {
       expect(isHorizontalConnection(null, null)).toBe(false);
       expect(isHorizontalConnection(undefined, undefined)).toBe(false);
     });

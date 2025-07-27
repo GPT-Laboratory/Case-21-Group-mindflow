@@ -7,6 +7,12 @@ import { NodeData } from '../../../types';
 // Mock the external dependencies
 vi.mock('@xyflow/react', () => ({
   useReactFlow: vi.fn(),
+  Position: {
+    Top: 'top',
+    Bottom: 'bottom',
+    Left: 'left',
+    Right: 'right'
+  }
 }));
 
 vi.mock('../../registry/nodeTypeRegistry', () => ({

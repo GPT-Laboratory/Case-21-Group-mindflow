@@ -4,21 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { NodeSearchControl } from '../NodeSearchControl';
 import { useNodeContext } from '../../../Node/context/useNodeContext';
 import { useReactFlow } from '@xyflow/react';
-import { vi } from 'vitest';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { afterEach } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
+import { vi, describe, it, beforeEach, afterEach, expect } from 'vitest';
 
 // Mock the dependencies
 vi.mock('../../../Node/context/useNodeContext');
@@ -70,19 +56,18 @@ describe('NodeSearchControl', () => {
       updateNode: vi.fn(),
       nodeMap: new Map(),
       addNode: vi.fn(),
-      removeNode: vi.fn(),
+      removeNodes: vi.fn(),
       onNodesChange: vi.fn(),
       onNodeDrag: vi.fn(),
       onNodeDragStop: vi.fn(),
       isDragging: false,
       setNodes: vi.fn(),
       localNodes: mockNodes
-    });
+    } as any);
 
     mockUseReactFlow.mockReturnValue({
       setCenter: mockSetCenter,
       fitView: mockFitView,
-      // Add other required properties as needed
       getNodes: vi.fn(),
       getEdges: vi.fn(),
       setNodes: vi.fn(),
@@ -105,12 +90,9 @@ describe('NodeSearchControl', () => {
       zoomOut: vi.fn(),
       zoomTo: vi.fn(),
       getZoom: vi.fn(),
-      setCenter: mockSetCenter,
-      fitView: mockFitView,
-      project: vi.fn(),
       screenToFlowPosition: vi.fn(),
       flowToScreenPosition: vi.fn()
-    });
+    } as any);
   });
 
   afterEach(() => {
@@ -251,7 +233,7 @@ describe('NodeSearchControl', () => {
       {
         id: '1',
         type: 'function',
-        position: undefined, // No position
+        position: { x: 0, y: 0 }, // Provide default position
         data: {
           functionName: 'testFunction',
           label: 'Test Function'
@@ -264,14 +246,14 @@ describe('NodeSearchControl', () => {
       updateNode: vi.fn(),
       nodeMap: new Map(),
       addNode: vi.fn(),
-      removeNode: vi.fn(),
+      removeNodes: vi.fn(),
       onNodesChange: vi.fn(),
       onNodeDrag: vi.fn(),
       onNodeDragStop: vi.fn(),
       isDragging: false,
       setNodes: vi.fn(),
       localNodes: nodesWithoutPosition
-    });
+    } as any);
 
     const user = userEvent.setup();
     render(<NodeSearchControl />);
