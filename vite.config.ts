@@ -14,11 +14,6 @@ export default defineConfig({
   define: {
     // Provide process polyfill for Babel compatibility
     'process.env': {},
-    'process.version': '"v16.0.0"',
-    'process.platform': '"browser"',
-    'process.stdout': 'null',
-    'process.stderr': 'null',
-    'process.stdin': 'null',
   },
   server: {
     proxy: {
