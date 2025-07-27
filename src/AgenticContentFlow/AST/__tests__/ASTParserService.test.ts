@@ -1,5 +1,24 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ASTParserService } from '../ASTParserService';
+
+// Mock the notifications hook
+const mockNotifications = {
+  showErrorToast: vi.fn(),
+  showWarningToast: vi.fn(),
+  showInfoToast: vi.fn(),
+  showSuccessToast: vi.fn(),
+  showToast: vi.fn(),
+  showBlockingNotification: vi.fn(),
+  updateBlockingNotification: vi.fn(),
+  completeBlockingNotification: vi.fn(),
+  failBlockingNotification: vi.fn(),
+  removeNotification: vi.fn(),
+  clearAllNotifications: vi.fn(),
+  clearToasts: vi.fn(),
+  hasBlockingNotifications: false,
+  blockingNotifications: [],
+  toastNotifications: []
+};
 
 describe('ASTParserService', () => {
   let parser: ASTParserService;
@@ -420,6 +439,15 @@ function second() {
   });
 
   describe('error handling', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Mock console methods to avoid noise in tests
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'group').mockImplementation(() => {});
+      vi.spyOn(console, 'groupEnd').mockImplementation(() => {});
+    });
+
     it('should throw error for invalid JavaScript', () => {
       const invalidCode = `
         function invalid( {
@@ -462,6 +490,369 @@ function second() {
       `;
 
       expect(() => parser.processExternalDependencies(invalidCode, 'test-parent')).toThrow();
+    });
+  });
+
+  describe('parseFileWithErrorHandling', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Mock console methods to avoid noise in tests
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'group').mockImplementation(() => {});
+      vi.spyOn(console, 'groupEnd').mockImplementation(() => {});
+    });
+
+    it('should successfully parse valid code', () => {
+      const code = `
+        /**
+         * Valid function
+         */
+        function validFunction() {
+          return 'valid';
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(true);
+      expect(result.structure).toBeDefined();
+      expect(result.structure?.functions).toHaveLength(1);
+      expect(result.errors).toHaveLength(0);
+      expect(result.warnings).toHaveLength(0);
+      expect(result.partiallyParsed).toBe(false);
+      expect(mockNotifications.showErrorToast).not.toHaveBeenCalled();
+    });
+
+    it('should handle syntax errors gracefully with user notifications', () => {
+      const code = `
+        function invalidFunction() {
+          const x = ;
+          return x;
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(false);
+      expect(result.structure).toBeUndefined();
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0].type).toBe('syntax');
+      expect(result.partiallyParsed).toBe(false);
+      
+      // Check if any notification method was called (could be error or warning depending on error type)
+      const notificationCalled = mockNotifications.showErrorToast.mock.calls.length > 0 ||
+                                 mockNotifications.showWarningToast.mock.calls.length > 0 ||
+                                 mockNotifications.showInfoToast.mock.calls.length > 0;
+      expect(notificationCalled).toBe(true);
+    });
+
+    it('should continue parsing when individual extractors fail', () => {
+      // Mock one of the extractors to throw an error
+      const originalExtractFunctions = parser['functionExtractor'].extractFunctions;
+      parser['functionExtractor'].extractFunctions = vi.fn().mockImplementation(() => {
+        throw new Error('Function extraction failed');
+      });
+
+      const code = `
+        function testFunction() {
+          return 'test';
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(true); // Should still succeed with partial data
+      expect(result.structure).toBeDefined();
+      expect(result.structure?.functions).toHaveLength(0); // Functions failed to extract
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.partiallyParsed).toBe(true);
+      
+      // Check if any notification method was called (could be error or warning depending on error type)
+      const notificationCalled = mockNotifications.showErrorToast.mock.calls.length > 0 ||
+                                 mockNotifications.showWarningToast.mock.calls.length > 0 ||
+                                 mockNotifications.showInfoToast.mock.calls.length > 0;
+      expect(notificationCalled).toBe(true);
+
+      // Restore original method
+      parser['functionExtractor'].extractFunctions = originalExtractFunctions;
+    });
+
+    it('should handle warnings from extractors', () => {
+      // Mock call extractor to throw an error (should be treated as warning)
+      const originalIdentifyFunctionCalls = parser['callExtractor'].identifyFunctionCalls;
+      parser['callExtractor'].identifyFunctionCalls = vi.fn().mockImplementation(() => {
+        throw new Error('Call extraction failed');
+      });
+
+      const code = `
+        function testFunction() {
+          return 'test';
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(true);
+      expect(result.structure).toBeDefined();
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings[0].type).toBe('semantic');
+      expect(mockNotifications.showInfoToast).toHaveBeenCalled();
+
+      // Restore original method
+      parser['callExtractor'].identifyFunctionCalls = originalIdentifyFunctionCalls;
+    });
+
+    it('should log errors to console with detailed formatting', () => {
+      const code = `
+        function invalidFunction() {
+          const x = ;
+        }
+      `;
+
+      parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(console.group).toHaveBeenCalledWith('🚨 AST Parsing Errors');
+      expect(console.error).toHaveBeenCalled();
+      expect(console.groupEnd).toHaveBeenCalled();
+    });
+
+    it('should handle critical parsing failures', () => {
+      // Mock Babel parser to throw a critical error
+      const originalParse = parser['babelParser'].parse;
+      parser['babelParser'].parse = vi.fn().mockImplementation(() => {
+        throw new Error('Critical parsing failure');
+      });
+
+      const code = `function test() { return 'test'; }`;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(false);
+      expect(result.structure).toBeUndefined();
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0].message).toContain('Critical parsing failure');
+      expect(result.partiallyParsed).toBe(false);
+      
+      // Check if any notification method was called (could be error or warning depending on error type)
+      const notificationCalled = mockNotifications.showErrorToast.mock.calls.length > 0 ||
+                                 mockNotifications.showWarningToast.mock.calls.length > 0 ||
+                                 mockNotifications.showInfoToast.mock.calls.length > 0;
+      expect(notificationCalled).toBe(true);
+
+      // Restore original method
+      parser['babelParser'].parse = originalParse;
+    });
+
+    it('should work without notification hook', () => {
+      const code = `
+        function invalidFunction() {
+          const x = ;
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      // Should not throw error when no notification hook provided
+    });
+
+    it('should handle dependency extraction errors as warnings', () => {
+      // Mock dependency extractor to throw an error
+      const originalExtractDependencies = parser['dependencyExtractor'].extractDependencies;
+      parser['dependencyExtractor'].extractDependencies = vi.fn().mockImplementation(() => {
+        throw new Error('Dependency extraction failed');
+      });
+
+      const code = `
+        function testFunction() {
+          return 'test';
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(true);
+      expect(result.structure).toBeDefined();
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings[0].type).toBe('dependency');
+      expect(result.warnings[0].suggestion).toContain('External dependencies may not be displayed correctly');
+
+      // Restore original method
+      parser['dependencyExtractor'].extractDependencies = originalExtractDependencies;
+    });
+
+    it('should handle variable extraction errors as warnings', () => {
+      // Mock variable extractor to throw an error
+      const originalExtractVariables = parser['variableExtractor'].extractVariables;
+      parser['variableExtractor'].extractVariables = vi.fn().mockImplementation(() => {
+        throw new Error('Variable extraction failed');
+      });
+
+      const code = `
+        function testFunction() {
+          const x = 'test';
+          return x;
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(true);
+      expect(result.structure).toBeDefined();
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings[0].type).toBe('semantic');
+      expect(result.warnings[0].suggestion).toContain('Variable configuration may not be available');
+
+      // Restore original method
+      parser['variableExtractor'].extractVariables = originalExtractVariables;
+    });
+
+    it('should provide appropriate error suggestions', () => {
+      const code = `
+        function testFunction() {
+          const x = ;
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0].suggestion).toBeDefined();
+      expect(result.errors[0].suggestion).toContain('semicolons, brackets, or quotes');
+    });
+
+    it('should handle multiple error types correctly', () => {
+      // Create a scenario with both syntax errors and extractor failures
+      const originalExtractFunctions = parser['functionExtractor'].extractFunctions;
+      parser['functionExtractor'].extractFunctions = vi.fn().mockImplementation(() => {
+        throw new Error('Function extraction failed');
+      });
+
+      const code = `
+        function invalidFunction() {
+          const x = ;
+        }
+      `;
+
+      const result = parser.parseFileWithErrorHandling(code, mockNotifications);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.partiallyParsed).toBe(false);
+
+      // Check if any notification method was called (could be error or warning depending on error type)
+      const notificationCalled = mockNotifications.showErrorToast.mock.calls.length > 0 ||
+                                 mockNotifications.showWarningToast.mock.calls.length > 0 ||
+                                 mockNotifications.showInfoToast.mock.calls.length > 0;
+      expect(notificationCalled).toBe(true);
+
+      // Restore original method
+      parser['functionExtractor'].extractFunctions = originalExtractFunctions;
+    });
+  });
+
+  describe('analyzeScopeViolations', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      // Mock console methods to avoid noise in tests
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'info').mockImplementation(() => {});
+      vi.spyOn(console, 'group').mockImplementation(() => {});
+      vi.spyOn(console, 'groupEnd').mockImplementation(() => {});
+    });
+
+    it('should analyze scope violations in parsed structure', () => {
+      const code = `
+        function parentFunction() {
+          function childFunction() {
+            return siblingFunction(); // This should trigger a scope violation
+          }
+          
+          function siblingFunction() {
+            return "sibling";
+          }
+          
+          return childFunction();
+        }
+      `;
+
+      const result = parser.parseFile(code);
+      const violations = parser.analyzeScopeViolations(result, mockNotifications);
+
+      expect(violations.length).toBeGreaterThan(0);
+      const scopeViolation = violations.find(v => v.type === 'invalid_scope');
+      expect(scopeViolation).toBeDefined();
+      expect(mockNotifications.showWarningToast).toHaveBeenCalled();
+    });
+
+    it('should handle scope analysis errors gracefully', () => {
+      const invalidStructure = {
+        functions: null as any,
+        calls: [],
+        dependencies: [],
+        variables: [],
+        comments: []
+      };
+
+      const violations = parser.analyzeScopeViolations(invalidStructure, mockNotifications);
+
+      expect(violations).toHaveLength(0);
+      expect(console.warn).toHaveBeenCalledWith('Failed to analyze scope violations:', expect.any(Error));
+    });
+
+    it('should work without notification hook', () => {
+      const code = `
+        function validFunction() {
+          return "valid";
+        }
+      `;
+
+      const result = parser.parseFile(code);
+      const violations = parser.analyzeScopeViolations(result);
+
+      expect(violations).toHaveLength(0);
+      // Should not throw error when no notification hook provided
+    });
+  });
+
+  describe('getScopeViolationIndicators', () => {
+    it('should create visual indicators for scope violations', () => {
+      const code = `
+        function childFunction() {
+          return "child";
+        }
+      `;
+
+      // Manually create a structure with a scope violation
+      const result = parser.parseFile(code);
+      result.functions[0].isNested = true;
+      result.functions[0].parentFunction = 'nonExistentParent';
+
+      const indicators = parser.getScopeViolationIndicators(result);
+
+      expect(indicators.size).toBeGreaterThan(0);
+      const functionIndicators = indicators.get(result.functions[0].id);
+      expect(functionIndicators).toBeDefined();
+      expect(functionIndicators?.[0].type).toBe('missing_parent');
+      expect(functionIndicators?.[0].severity).toBe('error');
+    });
+
+    it('should handle indicator creation errors gracefully', () => {
+      const invalidStructure = {
+        functions: null as any,
+        calls: [],
+        dependencies: [],
+        variables: [],
+        comments: []
+      };
+
+      const indicators = parser.getScopeViolationIndicators(invalidStructure);
+
+      expect(indicators.size).toBe(0);
+      expect(console.warn).toHaveBeenCalledWith('Failed to create scope violation indicators:', expect.any(Error));
     });
   });
 });
