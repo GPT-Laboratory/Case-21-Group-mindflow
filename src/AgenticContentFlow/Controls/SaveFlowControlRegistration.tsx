@@ -19,10 +19,7 @@ export const SaveFlowControlRegistration: React.FC = () => {
       CONTROL_TYPES.MINDMAP,
       'save-flow',
       SaveFlowControl,
-      {
-        variant: 'outline',
-        size: 'sm'
-      },
+      {}, // No props needed since we're using ControlButton
       10 // High priority order
     );
 
