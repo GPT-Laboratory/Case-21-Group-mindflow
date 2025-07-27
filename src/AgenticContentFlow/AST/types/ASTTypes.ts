@@ -108,6 +108,33 @@ export interface FlowChange {
   timestamp: string;
 }
 
+// Error handling types
+export interface ParseError {
+  id: string;
+  type: 'syntax' | 'semantic' | 'dependency' | 'scope';
+  message: string;
+  sourceLocation?: SourceLocation;
+  severity: 'error' | 'warning' | 'info';
+  suggestion?: string;
+  code?: string;
+  functionName?: string;
+  recoverable: boolean;
+}
+
+export interface ParseResult {
+  success: boolean;
+  structure?: ParsedFileStructure;
+  errors: ParseError[];
+  warnings: ParseError[];
+  partiallyParsed: boolean;
+}
+
+export interface ErrorRecoveryStrategy {
+  type: 'skip_function' | 'use_fallback' | 'continue_parsing' | 'abort';
+  description: string;
+  apply: () => void;
+}
+
 // Scope violation detection types
 export interface ScopeViolation {
   type: 'missing_parent' | 'circular_dependency' | 'invalid_scope';

@@ -11,6 +11,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    // Provide process polyfill for Babel compatibility
+    'process.env': {},
+  },
   server: {
     proxy: {
       '/api': {

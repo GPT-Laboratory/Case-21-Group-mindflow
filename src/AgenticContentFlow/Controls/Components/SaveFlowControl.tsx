@@ -15,19 +15,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import ControlButton from './ControlButton';
 import { useSaveFlow } from '../../hooks/useSaveFlow';
 
-interface SaveFlowControlProps {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
-  className?: string;
-}
+interface SaveFlowControlProps {}
 
-export const SaveFlowControl: React.FC<SaveFlowControlProps> = ({
-  variant = 'outline',
-  size = 'sm',
-  className = ''
-}) => {
+export const SaveFlowControl: React.FC<SaveFlowControlProps> = () => {
   const { saveCurrentFlow, isSaving, hasCurrentFlow, nodeCount, edgeCount } = useSaveFlow();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
@@ -54,19 +47,14 @@ export const SaveFlowControl: React.FC<SaveFlowControlProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant={variant} 
-          size={size} 
-          className={className}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          {size !== 'icon' && <span className="ml-2">Save Flow</span>}
-        </Button>
+        <span>
+          <ControlButton
+            tooltip={isSaving ? "Saving..." : "Save Flow"}
+            onClick={() => setIsOpen(true)}
+            icon={isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            disabled={isSaving}
+          />
+        </span>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

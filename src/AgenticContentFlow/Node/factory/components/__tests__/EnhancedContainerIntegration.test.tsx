@@ -4,9 +4,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { UnifiedNodeWrapper } from '../NodeWrapper';
-import { NodeProvider } from '../../../context/useNodeContext';
+import { NodeProvider, useNodeContext } from '../../../context/useNodeContext';
 import { FrameJSON } from '../../types/FrameJSON';
 import { EnhancedContainerNode } from '../../../interfaces/ContainerNodeInterfaces';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 // Mock the node type store
 vi.mock('../../../store/NodeTypeStoreInitializer', () => ({
@@ -365,9 +366,8 @@ describe('Enhanced Container Integration', () => {
         updateNodes: vi.fn()
       }));
 
-      // Temporarily replace the useNodeContext hook
-      const originalModule = require('../../../context/useNodeContext');
-      originalModule.useNodeContext = mockUseNodeContext;
+      // Mock the useNodeContext hook
+      vi.mocked(useNodeContext).mockReturnValue(mockUseNodeContext());
 
       render(
         <TestWrapper>
@@ -448,8 +448,7 @@ describe('Enhanced Container Integration', () => {
         updateNodes: vi.fn()
       }));
 
-      const originalModule = require('../../../context/useNodeContext');
-      originalModule.useNodeContext = mockUseNodeContext;
+      vi.mocked(useNodeContext).mockReturnValue(mockUseNodeContext() as any);
 
       const containerNode: EnhancedContainerNode = {
         id: 'auto-enable-container',

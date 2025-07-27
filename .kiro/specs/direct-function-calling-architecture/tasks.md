@@ -151,30 +151,30 @@
     - Write tests for complexity management features
     - _Requirements: 9.4, 9.5_
 
-- [ ] 9. Implement code import and analysis system
-  - [ ] 9.1 Create JavaScript file import functionality
+- [x] 9. Implement code import and analysis system
+  - [x] 9.1 Create JavaScript file import functionality
     - Implement file upload and parsing for JavaScript files
     - Create flow generation from imported code
     - Handle nested functions and class structures
     - Write tests for code import functionality
     - _Requirements: 4.1, 4.2_
 
-  - [ ] 9.2 Implement external dependency handling
+  - [x] 9.2 Implement external dependency handling
     - Detect and categorize external dependencies
     - Create appropriate visual representations for dependencies
     - Handle different types of external calls and imports
     - Write tests for dependency handling
     - _Requirements: 4.3_
 
-- [ ] 10. Implement error handling and validation
-  - [ ] 10.1 Create AST parsing error handling
+- [x] 10. Implement error handling and validation
+  - [x] 10.1 Create AST parsing error handling
     - Implement graceful degradation for syntax errors
     - Provide detailed error locations and suggestions
     - Continue parsing valid functions when errors occur
     - Write tests for error handling scenarios
     - _Requirements: Design requirement for error handling_
 
-  - [ ] 10.2 Implement scope violation detection and visualization
+  - [x] 10.2 Implement scope violation detection and visualization
     - Detect scoping violations and highlight them visually
     - Integrate with existing linting tools
     - Provide suggestions for scope corrections

@@ -85,7 +85,7 @@ export const ValidatedHandle: React.FC<ValidatedHandleProps> = ({
   }, []);
 
   return (
-    <div className=\"validated-handle-container\" style={{ position: 'relative' }}>
+    <div className="validated-handle-container" style={{ position: 'relative' }}>
       <Handle
         {...handleProps}
         id={handleId}
@@ -100,7 +100,7 @@ export const ValidatedHandle: React.FC<ValidatedHandleProps> = ({
       {/* Validation feedback tooltip */}
       {showValidationFeedback && validationMessage && (
         <div 
-          className=\"validation-tooltip\"
+          className="validation-tooltip"
           style={{
             position: 'absolute',
             top: position === Position.Top ? '-30px' : position === Position.Bottom ? '30px' : '50%',
@@ -127,19 +127,19 @@ export const ValidatedHandle: React.FC<ValidatedHandleProps> = ({
  * Convenience components for different handle types and orientations
  */
 export const HorizontalSourceHandle: React.FC<Omit<ValidatedHandleProps, 'handleType' | 'connectionType'>> = (props) => (
-  <ValidatedHandle {...props} handleType=\"source\" connectionType=\"horizontal\" />
+  <ValidatedHandle {...props} handleType="source" connectionType="horizontal" />
 );
 
 export const HorizontalTargetHandle: React.FC<Omit<ValidatedHandleProps, 'handleType' | 'connectionType'>> = (props) => (
-  <ValidatedHandle {...props} handleType=\"target\" connectionType=\"horizontal\" />
+  <ValidatedHandle {...props} handleType="target" connectionType="horizontal" />
 );
 
 export const VerticalSourceHandle: React.FC<Omit<ValidatedHandleProps, 'handleType' | 'connectionType'>> = (props) => (
-  <ValidatedHandle {...props} handleType=\"source\" connectionType=\"vertical\" />
+  <ValidatedHandle {...props} handleType="source" connectionType="vertical" />
 );
 
 export const VerticalTargetHandle: React.FC<Omit<ValidatedHandleProps, 'handleType' | 'connectionType'>> = (props) => (
-  <ValidatedHandle {...props} handleType=\"target\" connectionType=\"vertical\" />
+  <ValidatedHandle {...props} handleType="target" connectionType="vertical" />
 );
 
 /**
