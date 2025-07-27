@@ -1,5 +1,7 @@
 import * as Babel from '@babel/standalone';
 import * as t from '@babel/types';
+import { ParseError, ParseResult } from '../types/ASTTypes';
+import { errorHandlingService } from '../services/ErrorHandlingService';
 
 export class BabelParser {
   /**
@@ -34,6 +36,134 @@ export class BabelParser {
       return result.ast;
     } catch (error) {
       throw new Error(`Failed to parse JavaScript code: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Parse JavaScript code with enhanced error handling and recovery
+   */
+  parseWithErrorHandling(code: string): ParseResult {
+    const errors: ParseError[] = [];
+    const warnings: ParseError[] = [];
+    
+    try {
+      const result = Babel.transform(code, {
+        sourceType: 'module',
+        parserOpts: {
+          allowImportExportEverywhere: true,
+          allowReturnOutsideFunction: true,
+          plugins: [
+            'jsx',
+            'typescript',
+            'decorators-legacy',
+            'classProperties',
+            'objectRestSpread',
+            'functionBind',
+            'exportDefaultFrom',
+            'exportNamespaceFrom',
+            'dynamicImport',
+            'nullishCoalescingOperator',
+            'optionalChaining'
+          ],
+          attachComments: true
+        },
+        ast: true,
+        code: false
+      });
+      
+      return {
+        success: true,
+        structure: undefined, // Will be filled by ASTParserService
+        errors,
+        warnings,
+        partiallyParsed: false
+      };
+    } catch (error) {
+      const parseError = errorHandlingService.handleBabelError(error, code);
+      errors.push(parseError);
+
+      // Try fallback parsing strategies
+      const fallbackResult = this.attemptFallbackParsing(code, error);
+      
+      return {
+        success: fallbackResult.success,
+        structure: undefined, // Will be filled by ASTParserService if fallback succeeds
+        errors,
+        warnings,
+        partiallyParsed: fallbackResult.success
+      };
+    }
+  }
+
+  /**
+   * Attempt fallback parsing strategies when main parsing fails
+   */
+  private attemptFallbackParsing(code: string, originalError: any): { success: boolean; ast?: any } {
+    // Strategy 1: Try parsing as script instead of module
+    try {
+      const result = Babel.transform(code, {
+        sourceType: 'script',
+        parserOpts: {
+          allowReturnOutsideFunction: true,
+          plugins: ['jsx', 'typescript'],
+          attachComments: true,
+          errorRecovery: true
+        },
+        ast: true,
+        code: false
+      });
+      
+      return { success: true, ast: result.ast };
+    } catch (scriptError) {
+      // Strategy 2: Try with minimal plugins
+      try {
+        const result = Babel.transform(code, {
+          sourceType: 'module',
+          parserOpts: {
+            allowImportExportEverywhere: true,
+            attachComments: true,
+            errorRecovery: true
+          },
+          ast: true,
+          code: false
+        });
+        
+        return { success: true, ast: result.ast };
+      } catch (minimalError) {
+        // Strategy 3: Try to extract individual functions using regex
+        return this.extractFunctionsWithRegex(code);
+      }
+    }
+  }
+
+  /**
+   * Fallback function extraction using regex when AST parsing fails
+   */
+  private extractFunctionsWithRegex(code: string): { success: boolean; ast?: any } {
+    try {
+      // This is a very basic fallback - in a real implementation,
+      // you might want to create a minimal AST-like structure
+      const functionMatches = code.match(/function\s+(\w+)\s*\([^)]*\)\s*\{/g);
+      const arrowFunctionMatches = code.match(/(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>/g);
+      
+      if (functionMatches || arrowFunctionMatches) {
+        // Create a minimal AST-like structure for the functions found
+        // This would need to be expanded for full functionality
+        return { 
+          success: true, 
+          ast: {
+            type: 'Program',
+            body: [],
+            comments: [],
+            // Mark as fallback parsed
+            _fallbackParsed: true
+          }
+        };
+      }
+      
+      return { success: false };
+    } catch (regexError) {
+      return { success: false };
     }
   }
 

@@ -341,22 +341,30 @@ ${functionBody}
       };
     }
 
-    // Case 2: Multiple functions - find the one that calls others
-    const candidatesWithCalls = functions.map(func => {
-      const otherFunctionNames = functions
-        .filter(f => f.name !== func.name)
-        .map(f => f.name);
-      
-      const callsCount = otherFunctionNames.filter(name => 
-        func.code.includes(`${name}(`)
-      ).length;
+    // Case 2: Multiple functions - find the one that calls others or has wrapper-like characteristics
+    const candidatesWithScores = functions.map(func => {
+      const score = this.calculateWrapperScore(func, functions, variables);
+      return { func, score };
+    }).sort((a, b) => b.score - a.score);
 
-      return { func, callsCount };
-    }).filter(candidate => candidate.callsCount > 0);
+    // Check if we have multiple functions that call others (multiple wrapper candidates)
+    // Only consider it multiple wrappers if they have significant scores (> 0.5)
+    const functionsWithSignificantCalls = candidatesWithScores.filter(c => c.score > 0.5);
+    
+    if (functionsWithSignificantCalls.length > 1) {
+      return {
+        flowStructureNotification: {
+          type: 'multiple_wrappers',
+          message: 'Multiple functions call other functions. Consider creating a single main wrapper function.',
+          severity: 'suggestion',
+          suggestedAction: 'Create a main() function that orchestrates your flow by calling the other functions in sequence.'
+        }
+      };
+    }
 
-    // Case 2a: Exactly one function calls others - perfect wrapper
-    if (candidatesWithCalls.length === 1) {
-      const wrapper = candidatesWithCalls[0].func;
+    // If we have a clear winner (score > 0.6), use it as wrapper
+    if (candidatesWithScores.length > 0 && candidatesWithScores[0].score > 0.6) {
+      const wrapper = candidatesWithScores[0].func;
       const wrapperVariables = variables.filter(v => v.containingFunction === wrapper.name);
       
       // Mark variables as flow-level
@@ -369,21 +377,40 @@ ${functionBody}
           functionInfo: wrapper,
           variables: wrapperVariables,
           isFlowWrapper: true,
-          wrapperConfidence: 1.0
+          wrapperConfidence: candidatesWithScores[0].score
         }
       };
     }
 
-    // Case 2b: Multiple functions call others - ambiguous
-    if (candidatesWithCalls.length > 1) {
-      return {
-        flowStructureNotification: {
-          type: 'multiple_wrappers',
-          message: 'Multiple functions call other functions. Consider creating a single main wrapper function.',
-          severity: 'suggestion',
-          suggestedAction: 'Create a main() function that orchestrates your flow by calling the other functions in sequence.'
-        }
-      };
+    // Look for functions with wrapper-like names, but only if they also have some score
+    const wrapperNameCandidates = functions.filter(func => 
+      ['main', 'init', 'setup', 'run', 'start'].some(name => 
+        func.name.toLowerCase().includes(name.toLowerCase())
+      )
+    );
+
+    if (wrapperNameCandidates.length === 1) {
+      const wrapper = wrapperNameCandidates[0];
+      const wrapperScore = candidatesWithScores.find(c => c.func.name === wrapper.name)?.score || 0;
+      
+      // Only use wrapper name as fallback if it has some score or calls other functions
+      if (wrapperScore > 0) {
+        const wrapperVariables = variables.filter(v => v.containingFunction === wrapper.name);
+        
+        // Mark variables as flow-level
+        wrapperVariables.forEach(v => {
+          v.isFlowLevel = true;
+        });
+
+        return {
+          wrapperFunction: {
+            functionInfo: wrapper,
+            variables: wrapperVariables,
+            isFlowWrapper: true,
+            wrapperConfidence: Math.max(wrapperScore, 0.7)
+          }
+        };
+      }
     }
 
     // Case 2c: No function calls others - missing wrapper
@@ -416,8 +443,11 @@ ${functionBody}
       .filter(f => f.name !== candidate.name)
       .map(f => f.name);
     
+    // Extract just the function body from the candidate's code
+    const functionBody = this.extractFunctionBody(candidate);
+    
     const functionCallsCount = otherFunctionNames.filter(name => 
-      candidate.code.includes(`${name}(`)
+      functionBody.includes(`${name}(`)
     ).length;
     
     // If it calls other functions, it's likely a wrapper
@@ -427,8 +457,38 @@ ${functionBody}
       return Math.min(callRatio + 0.5, 1.0); // Base score + call ratio
     }
     
-    // If it doesn't call other functions, it's probably not a wrapper
+    // Check if it has wrapper-like characteristics (name, variables, etc.)
+    const hasWrapperName = ['main', 'init', 'setup', 'run', 'start'].some(name => 
+      candidate.name.toLowerCase().includes(name.toLowerCase())
+    );
+    
+    if (hasWrapperName) {
+      return 0.7; // High confidence for wrapper-named functions
+    }
+    
+    // If it doesn't call other functions and doesn't have wrapper characteristics, it's probably not a wrapper
     return 0.0;
+  }
+
+  /**
+   * Extract function body from function metadata
+   */
+  private extractFunctionBody(func: FunctionMetadata): string {
+    // If the code contains the entire file, extract just this function's part
+    if (func.sourceLocation && func.code.includes('function')) {
+      const lines = func.code.split('\n');
+      const startLine = func.sourceLocation.start.line - 1;
+      const endLine = func.sourceLocation.end.line - 1;
+      
+      if (startLine >= 0 && endLine < lines.length && startLine <= endLine) {
+        const extracted = lines.slice(startLine, endLine + 1).join('\n');
+        // console.log(`Extracted function body for ${func.name}:`, extracted);
+        return extracted;
+      }
+    }
+    
+    // Fallback to the entire code if we can't extract properly
+    return func.code;
   }
 
   /**
