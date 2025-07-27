@@ -21,8 +21,6 @@ export const CodeImportExportControlsRegistration: React.FC = () => {
       'import-js',
       CodeImportExportControl,
       {
-        variant: 'outline',
-        size: 'sm',
         mode: 'import'
       },
       20 // Medium priority order
@@ -35,8 +33,6 @@ export const CodeImportExportControlsRegistration: React.FC = () => {
       'export-flow',
       CodeImportExportControl,
       {
-        variant: 'outline',
-        size: 'sm',
         mode: 'export'
       },
       21 // Medium priority order

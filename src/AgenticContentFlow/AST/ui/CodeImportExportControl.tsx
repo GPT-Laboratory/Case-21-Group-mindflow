@@ -14,22 +14,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import ControlButton from '../../Controls/Components/ControlButton';
 import { flowGenerator } from '../services/FlowGenerator';
 import { useNodeContext } from '../../Node/context/useNodeContext';
 import { useEdgeContext } from '../../Edge/store/useEdgeContext';
 import { useNotifications } from '../../Notifications/hooks/useNotifications';
 
 interface CodeImportExportControlProps {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
-  className?: string;
   mode: 'import' | 'export';
 }
 
 export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = ({
-  variant = 'outline',
-  size = 'sm',
-  className = '',
   mode
 }) => {
   const { showErrorToast, showSuccessToast } = useNotifications();
@@ -38,7 +33,7 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fileName, setFileName] = useState('');
-  
+
   const { setNodes, nodes } = useNodeContext();
   const { setEdges, edges } = useEdgeContext();
 
@@ -63,11 +58,11 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
     try {
       const code = await file.text();
       const flow = flowGenerator.generateFlow(code, file.name);
-      
+
       // Load the generated flow into the current view
       setNodes(flow.nodes);
       setEdges(flow.edges);
-      
+
       setIsImportOpen(false);
       showSuccessToast('Import Successful', `Successfully imported ${flow.nodes.length} nodes and ${flow.edges.length} edges from ${file.name}`);
     } catch (error) {
@@ -107,7 +102,7 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
       const jsonContent = JSON.stringify(exportData, null, 2);
       const blob = new Blob([jsonContent], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = url;
       link.download = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
@@ -128,16 +123,14 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
     return (
       <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
         <DialogTrigger asChild>
-          <Button 
-            variant={variant} 
-            size={size} 
-            className={className}
-            onClick={handleImportClick}
-            disabled={isProcessing}
-          >
-            <Upload className="w-4 h-4" />
-            {size !== 'icon' && <span className="ml-2">Import JS</span>}
-          </Button>
+          <span>
+            <ControlButton
+              tooltip="Import JavaScript File"
+              onClick={handleImportClick}
+              icon={<Upload className="size-4" />}
+              disabled={isProcessing}
+            />
+          </span>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -157,9 +150,9 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
                   readOnly
                   className="flex-1"
                 />
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={handleFileSelect}
                   disabled={isProcessing}
                 >
@@ -177,8 +170,8 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsImportOpen(false)}
               disabled={isProcessing}
             >
@@ -193,15 +186,13 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
   return (
     <Dialog open={isExportOpen} onOpenChange={setIsExportOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant={variant} 
-          size={size} 
-          className={className}
-          onClick={handleExportClick}
-        >
-          <Download className="w-4 h-4" />
-          {size !== 'icon' && <span className="ml-2">Export Flow</span>}
-        </Button>
+        <span>
+          <ControlButton
+            tooltip="Export Current Flow"
+            onClick={handleExportClick}
+            icon={<Download className="size-4" />}
+          />
+        </span>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -226,13 +217,13 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
           </div>
         </div>
         <DialogFooter>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setIsExportOpen(false)}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleExport}
             disabled={!fileName.trim()}
           >
