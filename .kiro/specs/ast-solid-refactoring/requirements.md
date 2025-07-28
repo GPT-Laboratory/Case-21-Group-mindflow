@@ -2,7 +2,16 @@
 
 ## Introduction
 
-This feature refactors the existing AST parsing system to follow SOLID principles, eliminate code duplication (DRY), and improve maintainability. The current AST implementation has several architectural issues including violation of Single Responsibility Principle, tight coupling, code duplication across extractors, and lack of proper abstraction. This refactoring will create a more maintainable, testable, and extensible AST parsing architecture.
+This feature refactors the existing AST parsing system to follow SOLID principles, eliminate code duplication (DRY), and improve maintainability. The current AST implementation has several architectural issues including violation of Single Responsibility Principle, tight coupling, code duplication across extractors, and lack of proper abstraction.
+
+**Current Structure Analysis:**
+- ASTParserService directly instantiates all extractors (tight coupling)
+- Each extractor (FunctionExtractor, CallExtractor, etc.) implements its own traversal logic (code duplication)
+- FlowCodeSynchronizer directly instantiates ASTParserService (dependency inversion violation)
+- Multiple services in the services/ folder have overlapping responsibilities
+- No shared utilities for common operations like source location extraction
+
+The refactoring will transform the current tightly-coupled system into a clean, modular architecture where each component has a single responsibility, dependencies are properly abstracted, and common functionality is shared through utilities. This will result in a more maintainable, testable, and extensible AST parsing architecture that follows industry best practices.
 
 ## Requirements
 
