@@ -177,7 +177,7 @@ export const useFlowsStore = create<FlowsStore>()(
           return flow;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.error('Failed to save flow:', error);
+          console.error('Failed to save flow:', errorMessage);
           return null;
         } finally {
           set({ loading: false });

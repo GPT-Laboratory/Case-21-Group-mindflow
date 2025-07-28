@@ -12,7 +12,6 @@ import { ErrorsTab } from './components/tabs/ErrorsTab/ErrorsTab';
 import { ResponsiveTabs } from './components/ResponsiveTabs';
 import { ContentPreviewTab } from './components/tabs/PreviewContentTab/ContentPreviewTab';
 import { CodeEditorTab } from './components/tabs/CodeEditorTab/CodeEditorTab';
-import { GenerationPanel } from '../Generator/ui/generation/GenerationPanel';
 
 // LLM Generation System imports
 import { apiKeyManager } from '../Generator/providers/management/APIKeyManager';
@@ -44,7 +43,6 @@ export const NodeConfigPanel: React.FC = () => {
   const [hasDataChanges, setHasDataChanges] = useState(false);
 
   // LLM Generation state
-  const [isGenerating, setIsGenerating] = useState(false);
   const { generateContent } = useGeneration();
   const { updateNodeGenerationStatus, setUpdatingNode } = useGenerator();
 
@@ -167,7 +165,6 @@ export const NodeConfigPanel: React.FC = () => {
       return;
     }
 
-    setIsGenerating(true);
     let notificationId: string | null = null;
 
     try {
@@ -241,7 +238,6 @@ export const NodeConfigPanel: React.FC = () => {
         }, 2000);
       }
     } finally {
-      setIsGenerating(false);
       // Clear the updating state
       setUpdatingNode(activeNode.id, false);
     }

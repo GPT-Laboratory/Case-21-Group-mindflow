@@ -1,6 +1,6 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { FunctionDetailsTab } from '../FunctionDetailsTab';
+import { describe, expect, it } from 'vitest';
 
 describe('FunctionDetailsTab', () => {
   const mockFormData = {

@@ -12,7 +12,6 @@ interface PanelContainerProps {
 
 export const PanelContainer: React.FC<PanelContainerProps> = ({
   isExpanded,
-  position,
   size,
   isResizing,
   children,

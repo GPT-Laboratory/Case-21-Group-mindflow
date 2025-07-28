@@ -3,7 +3,6 @@ import { Database } from 'lucide-react';
 import { 
   TabContainer, 
   SharedEditor,
-  Badge
 } from '../../shared';
 import { getNodeType } from '@/AgenticContentFlow/Node/store';
 
@@ -19,7 +18,7 @@ export const DataTab: React.FC<DataTabProps> = ({
   formData, 
   onFieldChange,
   nodeType,
-  hasChanges = false
+
 }) => {
   // Core state
   const [factoryConfig, setFactoryConfig] = useState<any>(null);
@@ -80,15 +79,8 @@ export const DataTab: React.FC<DataTabProps> = ({
   const dataToShow = { ...formData };
   delete dataToShow.instanceCode;
 
-  const hasCustomData = Object.keys(dataToShow).some(key => 
-    key !== 'nodeType' && key !== 'nodeId' && dataToShow[key] !== undefined && dataToShow[key] !== null
-  );
 
-  const badges = [
-    nodeType && <Badge key="type" variant="outline" className="text-xs">{nodeType}</Badge>,
-    hasChanges && <Badge key="changes" variant="secondary" className="text-xs">Modified</Badge>,
-    hasCustomData && <Badge key="custom" variant="default" className="text-xs">Custom</Badge>
-  ].filter(Boolean);
+
 
   // Create JSON schema for autocomplete based on factory config (excluding instanceCode)
   const schema = {

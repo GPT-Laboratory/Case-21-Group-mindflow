@@ -9,20 +9,17 @@ interface FunctionDetailsTabProps {
 }
 
 export const FunctionDetailsTab: React.FC<FunctionDetailsTabProps> = ({
-  nodeId,
   formData
 }) => {
   const {
     functionName,
     functionDescription,
     parameters = [],
-    returnType,
     sourceLocation,
     isNested,
     parentFunction,
     externalDependencies = [],
     childNodes = [],
-    complexity
   } = formData;
 
   const getComplexityBadge = () => {

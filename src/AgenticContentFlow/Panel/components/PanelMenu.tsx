@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Save, RotateCcw, Sparkles, MoreHorizontal, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Save, RotateCcw, Sparkles, MoreHorizontal} from 'lucide-react';
 
-type PanelPosition = 'top' | 'bottom' | 'left' | 'right';
 
 interface PanelMenuProps {
   hasChanges?: boolean;
@@ -33,12 +32,7 @@ export const PanelMenu: React.FC<PanelMenuProps> = ({
     }
   };
 
-  const positionOptions = [
-    { value: 'top', label: 'Top', icon: ArrowUp },
-    { value: 'bottom', label: 'Bottom', icon: ArrowDown },
-    { value: 'left', label: 'Left', icon: ArrowLeft },
-    { value: 'right', label: 'Right', icon: ArrowRight },
-  ] as const;
+
 
   return (
     <div className="relative">

@@ -5,7 +5,6 @@ import {
   SharedEditor,
   Badge
 } from '../../shared';
-import { ProcessCodeValidator } from '@/AgenticContentFlow/Generator/core/validation/ProcessValidator';
 
 interface CodeEditorTabProps {
   nodeType: string;
@@ -70,7 +69,6 @@ export const CodeEditorTab: React.FC<CodeEditorTabProps> = ({
     );
   }
 
-  const currentCode = formData.instanceCode || factoryConfig.process?.templateCode || factoryConfig.process?.code || '';
   const isCustomCode = !!formData.instanceCode;
 
   const badges = [

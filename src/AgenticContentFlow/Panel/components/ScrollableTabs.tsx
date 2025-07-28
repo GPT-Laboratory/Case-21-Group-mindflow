@@ -5,23 +5,19 @@ interface ScrollableTabsProps {
   className?: string;
 }
 
-export const ScrollableTabs: React.FC<ScrollableTabsProps> = ({ children, className }) => {
+export const ScrollableTabs: React.FC<ScrollableTabsProps> = ({ children }) => {
 
 
 
   return (
 
-      <div
-        className="flex-1 overflow-x-auto scrollbar-hide flex items-center"
+    <div
+      className="flex-1 overflow-x-auto scrollbar-hide flex items-center">
+      <TabsList>
+        {children}
+      </TabsList>
+    </div>
 
-      >
-        <TabsList 
-  
-        >
-          {children}
-        </TabsList>
-      </div>
 
- 
   );
 };

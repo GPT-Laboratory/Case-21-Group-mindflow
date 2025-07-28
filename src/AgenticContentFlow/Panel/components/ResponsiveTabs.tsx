@@ -72,7 +72,6 @@ export const ResponsiveTabs: React.FC = () => {
       // Estimate widths
       const fullWidth = TAB_CONFIGS.length * 100; // generous for full text
       const abbreviatedWidth = TAB_CONFIGS.length * 56; // icon + abbrev
-      const iconWidth = TAB_CONFIGS.length * 40; // icon only
       if (containerWidth >= fullWidth) {
         setDisplayMode('full');
       } else if (containerWidth >= abbreviatedWidth) {
