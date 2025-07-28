@@ -5,6 +5,7 @@ import { FunctionExtractor } from './extractors/FunctionExtractor';
 import { CallExtractor } from './extractors/CallExtractor';
 import { DependencyExtractor } from './extractors/DependencyExtractor';
 import { VariableExtractor } from './extractors/VariableExtractor';
+import { ASTTraverser } from './core/ASTTraverser';
 import { externalDependencyProcessor, ExternalDependencyResult } from './services/ExternalDependencyProcessor';
 import { errorHandlingService } from './services/ErrorHandlingService';
 import { scopeViolationService } from './services/ScopeViolationService';
@@ -25,7 +26,10 @@ export class ASTParserService {
     this.functionExtractor = new FunctionExtractor(this.babelParser, this.commentExtractor);
     this.callExtractor = new CallExtractor(this.babelParser);
     this.dependencyExtractor = new DependencyExtractor();
-    this.variableExtractor = new VariableExtractor(this.babelParser);
+    
+    // Create ASTTraverser for the new architecture
+    const traverser = new ASTTraverser();
+    this.variableExtractor = new VariableExtractor(traverser);
   }
 
   /**
@@ -43,7 +47,7 @@ export class ASTParserService {
       const functions = this.functionExtractor.extractFunctions(ast, code, comments);
       const calls = this.callExtractor.identifyFunctionCalls(ast);
       const dependencies = this.dependencyExtractor.extractDependencies(ast);
-      const variables = this.variableExtractor.extractVariables(ast);
+      const variables = this.variableExtractor.extract(ast);
 
       return {
         functions,
@@ -325,7 +329,7 @@ export class ASTParserService {
    */
   private extractVariablesWithErrorHandling(ast: any, errors: ParseError[], warnings: ParseError[]) {
     try {
-      return this.variableExtractor.extractVariables(ast);
+      return this.variableExtractor.extract(ast);
     } catch (error) {
       const parseError = errorHandlingService.createParseError(
         'semantic',
