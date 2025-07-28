@@ -5,7 +5,6 @@ import {
   ChildNodeManager, 
   ScopeContext, 
   ParentChildRelationship,
-  EnhancedNodeData 
 } from '../interfaces/ContainerNodeInterfaces';
 
 /**

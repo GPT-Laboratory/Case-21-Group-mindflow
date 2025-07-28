@@ -2,6 +2,7 @@
 
 import { ChildNodeManagerService } from '../ChildNodeManager';
 import { EnhancedContainerNode, ScopeContext } from '../../interfaces/ContainerNodeInterfaces';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('ChildNodeManagerService', () => {
   let childNodeManager: ChildNodeManagerService;
