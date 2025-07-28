@@ -4,6 +4,12 @@ export { ASTParserService } from './ASTParserService';
 // Types
 export * from './types/ASTTypes';
 
+// Core interfaces and abstractions
+export * from './interfaces/CoreInterfaces';
+
+// Error handling
+export { ASTError } from './errors/ASTError';
+
 // Individual extractors (for advanced usage)
 export { BabelParser } from './parsers/BabelParser';
 export { CommentExtractor } from './extractors/CommentExtractor';
