@@ -1,5 +1,6 @@
 import { CommentUtils } from '../CommentUtils';
 import { CommentMetadata, SourceLocation } from '../../types/ASTTypes';
+import { describe, expect, it } from 'vitest';
 
 describe('CommentUtils', () => {
   const createSourceLocation = (startLine: number, startColumn: number, endLine: number, endColumn: number): SourceLocation => ({

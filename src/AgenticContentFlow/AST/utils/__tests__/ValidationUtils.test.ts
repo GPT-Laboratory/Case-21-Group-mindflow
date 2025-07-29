@@ -1,6 +1,7 @@
 import * as t from '@babel/types';
 import { ValidationUtils, ASTError } from '../ValidationUtils';
 import { SourceLocation } from '../../types/ASTTypes';
+import { describe, expect, it } from 'vitest';
 
 describe('ValidationUtils', () => {
   const createSourceLocation = (startLine: number, startColumn: number, endLine: number, endColumn: number): SourceLocation => ({

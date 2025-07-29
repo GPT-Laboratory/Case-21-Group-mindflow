@@ -43,8 +43,8 @@ describe('EdgeSynchronizationService', () => {
   `;
 
   beforeEach(() => {
-    mockEdgeManager = new AutomaticEdgeManager();
-    mockASTParser = new ASTParserService();
+    mockASTParser = vi.mocked(new ASTParserService({} as any, {} as any));
+    mockEdgeManager = vi.mocked(new AutomaticEdgeManager(mockASTParser));
     syncService = new EdgeSynchronizationService(mockEdgeManager, mockASTParser);
 
     // Setup mock implementations
@@ -100,7 +100,7 @@ describe('EdgeSynchronizationService', () => {
   describe('synchronizeEdges', () => {
     it('should successfully synchronize edges with code', () => {
       const currentEdges: Edge[] = [];
-      
+
       const result = syncService.synchronizeEdges(sampleCode, currentEdges);
 
       expect(result.success).toBe(true);
@@ -124,7 +124,7 @@ describe('EdgeSynchronizationService', () => {
 
     it('should return early when sync is disabled', () => {
       syncService.setSyncEnabled(false);
-      
+
       const result = syncService.synchronizeEdges(sampleCode, []);
 
       expect(result.success).toBe(true);
@@ -260,7 +260,7 @@ describe('EdgeSynchronizationService', () => {
 
     it('should return true when parsing fails', () => {
       syncService.synchronizeEdges(sampleCode, []);
-      
+
       vi.mocked(mockASTParser.parseFile).mockImplementation(() => {
         throw new Error('Parse error');
       });
@@ -273,17 +273,17 @@ describe('EdgeSynchronizationService', () => {
   describe('sync state management', () => {
     it('should enable and disable sync', () => {
       expect(syncService.isSyncEnabled()).toBe(true);
-      
+
       syncService.setSyncEnabled(false);
       expect(syncService.isSyncEnabled()).toBe(false);
-      
+
       syncService.setSyncEnabled(true);
       expect(syncService.isSyncEnabled()).toBe(true);
     });
 
     it('should track last known code', () => {
       expect(syncService.getLastKnownCode()).toBe('');
-      
+
       syncService.synchronizeEdges(sampleCode, []);
       expect(syncService.getLastKnownCode()).toBe(sampleCode);
     });
@@ -291,9 +291,9 @@ describe('EdgeSynchronizationService', () => {
     it('should reset state', () => {
       syncService.synchronizeEdges(sampleCode, []);
       syncService.setSyncEnabled(false);
-      
+
       syncService.reset();
-      
+
       expect(syncService.getLastKnownCode()).toBe('');
       expect(syncService.isSyncEnabled()).toBe(true);
     });

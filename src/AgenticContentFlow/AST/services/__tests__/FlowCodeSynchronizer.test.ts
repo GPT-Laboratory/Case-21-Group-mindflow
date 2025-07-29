@@ -1,11 +1,66 @@
 import { FlowCodeSynchronizer } from '../FlowCodeSynchronizer';
-import { FlowStructure, FlowChange } from '../../types/ASTTypes';
+import { FlowStructure, FlowChange, ParsedFileStructure } from '../../types/ASTTypes';
+import { ASTParserServiceInterface } from '../../interfaces/CoreInterfaces';
+import { ASTError } from '../../errors/ASTError';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
+import { afterEach } from 'node:test';
 
 describe('FlowCodeSynchronizer', () => {
   let synchronizer: FlowCodeSynchronizer;
+  let mockParserService: vi.Mocked<ASTParserServiceInterface>;
 
   beforeEach(() => {
-    synchronizer = new FlowCodeSynchronizer();
+    // Create mock parser service
+    mockParserService = {
+      parseFile: vi.fn()
+    };
+
+    // Set up default mock return value to prevent undefined errors
+    mockParserService.parseFile.mockReturnValue({
+      functions: [],
+      calls: [],
+      variables: [],
+      comments: [],
+      dependencies: []
+    });
+
+    synchronizer = new FlowCodeSynchronizer(mockParserService);
+  });
+
+  afterEach(() => {
+    // Reset all mocks after each test to prevent leakage
+    vi.clearAllMocks();
+  });
+
+  describe('constructor', () => {
+    it('should throw ASTError when parser service is not provided', () => {
+      expect(() => {
+        new FlowCodeSynchronizer(null as any);
+      }).toThrow(ASTError);
+
+      expect(() => {
+        new FlowCodeSynchronizer(null as any);
+      }).toThrow('ASTParserServiceInterface instance is required');
+    });
+
+    it('should throw ASTError when parser service does not implement parseFile method', () => {
+      const invalidParser = {} as ASTParserServiceInterface;
+
+      expect(() => {
+        new FlowCodeSynchronizer(invalidParser);
+      }).toThrow(ASTError);
+
+      expect(() => {
+        new FlowCodeSynchronizer(invalidParser);
+      }).toThrow('Parser service must implement parseFile method');
+    });
+
+    it('should accept valid parser service', () => {
+      expect(() => {
+        new FlowCodeSynchronizer(mockParserService);
+      }).not.toThrow();
+    });
   });
 
   describe('syncCodeToFlow', () => {
@@ -28,22 +83,71 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service response
+      const mockParsedStructure: ParsedFileStructure = {
+        functions: [
+          {
+            id: 'add_0',
+            name: 'add',
+            parameters: [
+              { name: 'a', type: 'unknown' },
+              { name: 'b', type: 'unknown' }
+            ],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 6, column: 8 }, end: { line: 8, column: 9 } },
+            description: 'Adds two numbers',
+            isNested: false,
+            scope: 'global',
+            code: 'function add(a, b) {\n  return a + b;\n}'
+          },
+          {
+            id: 'multiply_1',
+            name: 'multiply',
+            parameters: [
+              { name: 'x', type: 'unknown' },
+              { name: 'y', type: 'unknown' }
+            ],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 13, column: 8 }, end: { line: 15, column: 9 } },
+            description: 'Multiplies two numbers',
+            isNested: false,
+            scope: 'global',
+            code: 'function multiply(x, y) {\n  return add(x * y, 0);\n}'
+          }
+        ],
+        calls: [
+          {
+            id: 'call_0',
+            callerFunction: 'multiply',
+            calledFunction: 'add',
+            sourceLocation: { start: { line: 14, column: 10 }, end: { line: 14, column: 25 } },
+            isExternal: false
+          }
+        ],
+        variables: [],
+        comments: [],
+        dependencies: []
+      };
+
+      mockParserService.parseFile.mockReturnValue(mockParsedStructure);
+
       const flow = synchronizer.syncCodeToFlow(code, 'calculator.js');
 
+      expect(mockParserService.parseFile).toHaveBeenCalledWith(code);
       expect(flow.fileName).toBe('calculator.js');
       expect(flow.description).toContain('Simple calculator functions');
       expect(flow.nodes).toHaveLength(2);
-      
+
       const addNode = flow.nodes.find(n => n.data.functionName === 'add');
       const multiplyNode = flow.nodes.find(n => n.data.functionName === 'multiply');
-      
+
       expect(addNode).toBeDefined();
-      expect(addNode.data.description).toContain('Adds two numbers');
-      expect(addNode.data.parameters).toHaveLength(2);
-      
+      expect(addNode?.data.description).toContain('Adds two numbers');
+      expect(addNode?.data.parameters).toHaveLength(2);
+
       expect(multiplyNode).toBeDefined();
-      expect(multiplyNode.data.description).toContain('Multiplies two numbers');
-      
+      expect(multiplyNode?.data.description).toContain('Multiplies two numbers');
+
       // Should have edge from multiply to add
       expect(flow.edges).toHaveLength(1);
       if (flow.edges.length > 0) {
@@ -62,8 +166,49 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service response
+      const mockParsedStructure: ParsedFileStructure = {
+        functions: [
+          {
+            id: 'calculateArea_0',
+            name: 'calculateArea',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 5, column: 8 }, end: { line: 7, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function calculateArea() {\n  return PI * radius * radius;\n}'
+          }
+        ],
+        calls: [],
+        variables: [
+          {
+            name: 'PI',
+            type: 'const',
+            defaultValue: '3.14159',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 2, column: 25 } },
+            scope: 'global',
+            description: ''
+          },
+          {
+            name: 'radius',
+            type: 'let',
+            defaultValue: '5',
+            sourceLocation: { start: { line: 3, column: 8 }, end: { line: 3, column: 19 } },
+            scope: 'global',
+            description: ''
+          }
+        ],
+        comments: [],
+        dependencies: []
+      };
+
+      mockParserService.parseFile.mockReturnValue(mockParsedStructure);
+
       const flow = synchronizer.syncCodeToFlow(code, 'circle.js');
 
+      expect(mockParserService.parseFile).toHaveBeenCalledWith(code);
       expect(flow.variables).toHaveLength(2);
       expect(flow.variables.find(v => v.name === 'PI')).toBeDefined();
       expect(flow.variables.find(v => v.name === 'radius')).toBeDefined();
@@ -80,23 +225,80 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service response
+      const mockParsedStructure: ParsedFileStructure = {
+        functions: [
+          {
+            id: 'outerFunction_0',
+            name: 'outerFunction',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 7, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function outerFunction() {\n  function innerFunction() {\n    return \'inner\';\n  }\n  return innerFunction();\n}'
+          },
+          {
+            id: 'innerFunction_1',
+            name: 'innerFunction',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 3, column: 10 }, end: { line: 5, column: 11 } },
+            description: '',
+            isNested: true,
+            parentFunction: 'outerFunction_0',
+            scope: 'function',
+            code: 'function innerFunction() {\n  return \'inner\';\n}'
+          }
+        ],
+        calls: [
+          {
+            id: 'call_0',
+            callerFunction: 'outerFunction',
+            calledFunction: 'innerFunction',
+            sourceLocation: { start: { line: 6, column: 10 }, end: { line: 6, column: 26 } },
+            isExternal: false
+          }
+        ],
+        variables: [],
+        comments: [],
+        dependencies: []
+      };
+
+      mockParserService.parseFile.mockReturnValue(mockParsedStructure);
+
       const flow = synchronizer.syncCodeToFlow(code, 'nested.js');
 
+      expect(mockParserService.parseFile).toHaveBeenCalledWith(code);
       expect(flow.nodes).toHaveLength(2);
-      
+
       const outerNode = flow.nodes.find(n => n.data.functionName === 'outerFunction');
       const innerNode = flow.nodes.find(n => n.data.functionName === 'innerFunction');
-      
+
       expect(outerNode).toBeDefined();
       expect(innerNode).toBeDefined();
-      expect(innerNode.data.isNested).toBe(true);
-      expect(innerNode.data.parentFunction).toBe(outerNode?.id);
+      expect(innerNode?.data.isNested).toBe(true);
+      expect(innerNode?.data.parentFunction).toBe(outerNode?.id);
     });
 
     it('should handle empty code gracefully', () => {
       const code = '';
+
+      // Mock the parser service response for empty code
+      const mockParsedStructure: ParsedFileStructure = {
+        functions: [],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      };
+
+      mockParserService.parseFile.mockReturnValue(mockParsedStructure);
+
       const flow = synchronizer.syncCodeToFlow(code, 'empty.js');
 
+      expect(mockParserService.parseFile).toHaveBeenCalledWith(code);
       expect(flow.nodes).toHaveLength(0);
       expect(flow.edges).toHaveLength(0);
       expect(flow.variables).toHaveLength(0);
@@ -114,9 +316,14 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service to throw an ASTError for invalid syntax
+      mockParserService.parseFile.mockImplementation(() => {
+        throw new ASTError('Parsing failed: Unexpected token', 'BabelParser');
+      });
+
       expect(() => {
         synchronizer.syncCodeToFlow(code, 'invalid.js');
-      }).toThrow();
+      }).toThrow(ASTError);
     });
   });
 
@@ -261,9 +468,9 @@ describe('FlowCodeSynchronizer', () => {
           return 'original';
         }
       `;
-      
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
-      
+
       // Create changes to add a new node
       const changes: FlowChange[] = [
         {
@@ -281,9 +488,9 @@ describe('FlowCodeSynchronizer', () => {
           timestamp: new Date().toISOString()
         }
       ];
-      
+
       const updatedCode = synchronizer.updateCodeFromFlowChanges(changes);
-      
+
       expect(updatedCode).toContain('function original()');
       expect(updatedCode).toContain('function newFunction()');
     });
@@ -297,10 +504,10 @@ describe('FlowCodeSynchronizer', () => {
           return 'remove';
         }
       `;
-      
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const nodeToRemove = flow.nodes.find(n => n.data.functionName === 'remove');
-      
+
       const changes: FlowChange[] = [
         {
           type: 'node_removed',
@@ -308,9 +515,9 @@ describe('FlowCodeSynchronizer', () => {
           timestamp: new Date().toISOString()
         }
       ];
-      
+
       const updatedCode = synchronizer.updateCodeFromFlowChanges(changes);
-      
+
       expect(updatedCode).toContain('function keep()');
       expect(updatedCode).not.toContain('function remove()');
     });
@@ -324,11 +531,11 @@ describe('FlowCodeSynchronizer', () => {
           return 'target';
         }
       `;
-      
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const callerNode = flow.nodes.find(n => n.data.functionName === 'caller');
       const targetNode = flow.nodes.find(n => n.data.functionName === 'target');
-      
+
       const changes: FlowChange[] = [
         {
           type: 'edge_added',
@@ -341,9 +548,9 @@ describe('FlowCodeSynchronizer', () => {
           timestamp: new Date().toISOString()
         }
       ];
-      
+
       const updatedCode = synchronizer.updateCodeFromFlowChanges(changes);
-      
+
       expect(updatedCode).toContain('function caller()');
       expect(updatedCode).toContain('target();');
       expect(updatedCode).toContain('function target()');
@@ -357,7 +564,7 @@ describe('FlowCodeSynchronizer', () => {
           timestamp: new Date().toISOString()
         }
       ];
-      
+
       expect(() => {
         synchronizer.updateCodeFromFlowChanges(changes);
       }).toThrow('No current flow structure to update from');
@@ -367,18 +574,18 @@ describe('FlowCodeSynchronizer', () => {
   describe('persistCodeChanges', () => {
     it('should update internal code state', () => {
       const newCode = 'function test() { return "test"; }';
-      
+
       synchronizer.persistCodeChanges(newCode, 'test.js');
-      
+
       expect(synchronizer.getCurrentCode()).toBe(newCode);
     });
 
     it('should handle file path for persistence', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
       const newCode = 'function test() { return "test"; }';
-      
+
       synchronizer.persistCodeChanges(newCode, '/path/to/test.js');
-      
+
       expect(consoleSpy).toHaveBeenCalledWith('Code would be persisted to: /path/to/test.js');
       consoleSpy.mockRestore();
     });
@@ -398,9 +605,9 @@ describe('FlowCodeSynchronizer', () => {
         function helper2() {}
         function utility() {}
       `;
-      
+
       synchronizer.syncCodeToFlow(code, 'test.js');
-      
+
       const functionCalls = [
         {
           callerFunction: 'main',
@@ -424,9 +631,11 @@ describe('FlowCodeSynchronizer', () => {
       expect(edges).toHaveLength(3);
       expect(edges[0].source).toBe('main_0');
       expect(edges[0].target).toBe('helper1_1');
-      expect(edges[0].data.callType).toBe('direct');
-      
-      expect(edges[2].data.callType).toBe('external');
+      expect(edges[0].data).toBeDefined();
+      expect(edges[0].data?.callType).toBe('direct');
+
+      expect(edges[2].data).toBeDefined();
+      expect(edges[2].data?.callType).toBe('external');
     });
 
     it('should handle empty function calls array', () => {
@@ -502,10 +711,10 @@ describe('FlowCodeSynchronizer', () => {
           return 'original';
         }
       `;
-      
+
       const initialFlow = synchronizer.syncCodeToFlow(initialCode, 'test.js');
       expect(initialFlow.nodes).toHaveLength(1);
-      
+
       // Update code with new function
       const updatedCode = `
         function original() {
@@ -516,15 +725,15 @@ describe('FlowCodeSynchronizer', () => {
           return 'helper';
         }
       `;
-      
+
       const updatedFlow = synchronizer.reAnalyzeCodeChanges(updatedCode);
-      
+
       expect(updatedFlow.nodes).toHaveLength(2);
       expect(updatedFlow.edges).toHaveLength(1);
-      
+
       const originalNode = updatedFlow.nodes.find(n => n.data.functionName === 'original');
       const helperNode = updatedFlow.nodes.find(n => n.data.functionName === 'helper');
-      
+
       expect(originalNode).toBeDefined();
       expect(helperNode).toBeDefined();
       expect(updatedFlow.edges[0].source).toBe(originalNode?.id);
@@ -536,11 +745,11 @@ describe('FlowCodeSynchronizer', () => {
         function func1() {}
         function func2() {}
       `;
-      
+
       const initialFlow = synchronizer.syncCodeToFlow(initialCode, 'test.js');
       const originalFunc1Id = initialFlow.nodes.find(n => n.data.functionName === 'func1')?.id;
       const originalFunc1Position = initialFlow.nodes.find(n => n.data.functionName === 'func1')?.position;
-      
+
       // Update code but keep same functions
       const updatedCode = `
         function func1() {
@@ -548,10 +757,10 @@ describe('FlowCodeSynchronizer', () => {
         }
         function func2() {}
       `;
-      
+
       const updatedFlow = synchronizer.reAnalyzeCodeChanges(updatedCode);
       const updatedFunc1 = updatedFlow.nodes.find(n => n.data.functionName === 'func1');
-      
+
       expect(updatedFunc1?.id).toBe(originalFunc1Id);
       expect(updatedFunc1?.position).toEqual(originalFunc1Position);
     });
@@ -574,16 +783,16 @@ describe('FlowCodeSynchronizer', () => {
           return oldName();
         }
       `;
-      
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const updatedFlow = synchronizer.updateNodeNameReferences('oldName', 'newName');
-      
+
       const renamedNode = updatedFlow.nodes.find(n => n.data.functionName === 'newName');
       const callerNode = updatedFlow.nodes.find(n => n.data.functionName === 'caller');
-      
+
       expect(renamedNode).toBeDefined();
       expect(renamedNode?.data.label).toBe('newName');
-      
+
       // Check that edge references are updated
       const edge = updatedFlow.edges.find(e => e.source === callerNode?.id);
       expect(edge?.data.targetFunction).toBe('newName');
@@ -598,13 +807,13 @@ describe('FlowCodeSynchronizer', () => {
           return nestedFunction();
         }
       `;
-      
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const parentNode = flow.nodes.find(n => n.data.functionName === 'parentFunction');
       const originalParentId = parentNode?.id;
-      
+
       const updatedFlow = synchronizer.updateNodeNameReferences('parentFunction', 'renamedParent');
-      
+
       const nestedNode = updatedFlow.nodes.find(n => n.data.functionName === 'nestedFunction');
       // The parent function reference should be updated to the new name
       expect(nestedNode?.data.parentFunction).toBe('renamedParent');
@@ -628,22 +837,22 @@ describe('FlowCodeSynchronizer', () => {
           return nested();
         }
       `;
-      
+
       synchronizer.syncCodeToFlow(code, 'test.js');
-      
+
       // Get the parent node ID before removing it
       const currentFlow = synchronizer.getCurrentFlowStructure();
       const parentNode = currentFlow?.nodes.find(n => n.data?.functionName === 'parent');
       const parentNodeId = parentNode?.id;
-      
+
       // Manually remove the parent function to simulate a violation
       if (currentFlow) {
         currentFlow.nodes = currentFlow.nodes.filter(n => n.data?.functionName !== 'parent');
         (synchronizer as any).currentFlowStructure = currentFlow;
       }
-      
+
       const violations = synchronizer.detectScopeViolations();
-      
+
       expect(violations).toHaveLength(1);
       expect(violations[0].type).toBe('missing_parent');
       expect(violations[0].functionName).toBe('nested');
@@ -661,10 +870,10 @@ describe('FlowCodeSynchronizer', () => {
           return func1();
         }
       `;
-      
+
       synchronizer.syncCodeToFlow(code, 'test.js');
       const violations = synchronizer.detectScopeViolations();
-      
+
       expect(violations.length).toBeGreaterThan(0);
       const circularViolation = violations.find(v => v.type === 'circular_dependency');
       expect(circularViolation).toBeDefined();
@@ -677,10 +886,10 @@ describe('FlowCodeSynchronizer', () => {
           return 'clean';
         }
       `;
-      
+
       synchronizer.syncCodeToFlow(code, 'test.js');
       const violations = synchronizer.detectScopeViolations();
-      
+
       expect(violations).toHaveLength(0);
     });
 
@@ -702,9 +911,9 @@ describe('FlowCodeSynchronizer', () => {
           severity: 'error' as const
         }
       ];
-      
+
       const corrections = synchronizer.suggestScopeCorrections(violations);
-      
+
       expect(corrections).toHaveLength(1);
       expect(corrections[0].type).toBe('move_to_global');
       expect(corrections[0].description).toContain('Move \'nested\' to global scope');
@@ -721,9 +930,9 @@ describe('FlowCodeSynchronizer', () => {
           severity: 'warning' as const
         }
       ];
-      
+
       const corrections = synchronizer.suggestScopeCorrections(violations);
-      
+
       expect(corrections).toHaveLength(1);
       expect(corrections[0].type).toBe('break_cycle');
       expect(corrections[0].description).toContain('Break circular dependency');
@@ -734,30 +943,30 @@ describe('FlowCodeSynchronizer', () => {
   describe('auto-synchronization features', () => {
     it('should enable and disable auto-sync', () => {
       const callback = vi.fn();
-      
+
       synchronizer.enableAutoSync(callback);
       expect((synchronizer as any).autoSyncCallback).toBe(callback);
-      
+
       synchronizer.disableAutoSync();
       expect((synchronizer as any).autoSyncCallback).toBeUndefined();
     });
 
     it('should trigger auto-sync and call callback', () => {
       const callback = vi.fn();
-      
+
       // First create a base flow
       const initialCode = `function test() { return 'test'; }`;
       synchronizer.syncCodeToFlow(initialCode, 'test.js');
-      
+
       synchronizer.enableAutoSync(callback);
-      
+
       const updatedCode = `
         function test() { return helper(); }
         function helper() { return 'helper'; }
       `;
-      
+
       const result = synchronizer.triggerAutoSync(updatedCode);
-      
+
       expect(callback).toHaveBeenCalledWith(result);
       expect(result.nodes).toHaveLength(2);
     });
@@ -807,13 +1016,13 @@ describe('FlowCodeSynchronizer', () => {
       };
 
       const changes = synchronizer.compareFlowStructures(oldFlow, newFlow);
-      
+
       expect(changes.length).toBeGreaterThan(0);
-      
+
       const nodeAdded = changes.find(c => c.type === 'node_added');
       const nodeModified = changes.find(c => c.type === 'node_modified');
       const edgeAdded = changes.find(c => c.type === 'edge_added');
-      
+
       expect(nodeAdded).toBeDefined();
       expect(nodeModified).toBeDefined();
       expect(edgeAdded).toBeDefined();
@@ -827,22 +1036,22 @@ describe('FlowCodeSynchronizer', () => {
           return 'test';
         }
       `;
-      
+
       const flow = synchronizer.syncCodeToFlow(initialCode, 'test.js');
       const testNode = flow.nodes.find(n => n.data.functionName === 'test');
-      
+
       // Wait a bit to ensure different timestamps
       await new Promise(resolve => setTimeout(resolve, 10));
-      
+
       const updatedNodeCode = `
         function test() {
           helper();
           return 'updated';
         }
       `;
-      
+
       const updatedFlow = synchronizer.monitorNodeCodeChanges(testNode?.id!, updatedNodeCode);
-      
+
       expect(updatedFlow.nodes).toHaveLength(1);
       expect(updatedFlow.nodes[0].data.code).toBe(updatedNodeCode);
       expect(updatedFlow.metadata.lastModified).not.toBe(flow.metadata.lastModified);
@@ -857,9 +1066,9 @@ describe('FlowCodeSynchronizer', () => {
           return 'helper';
         }
       `;
-      
+
       synchronizer.syncCodeToFlow(code, 'test.js');
-      
+
       const modifiedCode = `
         function main() {
           return helper();
@@ -868,12 +1077,13 @@ describe('FlowCodeSynchronizer', () => {
           return 'helper';
         }
       `;
-      
+
       const edges = synchronizer.autoUpdateEdgesFromCodeModification(modifiedCode);
-      
+
       expect(edges).toHaveLength(1);
-      expect(edges[0].data.sourceFunction).toBe('main');
-      expect(edges[0].data.targetFunction).toBe('helper');
+      expect(edges[0].data).toBeDefined();
+      expect(edges[0].data?.sourceFunction).toBe('main');
+      expect(edges[0].data?.targetFunction).toBe('helper');
     });
 
     it('should handle node name changes and update references', () => {
@@ -885,16 +1095,16 @@ describe('FlowCodeSynchronizer', () => {
           return 'helper';
         }
       `;
-      
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const oldNameNode = flow.nodes.find(n => n.data.functionName === 'oldName');
-      
+
       const updatedFlow = synchronizer.handleNodeNameChange(oldNameNode?.id!, 'oldName', 'newName');
-      
+
       const renamedNode = updatedFlow.nodes.find(n => n.data.functionName === 'newName');
       expect(renamedNode).toBeDefined();
       expect(renamedNode?.data.label).toBe('newName');
-      
+
       // Check that code was updated
       const currentCode = synchronizer.getCurrentCode();
       expect(currentCode).toContain('function newName()');
@@ -907,9 +1117,9 @@ describe('FlowCodeSynchronizer', () => {
           return 'func1';
         }
       `;
-      
+
       synchronizer.syncCodeToFlow(initialCode, 'test.js');
-      
+
       const newCode = `
         function func1() {
           return func2();
@@ -918,19 +1128,19 @@ describe('FlowCodeSynchronizer', () => {
           return 'func2';
         }
       `;
-      
+
       const updatedFlow = synchronizer.detectAndApplyIncrementalChanges(newCode);
-      
+
       expect(updatedFlow.nodes).toHaveLength(2);
       // The edges might be empty if the AST parser doesn't detect the function call properly
       // Let's just check that the nodes are created correctly
-      
+
       const func1Node = updatedFlow.nodes.find(n => n.data.functionName === 'func1');
       const func2Node = updatedFlow.nodes.find(n => n.data.functionName === 'func2');
-      
+
       expect(func1Node).toBeDefined();
       expect(func2Node).toBeDefined();
-      
+
       // If edges are created, verify they're correct
       if (updatedFlow.edges.length > 0) {
         expect(updatedFlow.edges[0].source).toBe(func1Node?.id);
@@ -959,7 +1169,7 @@ describe('FlowCodeSynchronizer', () => {
     it('should handle node not found error in monitoring', () => {
       const code = `function test() { return 'test'; }`;
       synchronizer.syncCodeToFlow(code, 'test.js');
-      
+
       expect(() => {
         synchronizer.monitorNodeCodeChanges('nonexistent-id', 'updated code');
       }).toThrow('Node with ID nonexistent-id not found');
@@ -1009,12 +1219,12 @@ describe('FlowCodeSynchronizer', () => {
 
       // Should arrange nodes in a grid pattern
       expect(flow.nodes).toHaveLength(5);
-      
+
       // First row
       expect(flow.nodes[0].position).toEqual({ x: 50, y: 50 });
       expect(flow.nodes[1].position).toEqual({ x: 300, y: 50 });
       expect(flow.nodes[2].position).toEqual({ x: 550, y: 50 });
-      
+
       // Second row
       expect(flow.nodes[3].position).toEqual({ x: 50, y: 200 });
       expect(flow.nodes[4].position).toEqual({ x: 300, y: 200 });
@@ -1024,18 +1234,18 @@ describe('FlowCodeSynchronizer', () => {
       // Test with no current flow structure
       const emptyResult = (synchronizer as any).detectCircularDependencies('nonexistent');
       expect(emptyResult).toEqual([]);
-      
+
       // Test with self-referencing function
       const code = `
         function recursive() {
           return recursive();
         }
       `;
-      
+
       synchronizer.syncCodeToFlow(code, 'test.js');
       const flow = synchronizer.getCurrentFlowStructure();
       const recursiveNode = flow?.nodes.find(n => n.data?.functionName === 'recursive');
-      
+
       if (recursiveNode) {
         const cycle = (synchronizer as any).detectCircularDependencies(recursiveNode.id);
         expect(cycle.length).toBeGreaterThan(0);
@@ -1052,18 +1262,18 @@ describe('FlowCodeSynchronizer', () => {
           return nested();
         }
       `;
-      
+
       synchronizer.syncCodeToFlow(code, 'test.js');
       const flow = synchronizer.getCurrentFlowStructure();
       const nestedNode = flow?.nodes.find(n => n.data?.functionName === 'nested');
-      
+
       if (nestedNode) {
         // Test moveNodeToGlobalScope
         (synchronizer as any).moveNodeToGlobalScope(nestedNode.id);
-        
+
         const updatedFlow = synchronizer.getCurrentFlowStructure();
         const updatedNestedNode = updatedFlow?.nodes.find(n => n.id === nestedNode.id);
-        
+
         expect(updatedNestedNode?.data.isNested).toBe(false);
         expect(updatedNestedNode?.data.parentFunction).toBeUndefined();
         expect(updatedNestedNode?.data.scope).toBe('global');

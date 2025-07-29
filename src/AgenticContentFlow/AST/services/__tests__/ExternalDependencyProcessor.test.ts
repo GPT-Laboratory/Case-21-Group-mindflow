@@ -1,7 +1,7 @@
 /** @format */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { externalDependencyProcessor, ExternalDependency } from '../ExternalDependencyProcessor';
+import { externalDependencyProcessor } from '../ExternalDependencyProcessor';
 import { BabelParser } from '../../parsers/BabelParser';
 import { ScopeContext } from '../../../Node/interfaces/ContainerNodeInterfaces';
 

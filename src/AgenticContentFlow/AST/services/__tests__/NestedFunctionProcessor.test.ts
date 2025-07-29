@@ -3,6 +3,7 @@
 import { NestedFunctionProcessor } from '../NestedFunctionProcessor';
 import { FunctionMetadata, ParsedFileStructure } from '../../types/ASTTypes';
 import { EnhancedContainerNode } from '../../../Node/interfaces/ContainerNodeInterfaces';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('NestedFunctionProcessor', () => {
   let processor: NestedFunctionProcessor;
@@ -422,8 +423,10 @@ describe('NestedFunctionProcessor', () => {
       const node1 = result.nodes.find(n => n.data.functionName === 'function1');
       const node2 = result.nodes.find(n => n.data.functionName === 'function2');
 
-      expect(node1?.position.y).toBeLessThan(node2?.position.y);
-      expect(node1?.position.x).toBeGreaterThan(node2?.position.x);
+      expect(node1).toBeDefined();
+      expect(node2).toBeDefined();
+      expect(node1!.position.y).toBeLessThan(node2!.position.y);
+      expect(node1!.position.x).toBeGreaterThan(node2!.position.x);
     });
   });
 });

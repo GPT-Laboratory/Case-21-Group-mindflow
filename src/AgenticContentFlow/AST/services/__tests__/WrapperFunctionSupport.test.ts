@@ -9,6 +9,7 @@
 import { VariableConfigurationService } from '../VariableConfigurationService';
 import { BabelParser } from '../../parsers/BabelParser';
 import { FunctionMetadata } from '../../types/ASTTypes';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('VariableConfigurationService - Wrapper Function Support', () => {
   let service: VariableConfigurationService;

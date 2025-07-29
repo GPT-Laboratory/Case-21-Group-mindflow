@@ -1,5 +1,6 @@
 import * as t from '@babel/types';
 import { ParameterUtils } from '../ParameterUtils';
+import { describe, expect, it } from 'vitest';
 
 describe('ParameterUtils', () => {
   describe('extractParameters', () => {
@@ -9,7 +10,7 @@ describe('ParameterUtils', () => {
         [t.identifier('param1'), t.identifier('param2')],
         t.blockStatement([])
       );
-      
+
       const parameters = ParameterUtils.extractParameters(node);
       expect(parameters).toHaveLength(2);
       expect(parameters[0]).toEqual({
@@ -33,7 +34,7 @@ describe('ParameterUtils', () => {
         ],
         t.blockStatement([])
       );
-      
+
       const parameters = ParameterUtils.extractParameters(node);
       expect(parameters).toHaveLength(2);
       expect(parameters[0]).toEqual({
@@ -54,7 +55,7 @@ describe('ParameterUtils', () => {
         [t.restElement(t.identifier('args'))],
         t.blockStatement([])
       );
-      
+
       const parameters = ParameterUtils.extractParameters(node);
       expect(parameters).toHaveLength(1);
       expect(parameters[0]).toEqual({
@@ -73,7 +74,7 @@ describe('ParameterUtils', () => {
         ])],
         t.blockStatement([])
       );
-      
+
       const parameters = ParameterUtils.extractParameters(node);
       expect(parameters).toHaveLength(1);
       expect(parameters[0]).toEqual({
@@ -89,7 +90,7 @@ describe('ParameterUtils', () => {
         [t.arrayPattern([t.identifier('first'), t.identifier('second')])],
         t.blockStatement([])
       );
-      
+
       const parameters = ParameterUtils.extractParameters(node);
       expect(parameters).toHaveLength(1);
       expect(parameters[0]).toEqual({
@@ -105,7 +106,7 @@ describe('ParameterUtils', () => {
         [],
         t.blockStatement([])
       );
-      
+
       const parameters = ParameterUtils.extractParameters(node);
       expect(parameters).toEqual([]);
     });
@@ -117,7 +118,7 @@ describe('ParameterUtils', () => {
         t.blockStatement([])
       );
       delete (node as any).params;
-      
+
       const parameters = ParameterUtils.extractParameters(node);
       expect(parameters).toEqual([]);
     });
@@ -127,7 +128,7 @@ describe('ParameterUtils', () => {
     it('should extract identifier parameter', () => {
       const param = t.identifier('test');
       const result = ParameterUtils.extractParameter(param);
-      
+
       expect(result).toEqual({
         name: 'test',
         type: undefined,
@@ -138,7 +139,7 @@ describe('ParameterUtils', () => {
     it('should extract assignment pattern parameter', () => {
       const param = t.assignmentPattern(t.identifier('test'), t.stringLiteral('default'));
       const result = ParameterUtils.extractParameter(param);
-      
+
       expect(result).toEqual({
         name: 'test',
         type: undefined,
@@ -149,7 +150,7 @@ describe('ParameterUtils', () => {
     it('should extract rest element parameter', () => {
       const param = t.restElement(t.identifier('args'));
       const result = ParameterUtils.extractParameter(param);
-      
+
       expect(result).toEqual({
         name: '...args',
         type: undefined,

@@ -1,13 +1,16 @@
 import * as t from '@babel/types';
 import { SourceLocationUtils } from '../SourceLocationUtils';
 import { SourceLocation } from '../../types/ASTTypes';
+import { describe, expect, it } from 'vitest';
 
 describe('SourceLocationUtils', () => {
   const createMockNode = (startLine: number, startColumn: number, endLine: number, endColumn: number): t.Node => {
     const node = t.identifier('test');
     node.loc = {
-      start: { line: startLine, column: startColumn },
-      end: { line: endLine, column: endColumn }
+      start: { line: startLine, column: startColumn, index: 0 },
+      end: { line: endLine, column: endColumn, index: 0 },
+      filename: 'test.js',
+      identifierName: 'test'
     };
     return node;
   };
@@ -21,7 +24,7 @@ describe('SourceLocationUtils', () => {
     it('should extract source location from node with location info', () => {
       const node = createMockNode(1, 0, 1, 4);
       const location = SourceLocationUtils.extract(node);
-      
+
       expect(location).toEqual({
         start: { line: 1, column: 0 },
         end: { line: 1, column: 4 }
@@ -31,7 +34,7 @@ describe('SourceLocationUtils', () => {
     it('should return default location for node without location info', () => {
       const node = t.identifier('test');
       const location = SourceLocationUtils.extract(node);
-      
+
       expect(location).toEqual({
         start: { line: 0, column: 0 },
         end: { line: 0, column: 0 }
@@ -49,7 +52,7 @@ describe('SourceLocationUtils', () => {
           end: { line: 2, column: 15 }
         }
       };
-      
+
       const location = SourceLocationUtils.extractFromComment(comment);
       expect(location).toEqual({
         start: { line: 2, column: 0 },
@@ -62,7 +65,7 @@ describe('SourceLocationUtils', () => {
         type: 'CommentBlock',
         value: 'test comment'
       };
-      
+
       const location = SourceLocationUtils.extractFromComment(comment);
       expect(location).toEqual({
         start: { line: 0, column: 0 },
@@ -152,7 +155,7 @@ describe('SourceLocationUtils', () => {
       const location = createSourceLocation(2, 0, 2, 4);
       const rangeStart = createSourceLocation(1, 0, 1, 4);
       const rangeEnd = createSourceLocation(3, 0, 3, 4);
-      
+
       expect(SourceLocationUtils.isWithinRange(location, rangeStart, rangeEnd)).toBe(true);
     });
 
@@ -160,14 +163,14 @@ describe('SourceLocationUtils', () => {
       const location = createSourceLocation(4, 0, 4, 4);
       const rangeStart = createSourceLocation(1, 0, 1, 4);
       const rangeEnd = createSourceLocation(3, 0, 3, 4);
-      
+
       expect(SourceLocationUtils.isWithinRange(location, rangeStart, rangeEnd)).toBe(false);
     });
 
     it('should return true when location equals range boundaries', () => {
       const rangeStart = createSourceLocation(1, 0, 1, 4);
       const rangeEnd = createSourceLocation(3, 0, 3, 4);
-      
+
       expect(SourceLocationUtils.isWithinRange(rangeStart, rangeStart, rangeEnd)).toBe(true);
       expect(SourceLocationUtils.isWithinRange(rangeEnd, rangeStart, rangeEnd)).toBe(true);
     });
@@ -201,7 +204,7 @@ describe('SourceLocationUtils', () => {
         createSourceLocation(2, 0, 2, 4),
         createSourceLocation(5, 0, 5, 4)
       ];
-      
+
       const closest = SourceLocationUtils.findClosest(target, locations);
       expect(closest).toEqual(createSourceLocation(2, 0, 2, 4));
     });
@@ -257,7 +260,7 @@ describe('SourceLocationUtils', () => {
       const loc1 = createSourceLocation(1, 0, 2, 5);
       const loc2 = createSourceLocation(3, 0, 4, 10);
       const merged = SourceLocationUtils.merge(loc1, loc2);
-      
+
       expect(merged).toEqual({
         start: { line: 1, column: 0 },
         end: { line: 4, column: 10 }
@@ -268,7 +271,7 @@ describe('SourceLocationUtils', () => {
       const loc1 = createSourceLocation(3, 0, 4, 10);
       const loc2 = createSourceLocation(1, 0, 2, 5);
       const merged = SourceLocationUtils.merge(loc1, loc2);
-      
+
       expect(merged).toEqual({
         start: { line: 1, column: 0 },
         end: { line: 4, column: 10 }
