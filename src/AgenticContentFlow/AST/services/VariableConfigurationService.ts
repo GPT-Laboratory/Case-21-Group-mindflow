@@ -9,7 +9,7 @@
 
 import * as t from '@babel/types';
 import { BabelParser } from '../parsers/BabelParser';
-import { VariableDeclaration, FunctionMetadata, SourceLocation } from '../types/ASTTypes';
+import { VariableDeclaration, FunctionMetadata } from '../types/ASTTypes';
 
 export interface ConfigurableVariable extends VariableDeclaration {
   /** Unique identifier for the variable */
@@ -131,7 +131,6 @@ export class VariableConfigurationService {
     newValue: any
   ): string {
     try {
-      const ast = this.babelParser.parse(code);
       let updatedCode = code;
       
       // Find and update the variable declaration
@@ -253,7 +252,7 @@ ${functionBody}
   private extractConfigurableVariables(
     ast: t.Node,
     code: string,
-    functions: FunctionMetadata[]
+    _functions: FunctionMetadata[]
   ): ConfigurableVariable[] {
     const variables: ConfigurableVariable[] = [];
     const lines = code.split('\n');
@@ -431,7 +430,7 @@ ${functionBody}
   private calculateWrapperScore(
     candidate: FunctionMetadata,
     allFunctions: FunctionMetadata[],
-    variables: ConfigurableVariable[]
+    _variables: ConfigurableVariable[]
   ): number {
     // If there's only one function, it's automatically the wrapper
     if (allFunctions.length === 1) {
@@ -521,7 +520,7 @@ ${functionBody}
    * Suggest which function a global variable should be moved to
    */
   private suggestFunctionForGlobalVariable(
-    globalVar: ConfigurableVariable,
+    _globalVar: ConfigurableVariable,
     functions: FunctionMetadata[]
   ): string | undefined {
     // Simple heuristic: suggest the first function or a main/wrapper function
@@ -539,7 +538,7 @@ ${functionBody}
    */
   private isVariableConfigurable(
     declarator: t.VariableDeclarator,
-    functionName?: string
+    _functionName?: string
   ): boolean {
     // Variables with initial values are more likely to be configurable
     if (!declarator.init) {

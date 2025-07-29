@@ -3,6 +3,9 @@
 import { ASTParserService } from '../ASTParserService';
 import { ExternalDependencyResult } from './ExternalDependencyProcessor';
 import { FunctionMetadata, FunctionCall } from '../types/ASTTypes';
+import { ParserFactory } from '../factories/ParserFactory';
+import { ExtractorFactory } from '../factories/ExtractorFactory';
+import { ASTTraverser } from '../core/ASTTraverser';
 
 /**
  * Flow node types
@@ -62,27 +65,29 @@ export interface Flow {
  */
 export class FlowGenerator {
   private astParser: ASTParserService;
-  private nodeIdCounter = 0;
   private edgeIdCounter = 0;
 
   constructor() {
-    this.astParser = new ASTParserService();
+    // Create dependencies using factories
+    const parser = ParserFactory.createParser('babel');
+    const traverser = new ASTTraverser();
+    const extractors = ExtractorFactory.createExtractors(traverser);
+    this.astParser = new ASTParserService(parser, extractors);
   }
 
   /**
    * Generate a flow from JavaScript code
    */
   generateFlow(
-    code: string, 
-    fileName: string, 
+    code: string,
+    fileName: string,
     flowId?: string,
     flowName?: string
   ): Flow {
     // Parse the file with external dependencies
     const parseResult = this.astParser.parseFileWithChildNodes(code);
-    
+
     // Reset counters for this flow
-    this.nodeIdCounter = 0;
     this.edgeIdCounter = 0;
 
     // Extract module-level information
@@ -94,7 +99,7 @@ export class FlowGenerator {
     const nodes: FlowNode[] = [containerNode];
 
     // Create function nodes
-    const functionNodes = parseResult.functions.map((func, index) => 
+    const functionNodes = parseResult.functions.map((func, index) =>
       this.createFunctionNode(func, containerNode.id, index)
     );
     nodes.push(...functionNodes);
@@ -128,7 +133,7 @@ export class FlowGenerator {
    * Generate multiple flows from multiple JavaScript files
    */
   generateFlows(files: Array<{ code: string; fileName: string }>): Flow[] {
-    return files.map((file, index) => 
+    return files.map((file, index) =>
       this.generateFlow(file.code, file.fileName, (index + 1).toString())
     );
   }
@@ -175,7 +180,7 @@ export class FlowGenerator {
    * Create external dependency child nodes
    */
   private createExternalDependencyNodes(
-    extDeps: ExternalDependencyResult, 
+    extDeps: ExternalDependencyResult,
     parentFunctionId: string
   ): FlowNode[] {
     return extDeps.childNodes.map((childNode, index) => ({
@@ -184,9 +189,9 @@ export class FlowGenerator {
       parentId: parentFunctionId,
       position: { x: 300, y: 80 + (index * 30) },
       data: {
-        label: childNode.data.label,
-        description: childNode.data.functionDescription,
-        functionName: childNode.data.functionName,
+        label: (childNode.data.label as string) || 'Unknown',
+        description: (childNode.data.functionDescription as string) || undefined,
+        functionName: (childNode.data.functionName as string) || 'unknown',
         dependencyType: (childNode.data as any).dependencyType,
         isBuiltIn: (childNode.data as any).isBuiltIn,
         modulePath: (childNode.data as any).modulePath
@@ -198,7 +203,7 @@ export class FlowGenerator {
    * Create edges for function calls
    */
   private createEdges(
-    calls: FunctionCall[], 
+    calls: FunctionCall[],
     externalDeps: Map<string, ExternalDependencyResult>
   ): FlowEdge[] {
     const edges: FlowEdge[] = [];
@@ -234,11 +239,11 @@ export class FlowGenerator {
   private extractModuleTitle(comments: any[]): string {
     // Look for the first block comment that contains @title
     // This should be the module-level comment even if it's associated with a function
-    const titleComment = comments.find(comment => 
-      comment.type === 'block' && 
+    const titleComment = comments.find(comment =>
+      comment.type === 'block' &&
       comment.value.includes('@title')
     );
-    
+
     if (titleComment) {
       // Extract title from multiline comment
       const lines = titleComment.value.split('\n');
@@ -249,7 +254,7 @@ export class FlowGenerator {
         }
       }
     }
-    
+
     return '';
   }
 
@@ -259,11 +264,11 @@ export class FlowGenerator {
   private extractModuleDescription(comments: any[]): string {
     // Look for the first block comment that contains @description
     // This should be the module-level comment even if it's associated with a function
-    const descComment = comments.find(comment => 
-      comment.type === 'block' && 
+    const descComment = comments.find(comment =>
+      comment.type === 'block' &&
       comment.value.includes('@description')
     );
-    
+
     if (descComment) {
       // Extract description from multiline comment
       const lines = descComment.value.split('\n');
@@ -274,7 +279,7 @@ export class FlowGenerator {
         }
       }
     }
-    
+
     return '';
   }
 

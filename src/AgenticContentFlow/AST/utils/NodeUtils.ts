@@ -148,7 +148,7 @@ export class NodeUtils {
   /**
    * Check if a node is within a function scope
    */
-  static isInFunctionScope(node: t.Node, functionStack: string[]): boolean {
+  static isInFunctionScope(_node: t.Node, functionStack: string[]): boolean {
     return functionStack.length > 0;
   }
 

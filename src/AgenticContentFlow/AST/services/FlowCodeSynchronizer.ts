@@ -1,11 +1,11 @@
-import { ASTParserService } from '../ASTParserService';
+import { ASTParserServiceInterface } from '../interfaces/CoreInterfaces';
+import { ASTError } from '../errors/ASTError';
 import {
   FlowStructure,
   FunctionMetadata,
   ParsedFileStructure,
   SyncValidationResult,
   FlowVariable,
-  FlowMetadata,
   FlowChange,
   ScopeViolation,
   ScopeCorrection
@@ -17,12 +17,20 @@ import { Node, Edge } from '@xyflow/react';
  * It serves as the core engine for maintaining consistency between code files and their visual representations.
  */
 export class FlowCodeSynchronizer {
-  private astParser: ASTParserService;
+  private astParser: ASTParserServiceInterface;
   private currentFlowStructure: FlowStructure | null = null;
   private currentCode: string = '';
 
-  constructor() {
-    this.astParser = new ASTParserService();
+  constructor(astParser: ASTParserServiceInterface) {
+    if (!astParser) {
+      throw new ASTError('ASTParserServiceInterface instance is required', 'FlowCodeSynchronizer');
+    }
+    
+    if (typeof astParser.parseFile !== 'function') {
+      throw new ASTError('Parser service must implement parseFile method', 'FlowCodeSynchronizer');
+    }
+    
+    this.astParser = astParser;
   }
 
   /**
@@ -43,7 +51,10 @@ export class FlowCodeSynchronizer {
       return flowStructure;
     } catch (error) {
       console.error('Error synchronizing code to flow:', error);
-      throw new Error(`Failed to convert code to flow: ${error.message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to convert code to flow: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 
@@ -62,7 +73,10 @@ export class FlowCodeSynchronizer {
       return generatedCode;
     } catch (error) {
       console.error('Error synchronizing flow to code:', error);
-      throw new Error(`Failed to convert flow to code: ${error.message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to convert flow to code: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 
@@ -72,7 +86,7 @@ export class FlowCodeSynchronizer {
    */
   updateCodeFromFlowChanges(changes: FlowChange[]): string {
     if (!this.currentFlowStructure) {
-      throw new Error('No current flow structure to update from');
+      throw new ASTError('No current flow structure to update from', 'FlowCodeSynchronizer');
     }
 
     try {
@@ -88,7 +102,10 @@ export class FlowCodeSynchronizer {
       return updatedCode;
     } catch (error) {
       console.error('Error updating code from flow changes:', error);
-      throw new Error(`Failed to update code from flow changes: ${error.message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to update code from flow changes: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 
@@ -111,7 +128,7 @@ export class FlowCodeSynchronizer {
    */
   reAnalyzeCodeChanges(updatedCode: string): FlowStructure {
     if (!this.currentFlowStructure) {
-      throw new Error('No current flow structure to re-analyze');
+      throw new ASTError('No current flow structure to re-analyze', 'FlowCodeSynchronizer');
     }
 
     try {
@@ -131,7 +148,10 @@ export class FlowCodeSynchronizer {
       return updatedFlow;
     } catch (error) {
       console.error('Error re-analyzing code changes:', error);
-      throw new Error(`Failed to re-analyze code changes: ${error.message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to re-analyze code changes: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 
@@ -140,7 +160,7 @@ export class FlowCodeSynchronizer {
    */
   updateNodeNameReferences(oldName: string, newName: string): FlowStructure {
     if (!this.currentFlowStructure) {
-      throw new Error('No current flow structure to update');
+      throw new ASTError('No current flow structure to update', 'FlowCodeSynchronizer');
     }
 
     const updatedFlow = { ...this.currentFlowStructure };
@@ -341,7 +361,7 @@ export class FlowCodeSynchronizer {
       }
 
     } catch (error) {
-      errors.push(`Validation error: ${error.message}`);
+      errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     return {
@@ -503,7 +523,7 @@ export class FlowCodeSynchronizer {
     }
 
     // Generate function signature
-    const paramList = parameters.map(p => p.name).join(', ');
+    const paramList = Array.isArray(parameters) ? parameters.map(p => p.name).join(', ') : '';
     lines.push(`function ${functionName}(${paramList}) {`);
 
     // Add function calls based on edges
@@ -656,7 +676,7 @@ export class FlowCodeSynchronizer {
   private createUpdatedFlowFromChanges(
     currentFlow: FlowStructure,
     parsedStructure: ParsedFileStructure,
-    updatedCode: string
+    _updatedCode: string
   ): FlowStructure {
     // Create new flow structure from parsed data
     const newFlow = this.createFlowFromParsedStructure(parsedStructure, currentFlow.fileName);
@@ -780,14 +800,14 @@ export class FlowCodeSynchronizer {
    */
   monitorNodeCodeChanges(nodeId: string, updatedCode: string): FlowStructure {
     if (!this.currentFlowStructure) {
-      throw new Error('No current flow structure to monitor');
+      throw new ASTError('No current flow structure to monitor', 'FlowCodeSynchronizer');
     }
 
     try {
       // Find the node that was modified
       const nodeIndex = this.currentFlowStructure.nodes.findIndex(n => n.id === nodeId);
       if (nodeIndex === -1) {
-        throw new Error(`Node with ID ${nodeId} not found`);
+        throw new ASTError(`Node with ID ${nodeId} not found`, 'FlowCodeSynchronizer');
       }
 
       // Update the node's code
@@ -827,7 +847,10 @@ export class FlowCodeSynchronizer {
       return updatedFlow;
     } catch (error) {
       console.error('Error monitoring node code changes:', error);
-      throw new Error(`Failed to monitor node code changes: ${(error as Error).message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to monitor node code changes: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 
@@ -857,16 +880,19 @@ export class FlowCodeSynchronizer {
       return newEdges;
     } catch (error) {
       console.error('Error auto-updating edges from code modification:', error);
-      throw new Error(`Failed to auto-update edges: ${(error as Error).message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to auto-update edges: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 
   /**
    * Handles node name changes and updates all references throughout the flow
    */
-  handleNodeNameChange(nodeId: string, oldName: string, newName: string): FlowStructure {
+  handleNodeNameChange(_nodeId: string, oldName: string, newName: string): FlowStructure {
     if (!this.currentFlowStructure) {
-      throw new Error('No current flow structure to update');
+      throw new ASTError('No current flow structure to update', 'FlowCodeSynchronizer');
     }
 
     try {
@@ -895,7 +921,10 @@ export class FlowCodeSynchronizer {
       return finalFlow;
     } catch (error) {
       console.error('Error handling node name change:', error);
-      throw new Error(`Failed to handle node name change: ${(error as Error).message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to handle node name change: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 
@@ -935,7 +964,7 @@ export class FlowCodeSynchronizer {
    */
   detectAndApplyIncrementalChanges(newCode: string): FlowStructure {
     if (!this.currentFlowStructure) {
-      throw new Error('No current flow structure for incremental updates');
+      throw new ASTError('No current flow structure for incremental updates', 'FlowCodeSynchronizer');
     }
 
     try {
@@ -974,7 +1003,10 @@ export class FlowCodeSynchronizer {
       return updatedFlow;
     } catch (error) {
       console.error('Error detecting and applying incremental changes:', error);
-      throw new Error(`Failed to apply incremental changes: ${(error as Error).message}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(`Failed to apply incremental changes: ${(error as Error).message}`, 'FlowCodeSynchronizer');
     }
   }
 

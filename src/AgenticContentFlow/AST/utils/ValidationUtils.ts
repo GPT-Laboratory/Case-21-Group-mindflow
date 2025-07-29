@@ -1,5 +1,5 @@
 import * as t from '@babel/types';
-import { SourceLocation, Parameter } from '../types/ASTTypes';
+import { SourceLocation } from '../types/ASTTypes';
 import { NodeUtils } from './NodeUtils';
 import { SourceLocationUtils } from './SourceLocationUtils';
 

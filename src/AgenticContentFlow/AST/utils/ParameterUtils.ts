@@ -1,6 +1,5 @@
 import * as t from '@babel/types';
 import { Parameter } from '../types/ASTTypes';
-import { SourceLocationUtils } from './SourceLocationUtils';
 
 /**
  * Shared utility class for parameter extraction logic

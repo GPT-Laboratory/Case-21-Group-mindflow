@@ -1,4 +1,4 @@
-import { ParseError, ParseResult, ErrorRecoveryStrategy, SourceLocation } from '../types/ASTTypes';
+import { ParseError, ErrorRecoveryStrategy, SourceLocation } from '../types/ASTTypes';
 import { useNotifications } from '../../Notifications/hooks/useNotifications';
 
 export class ErrorHandlingService {
@@ -95,14 +95,14 @@ export class ErrorHandlingService {
       'Unterminated string',
       'Invalid or unexpected token'
     ];
-    
+
     return recoverablePatterns.some(pattern => message.includes(pattern));
   }
 
   /**
    * Create recovery strategies for different error types
    */
-  createRecoveryStrategies(error: ParseError, context: { code: string; functionName?: string }): ErrorRecoveryStrategy[] {
+  createRecoveryStrategies(error: ParseError, _context: { code: string; functionName?: string }): ErrorRecoveryStrategy[] {
     const strategies: ErrorRecoveryStrategy[] = [];
 
     switch (error.type) {
@@ -165,7 +165,7 @@ export class ErrorHandlingService {
 
     // Show critical errors as error toasts
     if (criticalErrors.length > 0) {
-      const errorMessage = criticalErrors.length === 1 
+      const errorMessage = criticalErrors.length === 1
         ? `${criticalErrors[0].message}${criticalErrors[0].suggestion ? ` Suggestion: ${criticalErrors[0].suggestion}` : ''}`
         : `${criticalErrors.length} parsing errors found. Check the console for details.`;
 
@@ -208,19 +208,19 @@ export class ErrorHandlingService {
    */
   formatErrorForConsole(error: ParseError, code?: string): string {
     let formatted = `[${error.severity.toUpperCase()}] ${error.type}: ${error.message}`;
-    
+
     if (error.functionName) {
       formatted += `\n  Function: ${error.functionName}`;
     }
-    
+
     if (error.sourceLocation) {
       formatted += `\n  Location: Line ${error.sourceLocation.start.line}, Column ${error.sourceLocation.start.column}`;
     }
-    
+
     if (error.code) {
       formatted += `\n  Code: ${error.code}`;
     }
-    
+
     if (error.suggestion) {
       formatted += `\n  Suggestion: ${error.suggestion}`;
     }
@@ -231,21 +231,21 @@ export class ErrorHandlingService {
       const lineIndex = error.sourceLocation.start.line - 1;
       const contextStart = Math.max(0, lineIndex - 2);
       const contextEnd = Math.min(lines.length, lineIndex + 3);
-      
+
       formatted += '\n  Context:';
       for (let i = contextStart; i < contextEnd; i++) {
         const lineNum = i + 1;
         const isErrorLine = i === lineIndex;
         const prefix = isErrorLine ? '  > ' : '    ';
         formatted += `\n${prefix}${lineNum}: ${lines[i]}`;
-        
+
         if (isErrorLine && error.sourceLocation.start.column > 0) {
           const pointer = ' '.repeat(error.sourceLocation.start.column + prefix.length + lineNum.toString().length + 2) + '^';
           formatted += `\n${pointer}`;
         }
       }
     }
-    
+
     return formatted;
   }
 

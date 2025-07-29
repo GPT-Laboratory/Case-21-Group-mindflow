@@ -1,18 +1,18 @@
 /** @format */
 
 import { FunctionMetadata, ParsedFileStructure } from '../types/ASTTypes';
-import { 
-  EnhancedContainerNode, 
-  ScopeContext, 
+import {
+  EnhancedContainerNode,
+  ScopeContext,
   ParentChildRelationship,
-  EnhancedNodeData 
+  EnhancedNodeData
 } from '../../Node/interfaces/ContainerNodeInterfaces';
 
 /**
  * Service for processing nested functions and creating parent-child node relationships
  */
 export class NestedFunctionProcessor {
-  
+
   /**
    * Convert parsed file structure to enhanced container nodes with proper nesting
    */
@@ -91,7 +91,7 @@ export class NestedFunctionProcessor {
    * Create scope context from function metadata
    */
   private createScopeFromFunction(func: FunctionMetadata, allFunctions: FunctionMetadata[]): ScopeContext {
-    const parentScope = func.parentFunction 
+    const parentScope = func.parentFunction
       ? this.findParentScope(func.parentFunction, allFunctions)
       : undefined;
 
@@ -142,17 +142,17 @@ export class NestedFunctionProcessor {
     const nestingOffset = 50;
 
     // Calculate position based on source location if available
-    const x = func.sourceLocation ? 
-      baseX + (func.sourceLocation.start.column * 2) : 
+    const x = func.sourceLocation ?
+      baseX + (func.sourceLocation.start.column * 2) :
       baseX + (index % 5) * spacing;
 
-    const y = func.sourceLocation ? 
-      baseY + (func.sourceLocation.start.line * 30) : 
+    const y = func.sourceLocation ?
+      baseY + (func.sourceLocation.start.line * 30) :
       baseY + Math.floor(index / 5) * spacing;
 
     // Add nesting offset for nested functions
     const nestingDepth = this.calculateDepthFromMetadata(func);
-    
+
     return {
       x: x + (nestingDepth * nestingOffset),
       y: y + (nestingDepth * nestingOffset),
@@ -170,7 +170,7 @@ export class NestedFunctionProcessor {
    * Update existing nodes with nested function relationships
    */
   updateNodesWithNesting(
-    existingNodes: EnhancedContainerNode[], 
+    existingNodes: EnhancedContainerNode[],
     parsedFile: ParsedFileStructure
   ): {
     updatedNodes: EnhancedContainerNode[];
@@ -243,7 +243,7 @@ export class NestedFunctionProcessor {
    * Check for circular references in parent-child relationships
    */
   private hasCircularReference(
-    node: EnhancedContainerNode, 
+    node: EnhancedContainerNode,
     nodeMap: Map<string, EnhancedContainerNode>,
     visited: Set<string> = new Set()
   ): boolean {

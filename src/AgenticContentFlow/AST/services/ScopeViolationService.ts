@@ -3,7 +3,6 @@ import { useNotifications } from '../../Notifications/hooks/useNotifications';
 
 export class ScopeViolationService {
   private static instance: ScopeViolationService;
-  private violationCount = 0;
 
   static getInstance(): ScopeViolationService {
     if (!ScopeViolationService.instance) {
@@ -38,7 +37,6 @@ export class ScopeViolationService {
    */
   private detectMissingParentViolations(functions: FunctionMetadata[]): ScopeViolation[] {
     const violations: ScopeViolation[] = [];
-    const functionIds = new Set(functions.map(f => f.id));
     const functionNames = new Set(functions.map(f => f.name));
 
     functions.forEach(func => {
