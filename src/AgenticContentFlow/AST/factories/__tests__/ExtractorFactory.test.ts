@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ExtractorFactory } from '../ExtractorFactory';
-import { ASTTraverser } from '../../interfaces/CoreInterfaces';
 import { FunctionExtractor } from '../../extractors/FunctionExtractor';
 import { CallExtractor } from '../../extractors/CallExtractor';
 import { VariableExtractor } from '../../extractors/VariableExtractor';
@@ -22,7 +21,7 @@ describe('ExtractorFactory', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Create mock traverser
     mockTraverser = {
       traverse: vi.fn()
@@ -59,7 +58,7 @@ describe('ExtractorFactory', () => {
 
       expect(extractors).toBeInstanceOf(Map);
       expect(extractors.size).toBe(5);
-      
+
       // Check all expected extractors are present
       expect(extractors.has('function')).toBe(true);
       expect(extractors.has('call')).toBe(true);
@@ -214,7 +213,7 @@ describe('ExtractorFactory', () => {
 
   describe('createSelectedExtractors', () => {
     it('should create only selected extractors', () => {
-      const selectedTypes = ['function', 'call'] as const;
+      const selectedTypes: ('function' | 'call' | 'variable' | 'comment' | 'dependency')[] = ['function', 'call'];
       const extractors = ExtractorFactory.createSelectedExtractors(selectedTypes, mockTraverser);
 
       expect(extractors).toBeInstanceOf(Map);
@@ -337,7 +336,7 @@ describe('ExtractorFactory', () => {
       expect(() => {
         ExtractorFactory.createExtractor('function', mockTraverser);
       }).toThrow(ASTError);
-      
+
       expect(() => {
         ExtractorFactory.createExtractor('function', mockTraverser);
       }).toThrow('Failed to create FunctionExtractor: Original error');
@@ -375,7 +374,7 @@ describe('ExtractorFactory', () => {
 
   describe('SOLID principles compliance', () => {
     it('should follow Dependency Inversion Principle by injecting dependencies', () => {
-      const extractors = ExtractorFactory.createExtractors(mockTraverser);
+      ExtractorFactory.createExtractors(mockTraverser);
 
       // All extractors should have been created with the injected traverser
       expect(FunctionExtractor).toHaveBeenCalledWith(mockTraverser);
@@ -402,9 +401,9 @@ describe('ExtractorFactory', () => {
 
     it('should follow Interface Segregation Principle by returning focused interfaces', () => {
       const extractors = ExtractorFactory.createExtractors(mockTraverser);
-      
+
       // Each extractor should only have the extract method (ASTExtractor interface)
-      for (const [type, extractor] of extractors) {
+      for (const [_type, extractor] of extractors) {
         expect(extractor).toHaveProperty('extract');
         expect(typeof extractor.extract).toBe('function');
       }

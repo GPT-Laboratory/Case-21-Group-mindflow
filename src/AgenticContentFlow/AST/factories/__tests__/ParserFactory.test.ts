@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ParserFactory } from '../ParserFactory';
 import { BabelParser } from '../../parsers/BabelParser';
-import { ASTParser } from '../../interfaces/CoreInterfaces';
 import { ASTError } from '../../utils/ValidationUtils';
 
 // Mock the BabelParser to avoid actual parsing during tests

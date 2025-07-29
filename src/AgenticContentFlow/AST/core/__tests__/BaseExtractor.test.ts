@@ -9,7 +9,7 @@ import { ASTError } from '../../utils/ValidationUtils';
 class TestExtractor extends BaseExtractor<{ id: string; name: string }> {
   extract(ast: Node): { id: string; name: string }[] {
     const results: { id: string; name: string }[] = [];
-    
+
     this.traverse(ast, {
       visit: (node: Node) => {
         if (node.type === 'FunctionDeclaration') {
@@ -20,7 +20,7 @@ class TestExtractor extends BaseExtractor<{ id: string; name: string }> {
         }
       }
     });
-    
+
     return results;
   }
 }
@@ -74,7 +74,7 @@ describe('BaseExtractor', () => {
   describe('extractSourceLocation', () => {
     it('should extract source location from node with location', () => {
       const result = (extractor as any).extractSourceLocation(mockNode);
-      
+
       expect(result).toEqual({
         start: { line: 1, column: 0 },
         end: { line: 5, column: 1 }
@@ -83,9 +83,9 @@ describe('BaseExtractor', () => {
 
     it('should handle nodes without location', () => {
       const nodeWithoutLoc = { type: 'Identifier' } as Node;
-      
+
       const result = (extractor as any).extractSourceLocation(nodeWithoutLoc);
-      
+
       expect(result).toEqual({
         start: { line: 0, column: 0 },
         end: { line: 0, column: 0 }
@@ -115,21 +115,21 @@ describe('BaseExtractor', () => {
 
     it('should generate unique ID with location and timestamp', () => {
       const id = (extractor as any).generateId(mockNode);
-      
+
       expect(id).toMatch(/functiondeclaration_1_0_[a-z0-9]+/);
     });
 
     it('should generate ID with custom prefix', () => {
       const id = (extractor as any).generateId(mockNode, 'custom');
-      
+
       expect(id).toMatch(/custom_functiondeclaration_1_0_[a-z0-9]+/);
     });
 
     it('should handle nodes without location', () => {
       const nodeWithoutLoc = { type: 'Identifier' } as Node;
-      
+
       const id = (extractor as any).generateId(nodeWithoutLoc);
-      
+
       expect(id).toMatch(/identifier_0_0_[a-z0-9]+/);
     });
   });
@@ -137,9 +137,9 @@ describe('BaseExtractor', () => {
   describe('traverse', () => {
     it('should call traverser with node and visitor', () => {
       const mockVisitor: NodeVisitor = { visit: vi.fn() };
-      
+
       (extractor as any).traverse(mockNode, mockVisitor);
-      
+
       expect(mockTraverser.traverse).toHaveBeenCalledWith(mockNode, mockVisitor);
     });
   });
@@ -148,28 +148,28 @@ describe('BaseExtractor', () => {
     it('should collect nodes matching predicate', () => {
       const functionNode = { type: 'FunctionDeclaration' } as Node;
       const identifierNode = { type: 'Identifier' } as Node;
-      
+
       // Mock traverser to call visitor with both nodes
-      mockTraverser.traverse.mockImplementation((node, visitor) => {
+      mockTraverser.traverse.mockImplementation((_node: any, visitor: any) => {
         visitor.visit(functionNode);
         visitor.visit(identifierNode);
       });
-      
+
       const predicate = (node: Node) => node.type === 'FunctionDeclaration';
       const result = (extractor as any).collectNodes(mockNode, predicate);
-      
+
       expect(result).toHaveLength(1);
       expect(result[0]).toBe(functionNode);
     });
 
     it('should return empty array when no nodes match', () => {
-      mockTraverser.traverse.mockImplementation((node, visitor) => {
+      mockTraverser.traverse.mockImplementation((_node: any, visitor: any) => {
         visitor.visit({ type: 'Identifier' } as Node);
       });
-      
+
       const predicate = (node: Node) => node.type === 'FunctionDeclaration';
       const result = (extractor as any).collectNodes(mockNode, predicate);
-      
+
       expect(result).toHaveLength(0);
     });
   });
@@ -177,7 +177,7 @@ describe('BaseExtractor', () => {
   describe('extractCommonMetadata', () => {
     it('should extract common metadata with ID and location', () => {
       const metadata = (extractor as any).extractCommonMetadata(mockNode);
-      
+
       expect(metadata).toHaveProperty('id');
       expect(metadata).toHaveProperty('sourceLocation');
       expect(metadata).toHaveProperty('nodeType', 'FunctionDeclaration');
@@ -191,13 +191,13 @@ describe('BaseExtractor', () => {
   describe('validateResults', () => {
     it('should validate that results is an array', () => {
       const results = [{ id: '1', name: 'test' }];
-      
+
       expect(() => (extractor as any).validateResults(results)).not.toThrow();
     });
 
     it('should throw error for non-array results', () => {
       const results = { id: '1', name: 'test' } as any;
-      
+
       expect(() => (extractor as any).validateResults(results)).toThrow(ASTError);
       expect(() => (extractor as any).validateResults(results)).toThrow('Extraction results must be an array');
     });
@@ -205,9 +205,9 @@ describe('BaseExtractor', () => {
     it('should use custom validator when provided', () => {
       const results = [{ id: '1', name: 'test' }];
       const validator = vi.fn();
-      
+
       (extractor as any).validateResults(results, validator);
-      
+
       expect(validator).toHaveBeenCalledWith(results[0]);
     });
 
@@ -216,7 +216,7 @@ describe('BaseExtractor', () => {
       const validator = vi.fn().mockImplementation(() => {
         throw new Error('Validation failed');
       });
-      
+
       expect(() => (extractor as any).validateResults(results, validator)).toThrow(ASTError);
       expect(() => (extractor as any).validateResults(results, validator)).toThrow('Result validation failed at index 0');
     });
@@ -225,9 +225,9 @@ describe('BaseExtractor', () => {
   describe('safeExtract', () => {
     it('should return result when extraction succeeds', () => {
       const extractionFn = vi.fn().mockReturnValue('success');
-      
+
       const result = (extractor as any).safeExtract(extractionFn, 'test extraction');
-      
+
       expect(result).toBe('success');
       expect(extractionFn).toHaveBeenCalled();
     });
@@ -236,16 +236,16 @@ describe('BaseExtractor', () => {
       const extractionFn = vi.fn().mockImplementation(() => {
         throw new Error('Extraction failed');
       });
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+
       const result = (extractor as any).safeExtract(extractionFn, 'test extraction');
-      
+
       expect(result).toBeNull();
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Safe extraction failed - test extraction in TestExtractor:'),
         expect.any(Error)
       );
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -267,9 +267,9 @@ describe('BaseExtractor', () => {
   describe('postProcess', () => {
     it('should validate results and return them', () => {
       const results = [{ id: '1', name: 'test' }];
-      
+
       const processed = (extractor as any).postProcess(results);
-      
+
       expect(processed).toBe(results);
     });
   });
@@ -278,9 +278,9 @@ describe('BaseExtractor', () => {
     it('should orchestrate complete extraction process', () => {
       const mockResults = [{ id: '1', name: 'test' }];
       vi.spyOn(extractor, 'extract').mockReturnValue(mockResults);
-      
+
       const result = extractor.extractWithTemplate(mockNode);
-      
+
       expect(extractor.extract).toHaveBeenCalledWith(mockNode);
       expect(result).toBe(mockResults);
     });
@@ -292,67 +292,67 @@ describe('BaseExtractor', () => {
         type: 'FunctionDeclaration',
         id: { name: 'testFunction' }
       } as Node;
-      
-      mockTraverser.traverse.mockImplementation((node, visitor) => {
+
+      mockTraverser.traverse.mockImplementation((_node: any, visitor: any) => {
         visitor.visit(functionNode);
-      });
-      
-      const result = extractor.extract(mockNode);
-      
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('testFunction');
-      expect(result[0].id).toMatch(/test_functiondeclaration_/);
     });
 
-    it('should handle anonymous functions', () => {
-      const functionNode = {
-        type: 'FunctionDeclaration',
-        id: null
-      } as any;
-      
-      mockTraverser.traverse.mockImplementation((node, visitor) => {
-        visitor.visit(functionNode);
-      });
-      
-      const result = extractor.extract(mockNode);
-      
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('anonymous');
-    });
+    const result = extractor.extract(mockNode);
 
-    it('should ignore non-function nodes', () => {
-      const identifierNode = { type: 'Identifier' } as Node;
-      
-      mockTraverser.traverse.mockImplementation((node, visitor) => {
-        visitor.visit(identifierNode);
-      });
-      
-      const result = extractor.extract(mockNode);
-      
-      expect(result).toHaveLength(0);
-    });
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('testFunction');
+    expect(result[0].id).toMatch(/test_functiondeclaration_/);
   });
 
-  describe('integration with real ASTTraverser', () => {
-    it('should work with actual ASTTraverser instance', () => {
-      const realTraverser = new ASTTraverser();
-      const realExtractor = new TestExtractor(realTraverser);
-      
-      const ast = {
-        type: 'Program',
-        body: [
-          {
-            type: 'FunctionDeclaration',
-            id: { name: 'realFunction' },
-            loc: { start: { line: 1, column: 0 }, end: { line: 3, column: 1 } }
-          }
-        ]
-      } as any;
-      
-      const result = realExtractor.extract(ast);
-      
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('realFunction');
+  it('should handle anonymous functions', () => {
+    const functionNode = {
+      type: 'FunctionDeclaration',
+      id: null
+    } as any;
+
+    mockTraverser.traverse.mockImplementation((_node: any, visitor: any) => {
+        visitor.visit(functionNode);
     });
+
+    const result = extractor.extract(mockNode);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('anonymous');
   });
+
+  it('should ignore non-function nodes', () => {
+    const identifierNode = { type: 'Identifier' } as Node;
+
+    mockTraverser.traverse.mockImplementation((_node: any, visitor: any) => {
+      visitor.visit(identifierNode);
+    });
+
+    const result = extractor.extract(mockNode);
+
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe('integration with real ASTTraverser', () => {
+  it('should work with actual ASTTraverser instance', () => {
+    const realTraverser = new ASTTraverser();
+    const realExtractor = new TestExtractor(realTraverser);
+
+    const ast = {
+      type: 'Program',
+      body: [
+        {
+          type: 'FunctionDeclaration',
+          id: { name: 'realFunction' },
+          loc: { start: { line: 1, column: 0 }, end: { line: 3, column: 1 } }
+        }
+      ]
+    } as any;
+
+    const result = realExtractor.extract(ast);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('realFunction');
+  });
+});
 });

@@ -1,5 +1,5 @@
 import { Node } from '@babel/types';
-import { vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   ASTExtractor,
   ASTParser,
@@ -13,14 +13,14 @@ import {
   ParameterMetadata,
   EnhancedCommentMetadata
 } from '../CoreInterfaces';
-import { SourceLocation, CommentMetadata } from '../../types/ASTTypes';
+import { CommentMetadata } from '../../types/ASTTypes';
 
 describe('CoreInterfaces', () => {
   describe('ASTExtractor interface', () => {
     it('should define extract method with correct signature', () => {
       // Mock implementation to test interface contract
       class MockExtractor implements ASTExtractor<string> {
-        extract(ast: Node): string[] {
+        extract(_ast: Node): string[] {
           return ['test'];
         }
       }
@@ -40,7 +40,7 @@ describe('CoreInterfaces', () => {
       }
 
       class TypedExtractor implements ASTExtractor<TestMetadata> {
-        extract(ast: Node): TestMetadata[] {
+        extract(_ast: Node): TestMetadata[] {
           return [{ name: 'test', value: 42 }];
         }
       }
@@ -57,7 +57,7 @@ describe('CoreInterfaces', () => {
     it('should define parse method with correct signature', () => {
       class MockParser implements ASTParser {
         parse(code: string): Node {
-          return { type: 'Program', body: [] } as Node;
+          return { type: 'Program', body: [], sourceType: 'module', directives: [] } as unknown as Node;
         }
       }
 
@@ -70,19 +70,19 @@ describe('CoreInterfaces', () => {
 
     it('should be substitutable (LSP compliance)', () => {
       class BabelMockParser implements ASTParser {
-        parse(code: string): Node {
-          return { type: 'Program', body: [], sourceType: 'module' } as Node;
+        parse(_code: string): Node {
+          return { type: 'Program', body: [], sourceType: 'module', directives: [] } as unknown as Node;
         }
       }
 
       class AcornMockParser implements ASTParser {
-        parse(code: string): Node {
-          return { type: 'Program', body: [], sourceType: 'script' } as Node;
+        parse(_code: string): Node {
+          return { type: 'Program', body: [], sourceType: 'script', directives: [] } as unknown as Node;
         }
       }
 
       const parsers: ASTParser[] = [new BabelMockParser(), new AcornMockParser()];
-      
+
       parsers.forEach(parser => {
         const result = parser.parse('const x = 1;');
         expect(result.type).toBe('Program');
@@ -266,7 +266,7 @@ describe('CoreInterfaces', () => {
       }
 
       const validator = new MockSyntaxValidator();
-      
+
       expect(validator.validateSyntax('function test() {}')).toBe(true);
       expect(validator.validateSyntax('const x = 1;')).toBe(false);
     });
@@ -283,7 +283,7 @@ describe('CoreInterfaces', () => {
       class ParsingOnlyParser implements ASTParser {
         parse(code: string): Node {
           // Only parses, doesn't validate
-          return { type: 'Program', body: [] } as Node;
+          return { type: 'Program', body: [], sourceType: 'module', directives: [] } as unknown as Node;
         }
       }
 
@@ -316,19 +316,19 @@ describe('CoreInterfaces', () => {
       }
 
       const validator = new MockNodeValidator();
-      
+
       // Should not throw for valid node
       expect(() => validator.validateNode({ type: 'Program' })).not.toThrow();
-      
+
       // Should throw for invalid node
       expect(() => validator.validateNode(null)).toThrow('Invalid node');
-      
+
       // Should throw for wrong type
       expect(() => validator.validateNode({ type: 'Program' }, 'Function')).toThrow('Expected Function, got Program');
-      
+
       // Should not throw for valid parameters
       expect(() => validator.validateParameters([])).not.toThrow();
-      
+
       // Should throw for invalid parameters
       expect(() => validator.validateParameters('not an array' as any)).toThrow('Parameters must be an array');
     });
@@ -348,13 +348,13 @@ describe('CoreInterfaces', () => {
       }
 
       const validator = new MockCodeValidator();
-      
+
       // Should not throw for valid code
       expect(() => validator.validateSourceCode('function test() {}')).not.toThrow();
-      
+
       // Should throw for non-string
       expect(() => validator.validateSourceCode(null as any)).toThrow('Code must be a string');
-      
+
       // Should throw for empty code
       expect(() => validator.validateSourceCode('')).toThrow('Code cannot be empty');
     });
@@ -437,13 +437,13 @@ describe('CoreInterfaces', () => {
       // Different implementations should be substitutable
       class MockParser1 implements ASTParser {
         parse(code: string): Node {
-          return { type: 'Program', body: [] } as Node;
+          return { type: 'Program', body: [], sourceType: 'module', directives: [] } as unknown as Node;
         }
       }
 
       class MockParser2 implements ASTParser {
         parse(code: string): Node {
-          return { type: 'Program', body: [], sourceType: 'module' } as Node;
+          return { type: 'Program', body: [], sourceType: 'module', directives: [] } as unknown as Node;
         }
       }
 
@@ -480,7 +480,7 @@ describe('CoreInterfaces', () => {
         constructor(
           private parser: ASTParser,
           private extractor: ASTExtractor<any>
-        ) {}
+        ) { }
 
         process(code: string): any[] {
           const ast = this.parser.parse(code);

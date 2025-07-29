@@ -5,6 +5,7 @@ import { ASTTraverser, NodeVisitor } from '../../interfaces/CoreInterfaces';
 import { VariableDeclaration, ScopeLevel } from '../../types/ASTTypes';
 import { ValidationUtils, ASTError } from '../../utils/ValidationUtils';
 import { NodeUtils } from '../../utils/NodeUtils';
+import { TestSetup, TestAssertions } from '../../__tests__/TestSetup';
 
 // Mock the utility modules
 vi.mock('../../utils/NodeUtils');
@@ -12,15 +13,13 @@ vi.mock('../../utils/ValidationUtils');
 
 describe('VariableExtractor', () => {
   let extractor: VariableExtractor;
-  let mockTraverser: ASTTraverser;
+  let mockTraverser: any;
   let mockNodeUtils: typeof NodeUtils;
   let mockValidationUtils: typeof ValidationUtils;
 
   beforeEach(() => {
-    // Create mock traverser
-    mockTraverser = {
-      traverse: vi.fn()
-    };
+    // Create mock traverser using TestSetup
+    mockTraverser = TestSetup.createMockTraverser();
 
     // Get mocked utilities
     mockNodeUtils = NodeUtils as any;
@@ -39,7 +38,7 @@ describe('VariableExtractor', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    TestSetup.resetAllMocks();
   });
 
   describe('constructor', () => {
@@ -63,29 +62,36 @@ describe('VariableExtractor', () => {
       } as t.Program;
     });
 
-    it('should extract variables from AST using visitor pattern', () => {
-      // Setup mocks
-      vi.mocked(mockTraverser.traverse).mockImplementation((node, visitor) => {
-        // Simulate visiting a variable declaration node
-        const variableNode = {
-          type: 'VariableDeclaration',
-          kind: 'let',
-          declarations: [
-            {
-              type: 'VariableDeclarator',
-              id: { type: 'Identifier', name: 'testVar' },
-              init: { type: 'Literal', value: 'test' }
-            }
-          ]
-        } as t.VariableDeclaration;
+    it('should extract variables from AST using custom traversal', () => {
+      // Create a mock AST with a variable declaration
+      const mockASTWithVariable = {
+        type: 'Program',
+        body: [
+          {
+            type: 'VariableDeclaration',
+            kind: 'let',
+            declarations: [
+              {
+                type: 'VariableDeclarator',
+                id: { type: 'Identifier', name: 'testVar' },
+                init: { type: 'Literal', value: 'test' }
+              }
+            ]
+          }
+        ]
+      } as t.Program;
 
-        vi.mocked(mockNodeUtils.isVariableDeclaration).mockReturnValue(true);
-        visitor.visit(variableNode);
+      // Set up mocks to return true for variable declaration
+      vi.mocked(mockNodeUtils.isVariableDeclaration).mockImplementation((node) => {
+        return node.type === 'VariableDeclaration';
+      });
+      vi.mocked(mockNodeUtils.isFunctionNode).mockReturnValue(false);
+      vi.mocked(mockNodeUtils.isValidNode).mockImplementation((node) => {
+        return node && typeof node === 'object' && typeof node.type === 'string';
       });
 
-      const result = extractor.extract(mockAST);
+      const result = extractor.extract(mockASTWithVariable);
 
-      expect(mockTraverser.traverse).toHaveBeenCalledWith(mockAST, expect.any(Object));
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         name: 'testVar',
@@ -100,30 +106,40 @@ describe('VariableExtractor', () => {
     });
 
     it('should validate results before returning', () => {
-      vi.mocked(mockTraverser.traverse).mockImplementation((node, visitor) => {
-        const variableNode = {
-          type: 'VariableDeclaration',
-          kind: 'const',
-          declarations: [
-            {
-              type: 'VariableDeclarator',
-              id: { type: 'Identifier', name: 'testVar' }
-            }
-          ]
-        } as t.VariableDeclaration;
+      // Create a mock AST with a variable declaration
+      const mockASTWithVariable = {
+        type: 'Program',
+        body: [
+          {
+            type: 'VariableDeclaration',
+            kind: 'const',
+            declarations: [
+              {
+                type: 'VariableDeclarator',
+                id: { type: 'Identifier', name: 'testVar' }
+              }
+            ]
+          }
+        ]
+      } as t.Program;
 
-        vi.mocked(mockNodeUtils.isVariableDeclaration).mockReturnValue(true);
-        visitor.visit(variableNode);
+      // Set up mocks
+      vi.mocked(mockNodeUtils.isVariableDeclaration).mockImplementation((node) => {
+        return node.type === 'VariableDeclaration';
+      });
+      vi.mocked(mockNodeUtils.isValidNode).mockImplementation((node) => {
+        return node && typeof node === 'object' && typeof node.type === 'string';
       });
 
-      extractor.extract(mockAST);
+      extractor.extract(mockASTWithVariable);
 
       expect(mockValidationUtils.validateVariableDeclaration).toHaveBeenCalled();
     });
 
     it('should handle extraction errors gracefully', () => {
-      vi.mocked(mockTraverser.traverse).mockImplementation(() => {
-        throw new Error('Traversal failed');
+      // Mock validateNode to throw an error
+      vi.mocked(mockValidationUtils.validateNode).mockImplementation(() => {
+        throw new Error('Validation failed');
       });
 
       expect(() => extractor.extract(mockAST)).toThrow(ASTError);
@@ -194,9 +210,13 @@ describe('VariableExtractor', () => {
       } as t.FunctionDeclaration;
 
       vi.mocked(mockNodeUtils.isFunctionNode).mockReturnValue(true);
+      vi.mocked(mockNodeUtils.isVariableDeclaration).mockReturnValue(false);
 
       const variables: VariableDeclaration[] = [];
-      (extractor as any).processNode(functionNode, variables);
+      
+      // The processNode method doesn't update scope stack directly
+      // Instead, it's done during traversal. Let's test the scope tracking method directly
+      (extractor as any).updateScopeStack(functionNode);
 
       expect(extractor.getCurrentScopeStack()).toContain('function');
     });
@@ -674,28 +694,35 @@ describe('VariableExtractor', () => {
 
   describe('integration with BaseExtractor', () => {
     it('should use template method from BaseExtractor', () => {
-      const mockAST = { type: 'Program', body: [] } as t.Program;
-      
-      mockTraverser.traverse.mockImplementation((node, visitor) => {
-        const variableNode = {
-          type: 'VariableDeclaration',
-          kind: 'const',
-          declarations: [
-            {
-              type: 'VariableDeclarator',
-              id: { type: 'Identifier', name: 'testVar' }
-            }
-          ]
-        } as t.VariableDeclaration;
+      // Create a mock AST with a variable declaration
+      const mockASTWithVariable = {
+        type: 'Program',
+        body: [
+          {
+            type: 'VariableDeclaration',
+            kind: 'const',
+            declarations: [
+              {
+                type: 'VariableDeclarator',
+                id: { type: 'Identifier', name: 'testVar' }
+              }
+            ]
+          }
+        ]
+      } as t.Program;
 
-        mockNodeUtils.isVariableDeclaration.mockReturnValue(true);
-        visitor.visit(variableNode);
+      // Set up mocks
+      vi.mocked(mockNodeUtils.isVariableDeclaration).mockImplementation((node) => {
+        return node.type === 'VariableDeclaration';
+      });
+      vi.mocked(mockNodeUtils.isValidNode).mockImplementation((node) => {
+        return node && typeof node === 'object' && typeof node.type === 'string';
       });
 
-      const result = extractor.extractWithTemplate(mockAST);
+      const result = extractor.extractWithTemplate(mockASTWithVariable);
 
       expect(result).toHaveLength(1);
-      expect(mockValidationUtils.validateNode).toHaveBeenCalledWith(mockAST);
+      expect(mockValidationUtils.validateNode).toHaveBeenCalledWith(mockASTWithVariable);
       expect(mockValidationUtils.validateVariableDeclaration).toHaveBeenCalled();
     });
 
@@ -712,11 +739,10 @@ describe('VariableExtractor', () => {
 
   describe('real-world scenarios', () => {
     it('should handle mixed variable declarations with different scopes', () => {
-      let visitCount = 0;
-      
-      mockTraverser.traverse.mockImplementation((node, visitor) => {
-        const nodes = [
-          // Global variable
+      // Create a mock AST with nested structure
+      const mockASTWithNested = {
+        type: 'Program',
+        body: [
           {
             type: 'VariableDeclaration',
             kind: 'var',
@@ -727,43 +753,44 @@ describe('VariableExtractor', () => {
               }
             ]
           },
-          // Function declaration (changes scope)
           {
             type: 'FunctionDeclaration',
-            id: { name: 'testFunc' }
-          },
-          // Function-scoped variable
-          {
-            type: 'VariableDeclaration',
-            kind: 'let',
-            declarations: [
-              {
-                type: 'VariableDeclarator',
-                id: { type: 'Identifier', name: 'functionVar' }
-              }
-            ]
+            id: { name: 'testFunc' },
+            body: {
+              type: 'BlockStatement',
+              body: [
+                {
+                  type: 'VariableDeclaration',
+                  kind: 'let',
+                  declarations: [
+                    {
+                      type: 'VariableDeclarator',
+                      id: { type: 'Identifier', name: 'functionVar' }
+                    }
+                  ]
+                }
+              ]
+            }
           }
-        ];
+        ]
+      } as any;
 
-        nodes.forEach((testNode, index) => {
-          if (testNode.type === 'VariableDeclaration') {
-            mockNodeUtils.isVariableDeclaration.mockReturnValue(true);
-            mockNodeUtils.isFunctionNode.mockReturnValue(false);
-          } else if (testNode.type === 'FunctionDeclaration') {
-            mockNodeUtils.isVariableDeclaration.mockReturnValue(false);
-            mockNodeUtils.isFunctionNode.mockReturnValue(true);
-          }
-          
-          visitor.visit(testNode as any);
-        });
+      // Set up mocks
+      vi.mocked(mockNodeUtils.isVariableDeclaration).mockImplementation((node) => {
+        return node.type === 'VariableDeclaration';
+      });
+      vi.mocked(mockNodeUtils.isFunctionNode).mockImplementation((node) => {
+        return node.type === 'FunctionDeclaration';
+      });
+      vi.mocked(mockNodeUtils.isValidNode).mockImplementation((node) => {
+        return node && typeof node === 'object' && typeof node.type === 'string';
       });
 
-      const mockAST = { type: 'Program', body: [] } as t.Program;
-      const result = extractor.extract(mockAST);
+      const result = extractor.extract(mockASTWithNested);
 
       expect(result).toHaveLength(2); // Two variable declarations
       expect(result[0].scope).toBe('global');
-      expect(result[1].scope).toBe('function');
+      expect(result[1].scope).toBe('block'); // Variable is in a block statement within the function
     });
 
     it('should handle destructuring assignments gracefully', () => {

@@ -1,14 +1,22 @@
 /** @format */
 
+import { beforeEach, describe, expect, it } from 'vitest';
 import { ASTParserService } from '../ASTParserService';
 import { NestedFunctionProcessor } from '../services/NestedFunctionProcessor';
+import { ParserFactory } from '../factories/ParserFactory';
+import { ExtractorFactory } from '../factories/ExtractorFactory';
+import { ASTTraverser } from '../core/ASTTraverser';
 
 describe('Nested Function Integration', () => {
   let astParser: ASTParserService;
   let nestedProcessor: NestedFunctionProcessor;
 
   beforeEach(() => {
-    astParser = new ASTParserService();
+    // Create dependencies using factories
+    const parser = ParserFactory.createParser('babel');
+    const traverser = new ASTTraverser();
+    const extractors = ExtractorFactory.createExtractors(traverser);
+    astParser = new ASTParserService(parser, extractors);
     nestedProcessor = new NestedFunctionProcessor();
   });
 
@@ -32,13 +40,13 @@ describe('Nested Function Integration', () => {
 
       // Parse the code
       const parsedFile = astParser.parseFile(code);
-      
+
       // Verify parsing results
       expect(parsedFile.functions).toHaveLength(2);
-      
+
       const mainFunc = parsedFile.functions.find(f => f.name === 'mainFunction');
       const helperFunc = parsedFile.functions.find(f => f.name === 'helperFunction');
-      
+
       expect(mainFunc).toBeDefined();
       expect(helperFunc).toBeDefined();
       expect(mainFunc?.isNested).toBe(false);
@@ -47,7 +55,7 @@ describe('Nested Function Integration', () => {
 
       // Create nodes from parsed structure
       const { nodes, relationships } = nestedProcessor.createNodesFromParsedFile(parsedFile);
-      
+
       expect(nodes).toHaveLength(2);
       expect(relationships).toHaveLength(1);
 
@@ -202,11 +210,11 @@ describe('Nested Function Integration', () => {
       `;
 
       const parsedFile = astParser.parseFile(code);
-      
+
       // Should detect the main function and the regular nested function
       // Arrow functions and function expressions may be detected depending on AST parser implementation
       expect(parsedFile.functions.length).toBeGreaterThanOrEqual(2);
-      
+
       const mainFunc = parsedFile.functions.find(f => f.name === 'mainFunction');
       expect(mainFunc).toBeDefined();
       expect(mainFunc?.isNested).toBe(false);
@@ -216,7 +224,7 @@ describe('Nested Function Integration', () => {
       expect(nestedFunctions.length).toBeGreaterThanOrEqual(1);
 
       const { nodes, relationships } = nestedProcessor.createNodesFromParsedFile(parsedFile);
-      
+
       expect(nodes.length).toBe(parsedFile.functions.length);
       expect(relationships.length).toBe(nestedFunctions.length);
     });
@@ -363,7 +371,7 @@ describe('Nested Function Integration', () => {
       const { nodes } = nestedProcessor.createNodesFromParsedFile(parsedFile);
 
       const validation = nestedProcessor.validateNestedStructure(nodes);
-      
+
       expect(validation.isValid).toBe(true);
       expect(validation.errors).toHaveLength(0);
     });

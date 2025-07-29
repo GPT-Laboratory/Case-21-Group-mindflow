@@ -70,8 +70,7 @@ describe('ASTTraverser', () => {
 
       // Set some initial state
       traverser.traverse(node, mockVisitor);
-      const initialVisitedCount = traverser.getVisitedNodeCount();
-
+      
       // Traverse again - state should be reset
       traverser.traverse(node, mockVisitor);
       
@@ -116,7 +115,7 @@ describe('ASTTraverser', () => {
       expect(mockVisitor.visit).toHaveBeenCalledTimes(3); // parent, id, body
       expect(mockVisitor.visit).toHaveBeenCalledWith(parentNode);
       expect(mockVisitor.visit).toHaveBeenCalledWith(childNode);
-      expect(mockVisitor.visit).toHaveBeenCalledWith(parentNode.body);
+      expect(mockVisitor.visit).toHaveBeenCalledWith((parentNode as any).body);
     });
 
     it('should traverse array children', () => {

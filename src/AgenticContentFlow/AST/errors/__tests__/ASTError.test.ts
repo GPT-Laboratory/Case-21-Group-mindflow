@@ -1,5 +1,6 @@
 import { ASTError } from '../ASTError';
 import { SourceLocation } from '../../types/ASTTypes';
+import { describe, expect, it } from 'vitest';
 
 describe('ASTError', () => {
   const mockSourceLocation: SourceLocation = {
