@@ -350,7 +350,7 @@ describe('VariableConfigurationService - Wrapper Function Support', () => {
       expect(result.flowLevelVariables.length).toBeGreaterThanOrEqual(3);
       expect(result.flowLevelVariables.every(v => v.isFlowLevel)).toBe(true);
       expect(result.flowLevelVariables.every(v => v.containingFunction === 'mainFlow')).toBe(true);
-      
+
       const variableNames = result.flowLevelVariables.map(v => v.name);
       expect(variableNames).toContain('environment');
       expect(variableNames).toContain('debugMode');
@@ -400,7 +400,7 @@ describe('VariableConfigurationService - Wrapper Function Support', () => {
 
       expect(result.flowLevelVariables.length).toBeGreaterThanOrEqual(2);
       expect(result.functionLevelVariables).toHaveLength(1);
-      
+
       const flowVariableNames = result.flowLevelVariables.map(v => v.name);
       expect(flowVariableNames).toContain('flowConfig');
       expect(flowVariableNames).toContain('timeout');
