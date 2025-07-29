@@ -31,7 +31,7 @@ interface ProcessContextValue {
   config: ProcessConfig;
   /** Update configuration */
   updateConfig: (config: Partial<ProcessConfig>) => void;
-  
+
   /** Node process states - reactive */
   nodeProcesses: Map<string, ProcessState>;
   /** Start processing for a node */
@@ -42,13 +42,13 @@ interface ProcessContextValue {
   setNodeError: (nodeId: string, error: string) => void;
   /** Get process state for a node */
   getNodeProcessState: (nodeId: string) => ProcessState;
-  
+
   /** Approval-related methods */
   setNodeApprovalStatus: (nodeId: string, status: 'pending' | 'approved' | 'declined') => void;
   setNodeAutoApprove: (nodeId: string, autoApprove: boolean) => void;
   setNodePendingData: (nodeId: string, data: any) => void;
   setNodePendingApproval: (nodeId: string, data: any, autoApprove?: boolean) => void;
-  
+
   /** FlowData - map of node/edge IDs to their data */
   flowData: Map<string, any>;
   /** Set data for a node or edge */
@@ -57,7 +57,7 @@ interface ProcessContextValue {
   getFlowData: (id: string) => any;
   /** Clear data for a node or edge */
   clearFlowData: (id: string) => void;
-  
+
   /** Persistent node data - keeps last processed data for Preview */
   nodeLastData: Map<string, any>;
   /** Get last processed data for a node */
@@ -81,9 +81,9 @@ interface ProcessProviderProps {
   initialConfig?: Partial<ProcessConfig>;
 }
 
-export const ProcessProvider: React.FC<ProcessProviderProps> = ({ 
-  children, 
-  initialConfig = {} 
+export const ProcessProvider: React.FC<ProcessProviderProps> = ({
+  children,
+  initialConfig = {}
 }) => {
   const [config, setConfig] = useState<ProcessConfig>({
     minAnimationDuration: 1000,
@@ -107,7 +107,7 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
       startTime: Date.now(),
       data
     };
-    
+
     setNodeProcesses(prev => new Map(prev).set(nodeId, processState));
     if (config.debug) {
       console.log(`[ProcessContext] Node process started: ${nodeId}`, data);
@@ -129,10 +129,10 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
           status: 'completed',
           data: result
         };
-        
+
         setNodeProcesses(prevProcesses => new Map(prevProcesses).set(nodeId, completedState));
         setNodeLastData(prevLastData => new Map(prevLastData).set(nodeId, result));
-        
+
         if (config.debug) {
           console.log(`[ProcessContext] Node process completed: ${nodeId}`, result);
         }
@@ -165,11 +165,11 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
         status: 'error',
         error
       };
-      
+
       if (config.debug) {
         console.log(`[ProcessContext] Node process error: ${nodeId}`, error);
       }
-      
+
       return new Map(prev).set(nodeId, errorState);
     });
   }, [config.debug]);
@@ -188,7 +188,7 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
         ...current,
         approvalStatus: status
       };
-      
+
       return new Map(prev).set(nodeId, updatedState);
     });
   }, []);
@@ -202,7 +202,7 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
         ...current,
         autoApprove
       };
-      
+
       return new Map(prev).set(nodeId, updatedState);
     });
   }, []);
@@ -217,7 +217,7 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
         pendingData: data,
         status: 'pending_approval'
       };
-      
+
       return new Map(prev).set(nodeId, updatedState);
     });
   }, []);
@@ -233,7 +233,7 @@ export const ProcessProvider: React.FC<ProcessProviderProps> = ({
         status: 'pending_approval',
         autoApprove
       };
-      
+
       return new Map(prev).set(nodeId, updatedState);
     });
   }, []);
