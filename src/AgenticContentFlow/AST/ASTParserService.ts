@@ -1,53 +1,69 @@
 import { ParsedFileStructure, ParseResult, ParseError, ScopeViolation } from './types/ASTTypes';
-import { BabelParser } from './parsers/BabelParser';
-import { CommentExtractor } from './extractors/CommentExtractor';
-import { FunctionExtractor } from './extractors/FunctionExtractor';
-import { CallExtractor } from './extractors/CallExtractor';
-import { DependencyExtractor } from './extractors/DependencyExtractor';
-import { VariableExtractor } from './extractors/VariableExtractor';
-import { ASTTraverser } from './core/ASTTraverser';
+import { ASTParser, ASTExtractor, ASTParserServiceInterface } from './interfaces/CoreInterfaces';
 import { externalDependencyProcessor, ExternalDependencyResult } from './services/ExternalDependencyProcessor';
 import { errorHandlingService } from './services/ErrorHandlingService';
 import { scopeViolationService } from './services/ScopeViolationService';
 import { ScopeContext } from '../Node/interfaces/ContainerNodeInterfaces';
 import { useNotifications } from '../Notifications/hooks/useNotifications';
+import { ASTError } from './utils/ValidationUtils';
 
-export class ASTParserService {
-  private babelParser: BabelParser;
-  private commentExtractor: CommentExtractor;
-  private functionExtractor: FunctionExtractor;
-  private callExtractor: CallExtractor;
-  private dependencyExtractor: DependencyExtractor;
-  private variableExtractor: VariableExtractor;
+export class ASTParserService implements ASTParserServiceInterface {
+  constructor(
+    private parser: ASTParser,
+    private extractors: Map<string, ASTExtractor<any>>
+  ) {
+    // Validate dependencies
+    this.validateDependencies();
+  }
 
-  constructor() {
-    this.babelParser = new BabelParser();
-    this.commentExtractor = new CommentExtractor();
-    this.functionExtractor = new FunctionExtractor(this.babelParser, this.commentExtractor);
-    this.callExtractor = new CallExtractor(this.babelParser);
-    this.dependencyExtractor = new DependencyExtractor();
-    
-    // Create ASTTraverser for the new architecture
-    const traverser = new ASTTraverser();
-    this.variableExtractor = new VariableExtractor(traverser);
+  /**
+   * Validate that all required dependencies are provided
+   */
+  private validateDependencies(): void {
+    if (!this.parser) {
+      throw new ASTError('ASTParser instance is required', 'ASTParserService');
+    }
+
+    if (!this.extractors || !(this.extractors instanceof Map)) {
+      throw new ASTError('Extractors map is required', 'ASTParserService');
+    }
+
+    // Validate that all required extractors are present
+    const requiredExtractors = ['function', 'call', 'variable', 'comment', 'dependency'];
+    for (const extractorType of requiredExtractors) {
+      if (!this.extractors.has(extractorType)) {
+        throw new ASTError(`Missing ${extractorType} extractor`, 'ASTParserService');
+      }
+    }
+
+    // Validate parser interface
+    if (typeof this.parser.parse !== 'function') {
+      throw new ASTError('Parser must implement parse method', 'ASTParserService');
+    }
+
+    // Validate extractor interfaces
+    for (const [type, extractor] of this.extractors) {
+      if (!extractor || typeof extractor.extract !== 'function') {
+        throw new ASTError(`${type} extractor must implement extract method`, 'ASTParserService');
+      }
+    }
   }
 
   /**
    * Parse JavaScript code into AST and extract structure
+   * Coordinates parsing and extraction operations using injected dependencies
    */
   parseFile(code: string): ParsedFileStructure {
     try {
-      // Parse with Babel
-      const ast = this.babelParser.parse(code);
+      // Parse with injected parser
+      const ast = this.parser.parse(code);
 
-      // Extract comments first
-      const comments = this.commentExtractor.extractComments(ast);
-
-      // Extract all components using specialized extractors
-      const functions = this.functionExtractor.extractFunctions(ast, code, comments);
-      const calls = this.callExtractor.identifyFunctionCalls(ast);
-      const dependencies = this.dependencyExtractor.extractDependencies(ast);
-      const variables = this.variableExtractor.extract(ast);
+      // Extract all components using injected extractors
+      const functions = this.extractors.get('function')?.extract(ast) || [];
+      const calls = this.extractors.get('call')?.extract(ast) || [];
+      const dependencies = this.extractors.get('dependency')?.extract(ast) || [];
+      const variables = this.extractors.get('variable')?.extract(ast) || [];
+      const comments = this.extractors.get('comment')?.extract(ast) || [];
 
       return {
         functions,
@@ -58,7 +74,13 @@ export class ASTParserService {
       };
     } catch (error) {
       console.error('AST parsing error:', error);
-      throw new Error(`Failed to parse JavaScript code: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(
+        `Failed to parse JavaScript code: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'ASTParserService'
+      );
     }
   }
 
@@ -70,14 +92,18 @@ export class ASTParserService {
     const warnings: ParseError[] = [];
     
     try {
-      // Use enhanced Babel parser with error handling
-      const parseResult = this.babelParser.parseWithErrorHandling(code);
-      
-      // Add any parsing errors from Babel
-      errors.push(...parseResult.errors);
-      warnings.push(...parseResult.warnings);
-      
-      if (!parseResult.success) {
+      // First try to parse with the injected parser
+      let ast: any;
+      try {
+        ast = this.parser.parse(code);
+      } catch (parseError) {
+        const error = errorHandlingService.createParseError(
+          'syntax',
+          `Parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+          { recoverable: false }
+        );
+        errors.push(error);
+        
         // Log errors to console with detailed formatting
         errorHandlingService.logErrors(errors, warnings, code);
         
@@ -90,7 +116,7 @@ export class ASTParserService {
           success: false,
           errors,
           warnings,
-          partiallyParsed: parseResult.partiallyParsed
+          partiallyParsed: false
         };
       }
 
@@ -98,14 +124,12 @@ export class ASTParserService {
       let structure: ParsedFileStructure | undefined;
       
       try {
-        const ast = this.babelParser.parse(code);
-        const comments = this.commentExtractor.extractComments(ast);
-        
-        // Extract components with individual error handling
-        const functions = this.extractFunctionsWithErrorHandling(ast, code, comments, errors, warnings);
-        const calls = this.extractCallsWithErrorHandling(ast, errors, warnings);
-        const dependencies = this.extractDependenciesWithErrorHandling(ast, errors, warnings);
-        const variables = this.extractVariablesWithErrorHandling(ast, errors, warnings);
+        // Extract components with individual error handling using injected extractors
+        const functions = this.extractWithErrorHandling('function', ast, errors, warnings, 'functions');
+        const calls = this.extractWithErrorHandling('call', ast, errors, warnings, 'function calls');
+        const dependencies = this.extractWithErrorHandling('dependency', ast, errors, warnings, 'dependencies');
+        const variables = this.extractWithErrorHandling('variable', ast, errors, warnings, 'variables');
+        const comments = this.extractWithErrorHandling('comment', ast, errors, warnings, 'comments');
 
         structure = {
           functions,
@@ -169,6 +193,63 @@ export class ASTParserService {
   }
 
   /**
+   * Extract data using an injected extractor with error handling
+   */
+  private extractWithErrorHandling(
+    extractorType: string,
+    ast: any,
+    errors: ParseError[],
+    warnings: ParseError[],
+    componentName: string
+  ): any[] {
+    try {
+      const extractor = this.extractors.get(extractorType);
+      if (!extractor) {
+        throw new ASTError(`${extractorType} extractor not found`, 'ASTParserService');
+      }
+      return extractor.extract(ast);
+    } catch (error) {
+      const parseError = errorHandlingService.createParseError(
+        extractorType === 'dependency' ? 'dependency' : 'semantic',
+        `Failed to extract ${componentName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { 
+          recoverable: true,
+          suggestion: this.getExtractionErrorSuggestion(extractorType)
+        }
+      );
+      
+      // Dependencies and calls are treated as warnings, others as errors
+      if (extractorType === 'dependency' || extractorType === 'call') {
+        warnings.push(parseError);
+      } else {
+        errors.push(parseError);
+      }
+      
+      return []; // Return empty array to continue processing
+    }
+  }
+
+  /**
+   * Get appropriate error suggestion based on extractor type
+   */
+  private getExtractionErrorSuggestion(extractorType: string): string {
+    switch (extractorType) {
+      case 'function':
+        return 'Some functions may be skipped. Check function syntax and structure.';
+      case 'call':
+        return 'Function call relationships may not be displayed correctly.';
+      case 'dependency':
+        return 'External dependencies may not be displayed correctly.';
+      case 'variable':
+        return 'Variable configuration may not be available for some functions.';
+      case 'comment':
+        return 'Some comments may not be processed correctly.';
+      default:
+        return 'Some components may not be processed correctly.';
+    }
+  }
+
+  /**
    * Analyze scope violations in parsed file structure
    */
   analyzeScopeViolations(structure: ParsedFileStructure, notificationHook?: ReturnType<typeof useNotifications>): ScopeViolation[] {
@@ -204,23 +285,6 @@ export class ASTParserService {
   }
 
   /**
-   * Extract function definitions from AST
-   * @deprecated Use functionExtractor.extractFunctions instead
-   */
-  extractFunctions(ast: any, sourceCode: string) {
-    const comments = this.commentExtractor.extractComments(ast);
-    return this.functionExtractor.extractFunctions(ast, sourceCode, comments);
-  }
-
-  /**
-   * Identify function calls within the AST
-   * @deprecated Use callExtractor.identifyFunctionCalls instead
-   */
-  identifyFunctionCalls(ast: any) {
-    return this.callExtractor.identifyFunctionCalls(ast);
-  }
-
-  /**
    * Process external dependencies and create child nodes for a parent function
    */
   processExternalDependencies(
@@ -229,11 +293,17 @@ export class ASTParserService {
     parentScope?: ScopeContext
   ): ExternalDependencyResult {
     try {
-      const ast = this.babelParser.parse(code);
+      const ast = this.parser.parse(code);
       return externalDependencyProcessor.processExternalDependencies(ast, parentNodeId, parentScope);
     } catch (error) {
       console.error('External dependency processing error:', error);
-      throw new Error(`Failed to process external dependencies: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (error instanceof ASTError) {
+        throw error;
+      }
+      throw new ASTError(
+        `Failed to process external dependencies: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'ASTParserService'
+      );
     }
   }
 
@@ -264,85 +334,7 @@ export class ASTParserService {
     };
   }
 
-  /**
-   * Extract functions with individual error handling
-   */
-  private extractFunctionsWithErrorHandling(ast: any, code: string, comments: any[], errors: ParseError[], warnings: ParseError[]) {
-    try {
-      return this.functionExtractor.extractFunctions(ast, code, comments);
-    } catch (error) {
-      const parseError = errorHandlingService.createParseError(
-        'semantic',
-        `Failed to extract functions: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { 
-          recoverable: true,
-          suggestion: 'Some functions may be skipped. Check function syntax and structure.'
-        }
-      );
-      errors.push(parseError);
-      return []; // Return empty array to continue processing
-    }
-  }
 
-  /**
-   * Extract function calls with individual error handling
-   */
-  private extractCallsWithErrorHandling(ast: any, errors: ParseError[], warnings: ParseError[]) {
-    try {
-      return this.callExtractor.identifyFunctionCalls(ast);
-    } catch (error) {
-      const parseError = errorHandlingService.createParseError(
-        'semantic',
-        `Failed to extract function calls: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { 
-          recoverable: true,
-          suggestion: 'Function call relationships may not be displayed correctly.'
-        }
-      );
-      warnings.push(parseError);
-      return []; // Return empty array to continue processing
-    }
-  }
-
-  /**
-   * Extract dependencies with individual error handling
-   */
-  private extractDependenciesWithErrorHandling(ast: any, errors: ParseError[], warnings: ParseError[]) {
-    try {
-      return this.dependencyExtractor.extractDependencies(ast);
-    } catch (error) {
-      const parseError = errorHandlingService.createParseError(
-        'dependency',
-        `Failed to extract dependencies: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { 
-          recoverable: true,
-          suggestion: 'External dependencies may not be displayed correctly.'
-        }
-      );
-      warnings.push(parseError);
-      return []; // Return empty array to continue processing
-    }
-  }
-
-  /**
-   * Extract variables with individual error handling
-   */
-  private extractVariablesWithErrorHandling(ast: any, errors: ParseError[], warnings: ParseError[]) {
-    try {
-      return this.variableExtractor.extract(ast);
-    } catch (error) {
-      const parseError = errorHandlingService.createParseError(
-        'semantic',
-        `Failed to extract variables: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        { 
-          recoverable: true,
-          suggestion: 'Variable configuration may not be available for some functions.'
-        }
-      );
-      warnings.push(parseError);
-      return []; // Return empty array to continue processing
-    }
-  }
 
   /**
    * Create a scope context from function metadata
