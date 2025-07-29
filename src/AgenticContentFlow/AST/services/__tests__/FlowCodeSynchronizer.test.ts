@@ -3,7 +3,6 @@ import { FlowStructure, FlowChange, ParsedFileStructure } from '../../types/ASTT
 import { ASTParserServiceInterface } from '../../interfaces/CoreInterfaces';
 import { ASTError } from '../../errors/ASTError';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MockedFunction } from 'vitest';
 import { afterEach } from 'node:test';
 
 describe('FlowCodeSynchronizer', () => {
