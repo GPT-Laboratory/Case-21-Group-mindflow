@@ -4,7 +4,7 @@ import { BaseExtractor } from '../core/BaseExtractor';
 import { ASTTraverser, NodeVisitor } from '../interfaces/CoreInterfaces';
 import { ExternalDependency } from '../types/ASTTypes';
 import { NodeUtils } from '../utils/NodeUtils';
-import { ValidationUtils, ASTError } from '../utils/ValidationUtils';
+import { ASTError } from '../utils/ValidationUtils';
 
 /**
  * DependencyExtractor refactored to follow SOLID principles and use new architecture.
@@ -89,9 +89,12 @@ export class DependencyExtractor extends BaseExtractor<ExternalDependency> {
    * @returns true if the node is a require call
    */
   private isRequireCall(node: Node): node is t.CallExpression {
-    return NodeUtils.isCallExpression(node) && 
-           t.isIdentifier((node as t.CallExpression).callee) && 
-           (node as t.CallExpression).callee.name === 'require';
+    if (!NodeUtils.isCallExpression(node)) {
+      return false;
+    }
+    
+    const callExpr = node as t.CallExpression;
+    return t.isIdentifier(callExpr.callee) && callExpr.callee.name === 'require';
   }
 
   /**

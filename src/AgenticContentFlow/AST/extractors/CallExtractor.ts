@@ -26,19 +26,18 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
    * @param traverserOrParser The ASTTraverser instance for new architecture or BabelParser for legacy
    */
   constructor(traverserOrParser: ASTTraverser | BabelParser) {
-    // Check if this is the legacy BabelParser constructor
-    if (traverserOrParser && 'parse' in traverserOrParser) {
-      // Legacy constructor - create a simple traverser internally
-      const legacyTraverser: ASTTraverser = {
+    // Determine the traverser to use and call super() unconditionally
+    const traverser = (traverserOrParser && 'parse' in traverserOrParser)
+      ? // Legacy constructor - create a simple traverser internally
+      {
         traverse: (node: Node, visitor: NodeVisitor) => {
           this.legacyTraverse(node, visitor);
         }
-      };
-      super(legacyTraverser);
-    } else {
-      // New architecture constructor
-      super(traverserOrParser as ASTTraverser);
-    }
+      } as ASTTraverser
+      : // New architecture constructor
+      traverserOrParser as ASTTraverser;
+
+    super(traverser);
   }
 
   /**
@@ -50,13 +49,13 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
    */
   private legacyTraverse(node: Node, visitor: NodeVisitor): void {
     if (!NodeUtils.isValidNode(node)) return;
-    
+
     visitor.visit(node);
-    
+
     // Traverse children using the old logic
     for (const key in node) {
       if (!NodeUtils.shouldTraverseProperty(key)) continue;
-      
+
       const child = (node as any)[key];
       if (Array.isArray(child)) {
         child.forEach(item => {
@@ -82,7 +81,7 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
   extract(ast: Node): FunctionCall[] {
     try {
       this.validateNode(ast);
-      
+
       const calls: FunctionCall[] = [];
       this.functionStack = [];
 
@@ -94,10 +93,10 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
       };
 
       this.traverse(ast, visitor);
-      
+
       this.validateResults(calls, this.validateFunctionCall.bind(this));
       return calls;
-      
+
     } catch (error) {
       this.handleExtractionError(error, 'Function call extraction failed', ast);
     }
@@ -195,10 +194,10 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
   private extractFunctionCall(node: Node): FunctionCall | null {
     try {
       this.validateNode(node, 'CallExpression');
-      
+
       const calledFunction = this.getCalledFunctionName(node);
       const currentFunction = this.getCurrentFunction();
-      
+
       if (!calledFunction || !currentFunction) {
         return null;
       }
@@ -210,7 +209,7 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
         sourceLocation: this.extractSourceLocation(node),
         isExternal: this.isExternalCall(calledFunction)
       };
-      
+
     } catch (error) {
       // Return null for failed extractions to allow partial processing
       return null;
@@ -265,8 +264,8 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
       'console', 'require', 'import', 'setTimeout', 'setInterval',
       'JSON', 'Math', 'Date', 'Array', 'Object', 'String', 'Number'
     ];
-    
-    return externalPatterns.some(pattern => 
+
+    return externalPatterns.some(pattern =>
       functionName.startsWith(pattern) || functionName === pattern
     );
   }
@@ -282,19 +281,19 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
     if (!call.id || typeof call.id !== 'string') {
       throw new ASTError('Function call must have a valid id', this.getExtractorName());
     }
-    
+
     if (!call.callerFunction || typeof call.callerFunction !== 'string') {
       throw new ASTError('Function call must have a valid caller function', this.getExtractorName());
     }
-    
+
     if (!call.calledFunction || typeof call.calledFunction !== 'string') {
       throw new ASTError('Function call must have a valid called function', this.getExtractorName());
     }
-    
+
     if (!call.sourceLocation) {
       throw new ASTError('Function call must have source location', this.getExtractorName());
     }
-    
+
     if (typeof call.isExternal !== 'boolean') {
       throw new ASTError('Function call must have valid isExternal flag', this.getExtractorName());
     }

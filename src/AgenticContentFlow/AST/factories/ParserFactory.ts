@@ -17,7 +17,7 @@ import { ASTError } from '../utils/ValidationUtils';
  */
 export class ParserFactory {
   private static readonly SUPPORTED_PARSERS = ['babel'] as const;
-  
+
   /**
    * Create a parser instance of the specified type.
    * Follows Factory Method pattern for object creation.
@@ -30,12 +30,12 @@ export class ParserFactory {
     try {
       // Validate parser type
       this.validateParserType(type);
-      
+
       // Create parser based on type
       switch (type) {
         case 'babel':
           return this.createBabelParser();
-        
+
         default:
           // This should never be reached due to validation, but provides safety
           throw new ASTError(
@@ -47,7 +47,7 @@ export class ParserFactory {
       if (error instanceof ASTError) {
         throw error;
       }
-      
+
       throw new ASTError(
         `Failed to create parser of type '${type}': ${error instanceof Error ? error.message : 'Unknown error'}`,
         'ParserFactory'
@@ -65,10 +65,10 @@ export class ParserFactory {
   private static createBabelParser(): ASTParser {
     try {
       const parser = new BabelParser();
-      
+
       // Validate that the parser implements the required interface
       this.validateParserInterface(parser);
-      
+
       return parser;
     } catch (error) {
       throw new ASTError(
@@ -186,13 +186,13 @@ export class ParserFactory {
    */
   static createMultipleParsers(types: ('babel')[]): Map<string, ASTParser> {
     const parsers = new Map<string, ASTParser>();
-    
+
     try {
       for (const type of types) {
         const parser = this.createParser(type);
         parsers.set(type, parser);
       }
-      
+
       return parsers;
     } catch (error) {
       throw new ASTError(

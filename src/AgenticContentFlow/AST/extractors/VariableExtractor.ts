@@ -1,10 +1,10 @@
 import * as t from '@babel/types';
 import { Node } from '@babel/types';
 import { BaseExtractor } from '../core/BaseExtractor';
-import { ASTTraverser, NodeVisitor } from '../interfaces/CoreInterfaces';
+import { ASTTraverser } from '../interfaces/CoreInterfaces';
 import { VariableDeclaration, ScopeLevel } from '../types/ASTTypes';
 import { NodeUtils } from '../utils/NodeUtils';
-import { ValidationUtils, ASTError } from '../utils/ValidationUtils';
+import { ValidationUtils } from '../utils/ValidationUtils';
 
 /**
  * VariableExtractor following SOLID principles and new architecture.
@@ -58,27 +58,6 @@ export class VariableExtractor extends BaseExtractor<VariableDeclaration> {
     }
   }
 
-  /**
-   * Process a single AST node during traversal.
-   * Handles scope tracking and variable extraction.
-   * 
-   * @param node The current node being visited
-   * @param variables Array to collect extracted variables
-   */
-  private processNode(node: Node, variables: VariableDeclaration[]): void {
-    try {
-      // Extract variables if this is a variable declaration
-      if (this.isVariableDeclaration(node)) {
-        // Determine scope based on the node's context in the AST
-        const scope = this.determineNodeScope(node);
-        this.extractVariablesFromDeclaration(node as t.VariableDeclaration, variables, scope);
-      }
-
-    } catch (error) {
-      // Log error but continue processing other nodes
-      console.warn(`Failed to process node in VariableExtractor: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
 
   /**
    * Check if a node is a variable declaration.
@@ -100,7 +79,7 @@ export class VariableExtractor extends BaseExtractor<VariableDeclaration> {
    * @param scope The scope level for the variables
    */
   private extractVariablesFromDeclaration(
-    node: t.VariableDeclaration, 
+    node: t.VariableDeclaration,
     variables: VariableDeclaration[],
     scope: ScopeLevel
   ): void {
@@ -207,17 +186,16 @@ export class VariableExtractor extends BaseExtractor<VariableDeclaration> {
       // Handle different types of initializers
       if (t.isLiteral(declarator.init)) {
         // Handle different literal types
-        if (declarator.init.value === null) {
+        if (t.isNullLiteral(declarator.init)) {
           return 'null';
         }
-        return String(declarator.init.value);
+        if ('value' in declarator.init && declarator.init.value !== undefined) {
+          return String(declarator.init.value);
+        }
+        // Fallback for other literal types
+        return String(declarator.init);
       }
-      
-      // Handle string literals specifically (for test compatibility)
-      if (declarator.init.type === 'Literal' && 'value' in declarator.init) {
-        return String((declarator.init as any).value);
-      }
-      
+
       if (t.isIdentifier(declarator.init)) {
         return declarator.init.name;
       }
@@ -255,45 +233,17 @@ export class VariableExtractor extends BaseExtractor<VariableDeclaration> {
 
   /**
    * Determine the scope of a variable declaration node based on its context in the AST.
-   * This replaces the problematic scope stack approach with a more reliable method.
+   * Uses the scope stack maintained during traversal instead of relying on parent properties.
    * 
    * @param node The variable declaration node
    * @returns The scope level for the variable
    */
   private determineNodeScope(node: Node): ScopeLevel {
     try {
-      // Walk up the AST tree to find the containing scope
-      let current = node as any;
-      
-      // Look for parent nodes to determine scope
-      while (current && current.parent) {
-        current = current.parent;
-        
-        // If we find a function node, we're in function scope
-        if (NodeUtils.isFunctionNode(current)) {
-          return 'function';
-        }
-        
-        // If we find a block statement that's not the program body, we might be in block scope
-        if (t.isBlockStatement(current) && current.parent && !t.isProgram(current.parent)) {
-          // Check if this block is part of a function
-          let blockParent = current.parent;
-          while (blockParent) {
-            if (NodeUtils.isFunctionNode(blockParent)) {
-              return 'function';
-            }
-            if (t.isProgram(blockParent)) {
-              break;
-            }
-            blockParent = blockParent.parent;
-          }
-          return 'block';
-        }
-      }
-      
-      // If we didn't find any containing function or block, it's global scope
-      return 'global';
-      
+      // Use the current scope from our traversal stack
+      // This is more reliable than trying to walk up parent nodes
+      return this.getCurrentScope();
+
     } catch (error) {
       console.warn(`Failed to determine node scope: ${error instanceof Error ? error.message : 'Unknown error'}`);
       // Default to global scope on error
@@ -358,7 +308,7 @@ export class VariableExtractor extends BaseExtractor<VariableDeclaration> {
   protected preProcess(ast: Node): void {
     // Reset scope stack for new extraction
     this.scopeStack = [];
-    
+
     // Call parent pre-processing
     super.preProcess(ast);
   }
@@ -373,7 +323,7 @@ export class VariableExtractor extends BaseExtractor<VariableDeclaration> {
   protected postProcess(results: VariableDeclaration[]): VariableDeclaration[] {
     // Clean up scope stack
     this.scopeStack = [];
-    
+
     // Call parent post-processing
     return super.postProcess(results);
   }
@@ -485,32 +435,32 @@ export class VariableExtractor extends BaseExtractor<VariableDeclaration> {
     const skipProperties = [
       // Parent references (prevent cycles)
       'parent',
-      
+
       // Comment metadata (handled separately by CommentExtractor)
       'leadingComments',
-      'trailingComments', 
+      'trailingComments',
       'innerComments',
-      
+
       // Source location metadata
-      'loc', 
-      'start', 
+      'loc',
+      'start',
       'end',
       'range',
-      
+
       // Raw values and metadata
       'raw',
       'value',
       'extra',
-      
+
       // Babel-specific metadata
       '_babelType',
       '_compact',
       '_generated',
-      
+
       // TypeScript-specific metadata
       'typeAnnotation',
       'optional',
-      
+
       // Flow-specific metadata
       'variance',
       'bound'

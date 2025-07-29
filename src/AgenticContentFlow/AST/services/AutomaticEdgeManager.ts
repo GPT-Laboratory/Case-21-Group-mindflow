@@ -1,6 +1,9 @@
 import { Edge } from '@xyflow/react';
 import { FunctionCall, FunctionMetadata } from '../types/ASTTypes';
 import { ASTParserService } from '../ASTParserService';
+import { ParserFactory } from '../factories/ParserFactory';
+import { ExtractorFactory } from '../factories/ExtractorFactory';
+import { ASTTraverser } from '../core/ASTTraverser';
 import * as t from '@babel/types';
 import { BabelParser } from '../parsers/BabelParser';
 
@@ -41,7 +44,15 @@ export class AutomaticEdgeManager {
   private astParser: ASTParserService;
 
   constructor(astParser?: ASTParserService) {
-    this.astParser = astParser || new ASTParserService();
+    if (astParser) {
+      this.astParser = astParser;
+    } else {
+      // Create dependencies using factories
+      const parser = ParserFactory.createParser('babel');
+      const traverser = new ASTTraverser();
+      const extractors = ExtractorFactory.createExtractors(traverser);
+      this.astParser = new ASTParserService(parser, extractors);
+    }
   }
 
   /**
@@ -56,7 +67,7 @@ export class AutomaticEdgeManager {
   ): EdgeCreationResult {
     const functionMap = new Map(availableFunctions.map(f => [f.name, f]));
     const existingEdgeMap = new Map(existingEdges.map(e => [`${e.source}-${e.target}`, e]));
-    
+
     const createdEdges: Edge[] = [];
     const skippedCalls: FunctionCall[] = [];
 
@@ -65,14 +76,14 @@ export class AutomaticEdgeManager {
       // Skip external calls (not in available functions)
       const targetFunction = functionMap.get(call.calledFunction);
       const sourceFunction = functionMap.get(call.callerFunction);
-      
+
       if (!targetFunction || !sourceFunction) {
         skippedCalls.push(call);
         continue;
       }
 
       const edgeKey = `${sourceFunction.id}-${targetFunction.id}`;
-      
+
       // Skip if edge already exists (single edge rule)
       if (existingEdgeMap.has(edgeKey)) {
         skippedCalls.push(call);
@@ -143,14 +154,14 @@ export class AutomaticEdgeManager {
     existingEdges: Edge[]
   ): EdgeRemovalResult {
     const functionMap = new Map(availableFunctions.map(f => [f.name, f]));
-    
+
     // Create set of valid edge keys from current function calls
     const validEdgeKeys = new Set<string>();
-    
+
     for (const call of currentFunctionCalls) {
       const sourceFunction = functionMap.get(call.callerFunction);
       const targetFunction = functionMap.get(call.calledFunction);
-      
+
       if (sourceFunction && targetFunction) {
         validEdgeKeys.add(`${sourceFunction.id}-${targetFunction.id}`);
       }
@@ -162,7 +173,7 @@ export class AutomaticEdgeManager {
     // Check each existing edge
     for (const edge of existingEdges) {
       const edgeKey = `${edge.source}-${edge.target}`;
-      
+
       if (validEdgeKeys.has(edgeKey)) {
         remainingEdges.push(edge);
       } else {
@@ -194,7 +205,7 @@ export class AutomaticEdgeManager {
   ): EdgeCreationResult & EdgeRemovalResult {
     try {
       const parsedStructure = this.astParser.parseFile(code);
-      
+
       // Remove obsolete edges first
       const removalResult = this.removeObsoleteEdges(
         parsedStructure.calls,
@@ -238,8 +249,7 @@ export class AutomaticEdgeManager {
     existingEdges: Edge[]
   ): { valid: boolean; reason?: string } {
     // Check if edge already exists
-    const edgeKey = `${sourceFunction.id}-${targetFunction.id}`;
-    const existingEdge = existingEdges.find(e => 
+    const existingEdge = existingEdges.find(e =>
       e.source === sourceFunction.id && e.target === targetFunction.id
     );
 
@@ -269,8 +279,8 @@ export class AutomaticEdgeManager {
     targetFunction: FunctionMetadata,
     functionCalls: FunctionCall[]
   ): FunctionCall[] {
-    return functionCalls.filter(call => 
-      call.callerFunction === sourceFunction.name && 
+    return functionCalls.filter(call =>
+      call.callerFunction === sourceFunction.name &&
       call.calledFunction === targetFunction.name
     );
   }
@@ -284,7 +294,7 @@ export class AutomaticEdgeManager {
     existingEdges: Edge[]
   ): ManualEdgeValidation {
     const functionMap = new Map(availableFunctions.map(f => [f.id, f]));
-    
+
     const sourceFunction = functionMap.get(edge.source);
     const targetFunction = functionMap.get(edge.target);
 
@@ -304,7 +314,7 @@ export class AutomaticEdgeManager {
 
     // Use existing validation logic
     const validation = this.validateEdgeCreation(sourceFunction, targetFunction, existingEdges);
-    
+
     return {
       valid: validation.valid,
       reason: validation.reason,
@@ -327,18 +337,16 @@ export class AutomaticEdgeManager {
     try {
       const babelParser = new BabelParser();
       const ast = babelParser.parse(code);
-      
+
       // Find the source function in the AST
       let sourceFunctionNode: t.Function | null = null;
-      let sourceFunctionPath: any = null;
 
       const traverse = (node: t.Node, path: string[] = []) => {
         if (t.isFunctionDeclaration(node) && node.id?.name === sourceFunction.name) {
           sourceFunctionNode = node;
-          sourceFunctionPath = path;
           return;
         }
-        
+
         // Continue traversing
         for (const key in node) {
           const child = (node as any)[key];
@@ -355,7 +363,7 @@ export class AutomaticEdgeManager {
       };
 
       if (ast && (ast as any).program && (ast as any).program.body) {
-        (ast as any).program.body.forEach((node: t.Node, index: number) => 
+        (ast as any).program.body.forEach((node: t.Node, index: number) =>
           traverse(node, ['program', 'body', index.toString()])
         );
       }
@@ -382,7 +390,7 @@ export class AutomaticEdgeManager {
 
       // Add function call to the end of the source function body
       const updatedCode = this.insertFunctionCall(code, sourceFunction, targetFunction);
-      
+
       // Create function call metadata
       const newCall: FunctionCall = {
         id: `manual_${sourceFunction.name}_calls_${targetFunction.name}`,
@@ -457,11 +465,11 @@ export class AutomaticEdgeManager {
     targetFunction: FunctionMetadata
   ): string {
     const lines = code.split('\n');
-    
+
     // Find the end of the source function (before the closing brace)
     const functionStartLine = sourceFunction.sourceLocation.start.line - 1;
     const functionEndLine = sourceFunction.sourceLocation.end.line - 1;
-    
+
     // Find the last meaningful line before the closing brace
     let insertLine = functionEndLine;
     for (let i = functionEndLine; i >= functionStartLine; i--) {
@@ -487,10 +495,10 @@ export class AutomaticEdgeManager {
 
     // Create the function call statement
     const functionCall = `${indentation}${targetFunction.name}();`;
-    
+
     // Insert the function call before the closing brace
     lines.splice(insertLine, 0, functionCall);
-    
+
     return lines.join('\n');
   }
 
@@ -523,7 +531,7 @@ export class AutomaticEdgeManager {
       }
 
       const result = this.addFunctionCallToCode(updatedCode, sourceFunction, targetFunction);
-      
+
       if (result.validationErrors.length === 0) {
         updatedCode = result.updatedCode;
         allAddedCalls.push(...result.addedCalls);
@@ -553,7 +561,7 @@ export class AutomaticEdgeManager {
     try {
       const babelParser = new BabelParser();
       const ast = babelParser.parse(code);
-      
+
       // Find the source function in the AST
       let sourceFunctionNode: t.Function | null = null;
 
@@ -562,7 +570,7 @@ export class AutomaticEdgeManager {
           sourceFunctionNode = node;
           return;
         }
-        
+
         // Continue traversing
         for (const key in node) {
           const child = (node as any)[key];
@@ -604,7 +612,7 @@ export class AutomaticEdgeManager {
 
       // Remove function calls from the source function
       const updatedCode = this.removeFunctionCallFromFunction(code, sourceFunction, targetFunction);
-      
+
       // Create metadata for removed calls
       existingCalls.forEach((call, index) => {
         const removedCall: FunctionCall = {
@@ -647,28 +655,28 @@ export class AutomaticEdgeManager {
     const lines = code.split('\n');
     const functionStartLine = sourceFunction.sourceLocation.start.line - 1;
     const functionEndLine = sourceFunction.sourceLocation.end.line - 1;
-    
+
     // Find and remove lines that contain calls to the target function
     const updatedLines: string[] = [];
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
+
       // If we're inside the source function
       if (i >= functionStartLine && i <= functionEndLine) {
         // Check if this line contains a call to the target function
         const trimmedLine = line.trim();
         const callPattern = new RegExp(`^\\s*${targetFunction.name}\\s*\\(\\s*\\)\\s*;?\\s*$`);
-        
+
         if (callPattern.test(trimmedLine)) {
           // Skip this line (remove the function call)
           continue;
         }
       }
-      
+
       updatedLines.push(line);
     }
-    
+
     return updatedLines.join('\n');
   }
 
@@ -701,7 +709,7 @@ export class AutomaticEdgeManager {
       }
 
       const result = this.removeFunctionCallFromCode(updatedCode, sourceFunction, targetFunction);
-      
+
       if (result.validationErrors.length === 0) {
         updatedCode = result.updatedCode;
         allRemovedCalls.push(...result.addedCalls); // addedCalls contains removed calls
@@ -729,7 +737,7 @@ export class AutomaticEdgeManager {
     // First, synchronize manual edges to code
     const manualEdges = edges.filter(edge => !edge.data?.functionCall);
     const edgeToCodeResult = this.synchronizeManualEdgesWithCode(code, manualEdges, availableFunctions);
-    
+
     // Then, synchronize code to edges using the updated code
     const codeToEdgeResult = this.synchronizeEdgesWithCode(edgeToCodeResult.updatedCode, edges, options);
 

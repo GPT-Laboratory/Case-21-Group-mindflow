@@ -1,7 +1,7 @@
 import { Node } from '@babel/types';
 import { CommentMetadata } from '../types/ASTTypes';
 import { BaseExtractor } from '../core/BaseExtractor';
-import { ASTTraverser } from '../core/ASTTraverser';
+import { ASTTraverser } from '../interfaces/CoreInterfaces';
 import { CommentUtils } from '../utils/CommentUtils';
 import { SourceLocationUtils } from '../utils/SourceLocationUtils';
 import { ValidationUtils, ASTError } from '../utils/ValidationUtils';
@@ -346,7 +346,7 @@ export class CommentExtractor extends BaseExtractor<CommentMetadata> {
    * @param node The AST node to check
    * @returns true if the extractor can handle this node type
    */
-  protected canHandle(node: Node): boolean {
+  protected canHandle(_node: Node): boolean {
     // CommentExtractor can handle any node type since comments can be attached to any node
     return true;
   }

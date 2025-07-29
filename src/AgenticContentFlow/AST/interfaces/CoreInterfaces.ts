@@ -1,5 +1,5 @@
 import { Node } from '@babel/types';
-import { SourceLocation, CommentMetadata } from '../types/ASTTypes';
+import { SourceLocation, CommentMetadata, ParsedFileStructure } from '../types/ASTTypes';
 
 /**
  * Core abstraction for AST extraction operations.
@@ -158,4 +158,19 @@ export interface CodeValidator {
    * @throws ASTError if validation fails
    */
   validateSourceCode(code: string): void;
+}
+
+/**
+ * Interface for AST parser service operations.
+ * Follows Dependency Inversion Principle - high-level modules depend on this abstraction.
+ * Coordinates parsing and extraction operations without handling implementation details.
+ */
+export interface ASTParserServiceInterface {
+  /**
+   * Parse a file and extract all relevant metadata.
+   * @param code The source code to parse
+   * @returns Parsed file structure with all extracted metadata
+   * @throws ASTError if parsing or extraction fails
+   */
+  parseFile(code: string): ParsedFileStructure;
 }

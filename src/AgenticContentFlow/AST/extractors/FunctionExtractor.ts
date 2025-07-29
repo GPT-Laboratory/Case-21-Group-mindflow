@@ -4,7 +4,6 @@ import { BaseExtractor } from '../core/BaseExtractor';
 import { ASTTraverser, NodeVisitor } from '../interfaces/CoreInterfaces';
 import { NodeUtils } from '../utils/NodeUtils';
 import { ParameterUtils } from '../utils/ParameterUtils';
-import { CommentUtils } from '../utils/CommentUtils';
 import { ValidationUtils, ASTError } from '../utils/ValidationUtils';
 import { ASTTraverser as ASTTraverserClass } from '../core/ASTTraverser';
 
@@ -34,28 +33,31 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
   constructor(babelParser: any, commentExtractor?: any);
   
   constructor(traverserOrBabelParser: ASTTraverser | any, commentExtractor?: any) {
-    // Handle both new and old constructor signatures
-    if (traverserOrBabelParser && typeof traverserOrBabelParser.traverse === 'function') {
-      // New constructor with ASTTraverser
-      super(traverserOrBabelParser as ASTTraverser);
-    } else if (traverserOrBabelParser === null || traverserOrBabelParser === undefined) {
-      // Handle null/undefined case - should throw error for new API
-      if (commentExtractor === undefined) {
-        // New API with null traverser - throw error
-        throw new ASTError(
-          'ASTTraverser is required for BaseExtractor',
-          'BaseExtractor'
-        );
+    // Determine the traverser to use and call super() unconditionally
+    const traverser = (() => {
+      // Handle both new and old constructor signatures
+      if (traverserOrBabelParser && typeof traverserOrBabelParser.traverse === 'function') {
+        // New constructor with ASTTraverser
+        return traverserOrBabelParser as ASTTraverser;
+      } else if (traverserOrBabelParser === null || traverserOrBabelParser === undefined) {
+        // Handle null/undefined case - should throw error for new API
+        if (commentExtractor === undefined) {
+          // New API with null traverser - throw error
+          throw new ASTError(
+            'ASTTraverser is required for BaseExtractor',
+            'BaseExtractor'
+          );
+        } else {
+          // Old API with null babel parser - create default traverser
+          return new ASTTraverserClass();
+        }
       } else {
-        // Old API with null babel parser - create default traverser
-        const defaultTraverser = new ASTTraverserClass();
-        super(defaultTraverser);
+        // Old constructor - create a default traverser
+        return new ASTTraverserClass();
       }
-    } else {
-      // Old constructor - create a default traverser
-      const defaultTraverser = new ASTTraverserClass();
-      super(defaultTraverser);
-    }
+    })();
+    
+    super(traverser);
   }
 
   /**
@@ -348,7 +350,7 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
    * @param comments The comments array (not used in new implementation)
    * @returns Array of function metadata
    */
-  extractFunctions(ast: t.Node, sourceCode: string, comments: any[]): FunctionMetadata[] {
+  extractFunctions(ast: t.Node, _sourceCode: string, _comments: any[]): FunctionMetadata[] {
     // For backward compatibility, just call the new extract method
     return this.extract(ast);
   }

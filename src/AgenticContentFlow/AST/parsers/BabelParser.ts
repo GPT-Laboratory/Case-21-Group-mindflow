@@ -27,12 +27,12 @@ export class BabelParser {
             'nullishCoalescingOperator',
             'optionalChaining'
           ],
-          attachComments: true
+          attachComment: true
         },
         ast: true,
         code: false
       });
-      
+
       return result.ast;
     } catch (error) {
       throw new Error(`Failed to parse JavaScript code: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -45,7 +45,7 @@ export class BabelParser {
   parseWithErrorHandling(code: string): ParseResult {
     const errors: ParseError[] = [];
     const warnings: ParseError[] = [];
-    
+
     try {
       const result = Babel.transform(code, {
         sourceType: 'module',
@@ -65,12 +65,14 @@ export class BabelParser {
             'nullishCoalescingOperator',
             'optionalChaining'
           ],
-          attachComments: true
+          attachComment: true
         },
         ast: true,
         code: false
       });
-      
+
+      console.log("Result", result)
+
       return {
         success: true,
         structure: undefined, // Will be filled by ASTParserService
@@ -84,7 +86,7 @@ export class BabelParser {
 
       // Try fallback parsing strategies
       const fallbackResult = this.attemptFallbackParsing(code, error);
-      
+
       return {
         success: fallbackResult.success,
         structure: undefined, // Will be filled by ASTParserService if fallback succeeds
@@ -98,7 +100,7 @@ export class BabelParser {
   /**
    * Attempt fallback parsing strategies when main parsing fails
    */
-  private attemptFallbackParsing(code: string, originalError: any): { success: boolean; ast?: any } {
+  private attemptFallbackParsing(code: string, _originalError: any): { success: boolean; ast?: any } {
     // Strategy 1: Try parsing as script instead of module
     try {
       const result = Babel.transform(code, {
@@ -106,13 +108,13 @@ export class BabelParser {
         parserOpts: {
           allowReturnOutsideFunction: true,
           plugins: ['jsx', 'typescript'],
-          attachComments: true,
+          attachComment: true,
           errorRecovery: true
         },
         ast: true,
         code: false
       });
-      
+
       return { success: true, ast: result.ast };
     } catch (scriptError) {
       // Strategy 2: Try with minimal plugins
@@ -121,13 +123,13 @@ export class BabelParser {
           sourceType: 'module',
           parserOpts: {
             allowImportExportEverywhere: true,
-            attachComments: true,
+            attachComment: true,
             errorRecovery: true
           },
           ast: true,
           code: false
         });
-        
+
         return { success: true, ast: result.ast };
       } catch (minimalError) {
         // Strategy 3: Try to extract individual functions using regex
@@ -145,12 +147,12 @@ export class BabelParser {
       // you might want to create a minimal AST-like structure
       const functionMatches = code.match(/function\s+(\w+)\s*\([^)]*\)\s*\{/g);
       const arrowFunctionMatches = code.match(/(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>/g);
-      
+
       if (functionMatches || arrowFunctionMatches) {
         // Create a minimal AST-like structure for the functions found
         // This would need to be expanded for full functionality
-        return { 
-          success: true, 
+        return {
+          success: true,
           ast: {
             type: 'Program',
             body: [],
@@ -160,7 +162,7 @@ export class BabelParser {
           }
         };
       }
-      
+
       return { success: false };
     } catch (regexError) {
       return { success: false };
@@ -172,13 +174,13 @@ export class BabelParser {
    */
   getSourceLocation(node: t.Node): { start: { line: number; column: number }; end: { line: number; column: number } } {
     return {
-      start: { 
-        line: node.loc?.start.line || 0, 
-        column: node.loc?.start.column || 0 
+      start: {
+        line: node.loc?.start.line || 0,
+        column: node.loc?.start.column || 0
       },
-      end: { 
-        line: node.loc?.end.line || 0, 
-        column: node.loc?.end.column || 0 
+      end: {
+        line: node.loc?.end.line || 0,
+        column: node.loc?.end.column || 0
       }
     };
   }
@@ -189,7 +191,7 @@ export class BabelParser {
   extractFunctionCode(node: t.Function, sourceCode: string): string {
     const location = this.getSourceLocation(node);
     const lines = sourceCode.split('\n');
-    
+
     if (location.start.line === location.end.line) {
       // Single line function
       const line = lines[location.start.line - 1];
@@ -199,7 +201,7 @@ export class BabelParser {
       const startLine = lines[location.start.line - 1].substring(location.start.column);
       const endLine = lines[location.end.line - 1].substring(0, location.end.column);
       const middleLines = lines.slice(location.start.line, location.end.line - 1);
-      
+
       return [startLine, ...middleLines, endLine].join('\n');
     }
   }

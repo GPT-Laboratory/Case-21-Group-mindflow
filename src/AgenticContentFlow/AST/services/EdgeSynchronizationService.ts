@@ -1,6 +1,9 @@
 import { Edge } from '@xyflow/react';
 import { AutomaticEdgeManager, EdgeCreationOptions } from './AutomaticEdgeManager';
 import { ASTParserService } from '../ASTParserService';
+import { ParserFactory } from '../factories/ParserFactory';
+import { ExtractorFactory } from '../factories/ExtractorFactory';
+import { ASTTraverser } from '../core/ASTTraverser';
 
 export interface SynchronizationResult {
   success: boolean;
@@ -29,7 +32,16 @@ export class EdgeSynchronizationService {
     astParser?: ASTParserService
   ) {
     this.edgeManager = edgeManager || new AutomaticEdgeManager();
-    this.astParser = astParser || new ASTParserService();
+
+    if (astParser) {
+      this.astParser = astParser;
+    } else {
+      // Create dependencies using factories
+      const parser = ParserFactory.createParser('babel');
+      const traverser = new ASTTraverser();
+      const extractors = ExtractorFactory.createExtractors(traverser);
+      this.astParser = new ASTParserService(parser, extractors);
+    }
   }
 
   /**
@@ -56,7 +68,7 @@ export class EdgeSynchronizationService {
     try {
       // Parse the code to get current function structure
       const parsedStructure = this.astParser.parseFile(code);
-      
+
       // Get current function calls
       const currentCalls = parsedStructure.calls;
       const availableFunctions = parsedStructure.functions;
@@ -185,7 +197,7 @@ export class EdgeSynchronizationService {
     try {
       const parsedStructure = this.astParser.parseFile(code);
       const functionMap = new Map(parsedStructure.functions.map(f => [f.name, f]));
-      
+
       // Create set of valid function call pairs
       const validCallPairs = new Set(
         parsedStructure.calls.map(call => `${call.callerFunction}->${call.calledFunction}`)
@@ -194,18 +206,21 @@ export class EdgeSynchronizationService {
       // Check each edge that claims to represent a function call
       for (const edge of edges) {
         if (edge.data?.functionCall) {
-          const sourceFunc = functionMap.get(edge.data.sourceFunction);
-          const targetFunc = functionMap.get(edge.data.targetFunction);
+          const sourceFunctionName = edge.data.sourceFunction as string;
+          const targetFunctionName = edge.data.targetFunction as string;
+
+          const sourceFunc = functionMap.get(sourceFunctionName);
+          const targetFunc = functionMap.get(targetFunctionName);
 
           if (!sourceFunc) {
-            issues.push(`Edge ${edge.id} references non-existent source function: ${edge.data.sourceFunction}`);
+            issues.push(`Edge ${edge.id} references non-existent source function: ${sourceFunctionName}`);
           }
 
           if (!targetFunc) {
-            issues.push(`Edge ${edge.id} references non-existent target function: ${edge.data.targetFunction}`);
+            issues.push(`Edge ${edge.id} references non-existent target function: ${targetFunctionName}`);
           }
 
-          const callPair = `${edge.data.sourceFunction}->${edge.data.targetFunction}`;
+          const callPair = `${sourceFunctionName}->${targetFunctionName}`;
           if (!validCallPairs.has(callPair)) {
             issues.push(`Edge ${edge.id} represents a function call that no longer exists in code: ${callPair}`);
           }
@@ -240,7 +255,7 @@ export class EdgeSynchronizationService {
       const parsedStructure = this.astParser.parseFile(code);
       const automaticEdges = edges.filter(e => e.data?.functionCall).length;
       const manualEdges = edges.filter(e => !e.data?.functionCall).length;
-      
+
       return {
         totalEdges: edges.length,
         automaticEdges,

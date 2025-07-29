@@ -110,7 +110,7 @@ export abstract class BaseExtractor<T> implements ASTExtractor<T> {
     const locationStr = `${location.start.line}_${location.start.column}`;
     const nodeType = node.type.toLowerCase();
     const baseId = prefix ? `${prefix}_${nodeType}_${locationStr}` : `${nodeType}_${locationStr}`;
-    
+
     // Add timestamp to ensure uniqueness
     const timestamp = Date.now().toString(36);
     return `${baseId}_${timestamp}`;
@@ -153,7 +153,7 @@ export abstract class BaseExtractor<T> implements ASTExtractor<T> {
    */
   protected collectNodes(ast: Node, nodeTypePredicate: (node: Node) => boolean): Node[] {
     const collectedNodes: Node[] = [];
-    
+
     this.traverse(ast, {
       visit: (node: Node) => {
         if (nodeTypePredicate(node)) {
@@ -161,7 +161,7 @@ export abstract class BaseExtractor<T> implements ASTExtractor<T> {
         }
       }
     });
-    
+
     return collectedNodes;
   }
 
@@ -195,7 +195,7 @@ export abstract class BaseExtractor<T> implements ASTExtractor<T> {
    */
   protected handleExtractionError(error: any, context: string, node?: Node): never {
     const sourceLocation = node ? this.extractSourceLocation(node) : undefined;
-    
+
     if (ValidationUtils.isASTError(error)) {
       throw new ASTError(
         `${context} in ${this.constructor.name}: ${error.message}`,
@@ -203,7 +203,7 @@ export abstract class BaseExtractor<T> implements ASTExtractor<T> {
         sourceLocation || error.sourceLocation
       );
     }
-    
+
     throw new ASTError(
       `${context} in ${this.constructor.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       this.constructor.name,
@@ -280,7 +280,7 @@ export abstract class BaseExtractor<T> implements ASTExtractor<T> {
    * @param node The AST node to check
    * @returns true if the extractor can handle this node type
    */
-  protected canHandle(node: Node): boolean {
+  protected canHandle(_node: Node): boolean {
     return true;
   }
 
@@ -321,13 +321,13 @@ export abstract class BaseExtractor<T> implements ASTExtractor<T> {
     try {
       // Pre-processing phase
       this.preProcess(ast);
-      
+
       // Main extraction phase (implemented by subclasses)
       const results = this.extract(ast);
-      
+
       // Post-processing phase
       return this.postProcess(results);
-      
+
     } catch (error) {
       this.handleExtractionError(error, 'Template extraction failed', ast);
     }
