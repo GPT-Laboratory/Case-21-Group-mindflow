@@ -25,11 +25,11 @@ export class FlowCodeSynchronizer {
     if (!astParser) {
       throw new ASTError('ASTParserServiceInterface instance is required', 'FlowCodeSynchronizer');
     }
-    
+
     if (typeof astParser.parseFile !== 'function') {
       throw new ASTError('Parser service must implement parseFile method', 'FlowCodeSynchronizer');
     }
-    
+
     this.astParser = astParser;
   }
 
