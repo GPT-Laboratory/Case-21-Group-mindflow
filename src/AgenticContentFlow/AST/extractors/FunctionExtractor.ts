@@ -6,6 +6,7 @@ import { NodeUtils } from '../utils/NodeUtils';
 import { ParameterUtils } from '../utils/ParameterUtils';
 import { ValidationUtils, ASTError } from '../utils/ValidationUtils';
 import { ASTTraverser as ASTTraverserClass } from '../core/ASTTraverser';
+import { useCodeStore } from '../../../stores/codeStore';
 
 /**
  * FunctionExtractor refactored to follow SOLID principles and use new architecture.
@@ -15,6 +16,8 @@ import { ASTTraverser as ASTTraverserClass } from '../core/ASTTraverser';
  */
 export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
   private functionStack: string[] = []; // Track nested function context
+  private sourceCode: string = '';
+  private filePath: string = '';
 
   /**
    * Create a new FunctionExtractor with dependency injection.
@@ -58,6 +61,18 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
     })();
     
     super(traverser);
+  }
+
+  /**
+   * Set the source code and file path for function extraction
+   */
+  setSourceContext(sourceCode: string, filePath: string = 'unknown'): void {
+    this.sourceCode = sourceCode;
+    this.filePath = filePath;
+    
+    // Store the source code in the code store
+    const codeStore = useCodeStore.getState();
+    codeStore.setSourceCode(filePath, sourceCode);
   }
 
   /**
@@ -109,6 +124,11 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
    */
   private processNode(node: t.Node, functions: FunctionMetadata[]): void {
     if (this.isFunctionNode(node)) {
+      // Skip small inline arrow functions (like those in reduce, map, etc.)
+      if (this.shouldSkipInlineFunction(node as t.Function)) {
+        return;
+      }
+      
       // Extract function metadata
       const functionMetadata = this.extractFunction(node as t.Function);
       functions.push(functionMetadata);
@@ -129,6 +149,51 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
   }
 
   /**
+   * Determine if an inline function should be skipped (not treated as a separate node).
+   * Skips small arrow functions that are typically used as callbacks in array methods.
+   * 
+   * @param node The function AST node
+   * @returns true if the function should be skipped, false otherwise
+   */
+  private shouldSkipInlineFunction(node: t.Function): boolean {
+    // Only skip arrow functions (not regular function declarations)
+    if (node.type !== 'ArrowFunctionExpression') {
+      return false;
+    }
+
+    // Skip if the function is very short (likely a simple callback)
+    if (node.loc) {
+      const lineSpan = node.loc.end.line - node.loc.start.line;
+      const columnSpan = node.loc.end.column - node.loc.start.column;
+      
+      // Skip single-line arrow functions that are less than 50 characters
+      if (lineSpan === 0 && columnSpan < 50) {
+        return true;
+      }
+      
+      // Skip multi-line arrow functions that span only 1-2 lines
+      if (lineSpan <= 1) {
+        return true;
+      }
+    }
+
+    // Check if it's a simple expression (not a block statement)
+    if (node.body && node.body.type !== 'BlockStatement') {
+      return true; // Simple expression like (x) => x + 1
+    }
+
+    // Check if it has a very simple body (single return statement)
+    if (node.body && node.body.type === 'BlockStatement') {
+      const blockBody = node.body as t.BlockStatement;
+      if (blockBody.body.length === 1 && blockBody.body[0].type === 'ReturnStatement') {
+        return true; // Simple block like (x) => { return x + 1; }
+      }
+    }
+
+    return false; // Keep more complex arrow functions
+  }
+
+  /**
    * Extract function metadata from a function node.
    * Uses shared utilities to eliminate code duplication.
    * 
@@ -145,20 +210,34 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
       const sourceLocation = this.extractSourceLocation(node);
       const parameters = this.extractParameters(node);
       
-      // Generate unique ID
-      const id = this.generateId(node, name);
+      // Generate stable ID based on function characteristics (no timestamp)
+      const id = this.generateStableFunctionId(node, name);
       
-      // Extract comments using shared utility (simplified for now)
-      const comments: any[] = [];
-      const description = this.extractDescription(comments);
+      // Extract comments from the node itself
+      const nodeComments = this.extractNodeComments(node);
+      const description = this.extractFunctionDescriptionFromComments(nodeComments, name);
       
       // Determine nesting and scope
       const isNested = this.functionStack.length > 0;
       const parentFunction = isNested ? this.functionStack[this.functionStack.length - 1] : undefined;
       const scope: ScopeLevel = isNested ? 'function' : 'global';
       
-      // Extract function code (simplified - would need source code for full implementation)
-      const code = this.extractFunctionCode(node);
+      // Store function location in the code store for later retrieval
+      if (node.loc && this.sourceCode) {
+        const codeStore = useCodeStore.getState();
+        
+        // Calculate extended range to include JSDoc comments
+        const extendedRange = this.calculateExtendedFunctionRange(node, nodeComments);
+        
+        codeStore.setFunctionLocation(id, {
+          filePath: this.filePath,
+          functionName: name,
+          startLine: extendedRange.startLine,
+          endLine: extendedRange.endLine,
+          startColumn: extendedRange.startColumn,
+          endColumn: extendedRange.endColumn
+        });
+      }
       
       const functionMetadata: FunctionMetadata = {
         id,
@@ -169,7 +248,7 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
         isNested,
         parentFunction,
         scope,
-        code
+        filePath: this.filePath
       };
       
       return functionMetadata;
@@ -219,10 +298,228 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
   }
 
   /**
+   * Extract comments attached to a function node.
+   * 
+   * @param node The function AST node
+   * @returns Array of comment objects
+   */
+  private extractNodeComments(node: t.Function): any[] {
+    const comments: any[] = [];
+    const nodeAny = node as any;
+    
+    // Extract leading comments (JSDoc comments are typically leading comments)
+    if (nodeAny.leadingComments && Array.isArray(nodeAny.leadingComments)) {
+      nodeAny.leadingComments.forEach((comment: any) => {
+        comments.push({
+          type: comment.type === 'CommentBlock' ? 'block' : 'line',
+          value: comment.value,
+          position: 'leading'
+        });
+      });
+    }
+    
+    // Extract trailing comments
+    if (nodeAny.trailingComments && Array.isArray(nodeAny.trailingComments)) {
+      nodeAny.trailingComments.forEach((comment: any) => {
+        comments.push({
+          type: comment.type === 'CommentBlock' ? 'block' : 'line',
+          value: comment.value,
+          position: 'trailing'
+        });
+      });
+    }
+    
+    return comments;
+  }
+
+  /**
+   * Extract function description from JSDoc comments.
+   * Looks for @title and @description tags in block comments.
+   * Prioritizes comments that specifically mention the function name or are function-specific.
+   * 
+   * @param comments Array of comment objects
+   * @param functionName The name of the function
+   * @returns Function description or empty string
+   */
+  private extractFunctionDescriptionFromComments(comments: any[], functionName: string): string {
+    if (!Array.isArray(comments) || comments.length === 0) {
+      return '';
+    }
+    
+    // Look for leading block comments that might contain JSDoc
+    const leadingBlockComments = comments.filter(comment => 
+      comment.position === 'leading' && comment.type === 'block'
+    );
+    
+    if (leadingBlockComments.length === 0) {
+      return '';
+    }
+    
+    // If there are multiple leading comments, try to find the one that's function-specific
+    let targetComment = null;
+    
+    if (leadingBlockComments.length > 1) {
+      // Look for a comment that contains @title with the function name
+      targetComment = leadingBlockComments.find(comment => {
+        const commentValue = comment.value;
+        const titleMatch = commentValue.match(/\*?\s*@title\s+(.+)/);
+        return titleMatch && titleMatch[1].trim() === functionName;
+      });
+      
+      // If no function-specific comment found, use the last leading comment
+      // (which is typically the one immediately before the function)
+      if (!targetComment) {
+        targetComment = leadingBlockComments[leadingBlockComments.length - 1];
+      }
+    } else {
+      targetComment = leadingBlockComments[0];
+    }
+    
+    if (targetComment) {
+      const commentValue = targetComment.value;
+      
+      // First try to extract @description tag
+      const descriptionMatch = commentValue.match(/\*?\s*@description\s+(.+)/);
+      if (descriptionMatch) {
+        return descriptionMatch[1].trim();
+      }
+      
+      // If no @description, try to extract @title tag
+      const titleMatch = commentValue.match(/\*?\s*@title\s+(.+)/);
+      if (titleMatch) {
+        return titleMatch[1].trim();
+      }
+      
+      // If no specific tags, extract the main description (before any @ tags)
+      const lines = commentValue.split('\n');
+      const descriptionLines: string[] = [];
+      
+      for (const line of lines) {
+        const cleanLine = line.replace(/^\s*\*\s?/, '').trim();
+        if (cleanLine.startsWith('@')) {
+          break; // Stop at first @ tag
+        }
+        if (cleanLine.length > 0) {
+          descriptionLines.push(cleanLine);
+        }
+      }
+      
+      if (descriptionLines.length > 0) {
+        return descriptionLines.join(' ').trim();
+      }
+    }
+    
+    return '';
+  }
+
+  /**
+   * Generate a stable function ID based on function characteristics (no timestamp).
+   * This ensures the same function always gets the same ID across different parses.
+   * 
+   * @param node The function AST node
+   * @param functionName The name of the function
+   * @returns A stable, deterministic function ID
+   */
+  private generateStableFunctionId(node: t.Function, functionName: string): string {
+    const nodeType = node.type.toLowerCase();
+    
+    // For named functions, use name as primary identifier
+    if (functionName && functionName !== 'anonymous') {
+      // Create a simple hash based on function name and file path for uniqueness
+      const stableComponents = [functionName, nodeType, this.filePath].join('_');
+      let hash = 0;
+      for (let i = 0; i < stableComponents.length; i++) {
+        const char = stableComponents.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      const hashStr = Math.abs(hash).toString(36);
+      return `${functionName}_${nodeType}_${hashStr}`;
+    }
+    
+    // For anonymous functions, fall back to location-based ID
+    const location = this.extractSourceLocation(node);
+    const locationStr = `${location.start.line}_${location.start.column}`;
+    const stableComponents = [functionName, nodeType, locationStr, this.filePath].join('_');
+    
+    let hash = 0;
+    for (let i = 0; i < stableComponents.length; i++) {
+      const char = stableComponents.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    const hashStr = Math.abs(hash).toString(36);
+    return `${functionName}_${nodeType}_${locationStr}_${hashStr}`;
+  }
+
+  /**
+   * Calculate extended function range to include JSDoc comments.
+   * 
+   * @param node The function AST node
+   * @param nodeComments The comments extracted from the node
+   * @returns Extended range including JSDoc comments
+   */
+  private calculateExtendedFunctionRange(node: t.Function, nodeComments: any[]): {
+    startLine: number;
+    endLine: number;
+    startColumn: number;
+    endColumn: number;
+  } {
+    if (!node.loc) {
+      // Fallback to original range if no location info
+      return {
+        startLine: 1,
+        endLine: 1,
+        startColumn: 0,
+        endColumn: 0
+      };
+    }
+
+    let startLine = node.loc.start.line;
+    let startColumn = node.loc.start.column;
+    const endLine = node.loc.end.line;
+    const endColumn = node.loc.end.column;
+
+    // Check if there are leading comments (JSDoc)
+    const nodeAny = node as any;
+    if (nodeAny.leadingComments && Array.isArray(nodeAny.leadingComments) && nodeAny.leadingComments.length > 0) {
+      // Find the earliest leading comment
+      let earliestCommentLine = startLine;
+      let earliestCommentColumn = startColumn;
+
+      nodeAny.leadingComments.forEach((comment: any) => {
+        if (comment.loc && comment.loc.start) {
+          if (comment.loc.start.line < earliestCommentLine) {
+            earliestCommentLine = comment.loc.start.line;
+            earliestCommentColumn = comment.loc.start.column;
+          } else if (comment.loc.start.line === earliestCommentLine && comment.loc.start.column < earliestCommentColumn) {
+            earliestCommentColumn = comment.loc.start.column;
+          }
+        }
+      });
+
+      // Use the earliest comment as the start of our range
+      if (earliestCommentLine < startLine) {
+        startLine = earliestCommentLine;
+        startColumn = earliestCommentColumn;
+      }
+    }
+
+    return {
+      startLine,
+      endLine,
+      startColumn,
+      endColumn
+    };
+  }
+
+  /**
    * Extract function description from comments.
    * 
    * @param comments Array of comment metadata
    * @returns Function description or empty string
+   * @deprecated Use extractFunctionDescriptionFromComments instead
    */
   private extractDescription(comments: any[]): string {
     if (!Array.isArray(comments) || comments.length === 0) {
@@ -246,29 +543,7 @@ export class FunctionExtractor extends BaseExtractor<FunctionMetadata> {
     return '';
   }
 
-  /**
-   * Extract function code representation.
-   * Simplified implementation - in full version would need source code.
-   * 
-   * @param node The function AST node
-   * @returns String representation of function code
-   */
-  private extractFunctionCode(node: t.Function): string {
-    try {
-      // This is a simplified implementation
-      // In the full version, this would extract the actual source code
-      const name = this.getFunctionName(node);
-      const params = node.params.map(param => {
-        if (t.isIdentifier(param)) return param.name;
-        return 'param';
-      }).join(', ');
-      
-      return `function ${name}(${params}) { /* ... */ }`;
-      
-    } catch (error) {
-      return '/* function code extraction failed */';
-    }
-  }
+
 
   /**
    * Check if the extractor can handle a specific AST node type.
