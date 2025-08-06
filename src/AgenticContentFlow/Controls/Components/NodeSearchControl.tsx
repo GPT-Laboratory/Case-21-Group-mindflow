@@ -25,13 +25,13 @@ export const NodeSearchControl: React.FC = () => {
 
   // Focus on first matching node
   useEffect(() => {
-    if (matchingNodes.length > 0 && searchTerm) {
+    if (matchingNodes.length > 0 && searchTerm && searchTerm.trim() !== '' && isOpen) {
       const firstMatch = matchingNodes[0];
-      if (firstMatch.position) {
+      if (firstMatch.position && firstMatch.position.x !== undefined && firstMatch.position.y !== undefined) {
         setCenter(firstMatch.position.x, firstMatch.position.y, { zoom: 1.2, duration: 500 });
       }
     }
-  }, [matchingNodes, searchTerm, setCenter]);
+  }, [matchingNodes, searchTerm, setCenter, isOpen]);
 
   const handleClear = () => {
     setSearchTerm('');

@@ -51,6 +51,7 @@ describe('NodeSearchControl', () => {
   ];
 
   beforeEach(() => {
+    mockSetCenter.mockClear();
     mockUseNodeContext.mockReturnValue({
       nodes: mockNodes,
       updateNode: vi.fn(),
@@ -97,6 +98,7 @@ describe('NodeSearchControl', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    mockSetCenter.mockClear();
   });
 
   it('should render the search button initially', () => {
