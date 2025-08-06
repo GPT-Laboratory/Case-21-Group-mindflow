@@ -32,9 +32,8 @@ export const DataTab: React.FC<DataTabProps> = ({
           const config = getNodeType(nodeType);
           setFactoryConfig(config);
           
-          // Initialize with current formData (complete node instance data) but exclude instanceCode
+          // Initialize with current formData (complete node instance data)
           const dataToShow = { ...formData };
-          delete dataToShow.instanceCode; // Exclude instanceCode since it's edited in Code Editor tab
           setEditedJson(JSON.stringify(dataToShow, null, 2));
         } catch (error) {
           console.warn('Could not load factory configuration:', error);
@@ -52,11 +51,9 @@ export const DataTab: React.FC<DataTabProps> = ({
     try {
       const parsedData = newValue.trim() ? JSON.parse(newValue) : {};
       
-      // Update all fields in formData with the parsed data, but preserve instanceCode
+      // Update all fields in formData with the parsed data
       Object.keys(parsedData).forEach(key => {
-        if (key !== 'instanceCode') { // Don't overwrite instanceCode
-          onFieldChange(key, parsedData[key]);
-        }
+        onFieldChange(key, parsedData[key]);
       });
     } catch (error) {
       // Invalid JSON, don't update formData
@@ -75,14 +72,7 @@ export const DataTab: React.FC<DataTabProps> = ({
     );
   }
 
-  // Create data to show (excluding instanceCode)
-  const dataToShow = { ...formData };
-  delete dataToShow.instanceCode;
-
-
-
-
-  // Create JSON schema for autocomplete based on factory config (excluding instanceCode)
+  // Create JSON schema for autocomplete based on factory config
   const schema = {
     type: 'object',
     properties: {
@@ -94,15 +84,19 @@ export const DataTab: React.FC<DataTabProps> = ({
         properties: factoryConfig?.process?.parameters || {},
         additionalProperties: true
       },
-      instanceCodeMetadata: { 
+      codeMetadata: { 
         type: 'object', 
-        description: 'Metadata about custom code modifications (code is edited in Code tab)',
+        description: 'Metadata about code modifications (actual code is stored in code store)',
         properties: {
           modifiedBy: { type: 'string' },
           modifiedAt: { type: 'string' },
           originalVersion: { type: 'string' },
           generatedFrom: { type: 'string' }
         }
+      },
+      filePath: {
+        type: 'string',
+        description: 'Path to the source file in the code store'
       },
       instanceData: { type: 'object', description: 'Instance-specific data' },
       metadata: { 

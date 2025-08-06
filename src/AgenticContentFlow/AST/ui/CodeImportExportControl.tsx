@@ -19,6 +19,8 @@ import { flowGenerator } from '../services/FlowGenerator';
 import { useNodeContext } from '../../Node/context/useNodeContext';
 import { useEdgeContext } from '../../Edge/store/useEdgeContext';
 import { useNotifications } from '../../Notifications/hooks/useNotifications';
+import { useCodeStore } from '../../../stores/codeStore';
+import '../services/ASTNodeTypeRegistration'; // Ensure AST node types are registered
 
 interface CodeImportExportControlProps {
   mode: 'import' | 'export';
@@ -60,6 +62,24 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
       const flow = flowGenerator.generateFlow(code, file.name);
 
       // Load the generated flow into the current view
+      console.log('📥 CodeImportExportControl: Loading flow into view:', {
+        totalNodes: flow.nodes.length,
+        totalEdges: flow.edges.length,
+        containerNode: flow.nodes.find(n => n.type === 'flownode'),
+        functionNodes: flow.nodes.filter(n => n.type === 'functionnode').length,
+        childNodes: flow.nodes.filter(n => n.type === 'childnode').length
+      });
+      
+      // Debug: Check what data is in the nodes
+      console.log('📥 CodeImportExportControl: Node data details:', {
+        containerNodeData: flow.nodes.find(n => n.type === 'flownode')?.data,
+        firstFunctionNodeData: flow.nodes.find(n => n.type === 'functionnode')?.data,
+        codeStoreState: {
+          sourceFilesCount: useCodeStore.getState().sourceFiles.size,
+          functionLocationsCount: useCodeStore.getState().functionLocations.size
+        }
+      });
+      
       setNodes(flow.nodes);
       setEdges(flow.edges);
 

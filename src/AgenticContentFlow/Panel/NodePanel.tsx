@@ -84,8 +84,19 @@ export const NodeConfigPanel: React.FC = () => {
   useEffect(() => {
     if (selectedNodes.length === 1) {
       const node = selectedNodes[0];
+      console.log('🔍 NodePanel: Node selected, data:', {
+        nodeId: node.id,
+        nodeType: node.type,
+        nodeData: node.data,
+        hasFilePath: !!node.data?.filePath,
+        filePath: node.data?.filePath
+      });
       setActiveNode(node);
-      setFormData(node.data || {});
+      setFormData({
+        ...node.data,
+        id: node.id, // Include the node ID so CodeEditorTab can access it
+        type: node.type // Include the node type for completeness
+      });
       setHasChanges(false);
       setHasDataChanges(false);
     } else if (selectedNodes.length === 0) {
@@ -112,7 +123,11 @@ export const NodeConfigPanel: React.FC = () => {
             newData: currentNodeFromMap.data
           });
           setActiveNode(currentNodeFromMap);
-          setFormData(currentNodeFromMap.data || {});
+          setFormData({
+            ...currentNodeFromMap.data,
+            id: currentNodeFromMap.id,
+            type: currentNodeFromMap.type
+          });
           setHasChanges(false);
           setHasDataChanges(false);
         }
@@ -144,7 +159,11 @@ export const NodeConfigPanel: React.FC = () => {
 
   const handleReset = () => {
     if (activeNode) {
-      setFormData(activeNode.data || {});
+      setFormData({
+        ...activeNode.data,
+        id: activeNode.id,
+        type: activeNode.type
+      });
       setHasChanges(false);
       setHasDataChanges(false);
     }
