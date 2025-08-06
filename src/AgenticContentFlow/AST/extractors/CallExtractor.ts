@@ -18,6 +18,7 @@ import { BabelParser } from '../parsers/BabelParser';
  */
 export class CallExtractor extends BaseExtractor<FunctionCall> {
   private functionStack: string[] = [];
+  private definedFunctions: Set<string> = new Set();
 
   /**
    * Create a new CallExtractor instance with dependency injection.
@@ -70,6 +71,16 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
   }
 
   /**
+   * Set the list of functions defined in the current file.
+   * This is used to determine if function calls are internal or external.
+   * 
+   * @param functionNames Array of function names defined in the current file
+   */
+  setDefinedFunctions(functionNames: string[]): void {
+    this.definedFunctions = new Set(functionNames);
+  }
+
+  /**
    * Extract function calls from the AST using the new architecture.
    * Follows Single Responsibility Principle - only handles call extraction.
    * Uses shared traversal logic to eliminate code duplication.
@@ -84,8 +95,23 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
 
       const calls: FunctionCall[] = [];
       this.functionStack = [];
+      this.definedFunctions.clear();
 
-      // Use visitor pattern with shared traverser
+      // First pass: collect all function definitions
+      const functionCollector: NodeVisitor = {
+        visit: (node: Node) => {
+          if (this.isFunctionNode(node)) {
+            const functionName = this.getFunctionName(node);
+            if (functionName && functionName !== 'anonymous') {
+              this.definedFunctions.add(functionName);
+            }
+          }
+        }
+      };
+
+      this.traverse(ast, functionCollector);
+
+      // Second pass: extract function calls with proper internal/external classification
       const visitor: NodeVisitor = {
         visit: (node: Node) => {
           this.processNode(node, calls);
@@ -253,21 +279,37 @@ export class CallExtractor extends BaseExtractor<FunctionCall> {
 
   /**
    * Determine if a function call is external (not defined in the current file).
-   * This is a simplified implementation - could be enhanced with dependency analysis.
+   * First checks if the function is defined in the current file, then falls back to common patterns.
    * 
    * @param functionName The name of the called function
-   * @returns true if the call is likely external, false otherwise
+   * @returns true if the call is external, false if it's internal
    */
   private isExternalCall(functionName: string): boolean {
-    // Common external function patterns
+    // First check if the function is defined in the current file
+    if (this.definedFunctions.has(functionName)) {
+      return false; // Internal call - function is defined in this file
+    }
+
+    // If not found in defined functions, check common external patterns
     const externalPatterns = [
       'console', 'require', 'import', 'setTimeout', 'setInterval',
-      'JSON', 'Math', 'Date', 'Array', 'Object', 'String', 'Number'
+      'JSON', 'Math', 'Date', 'Array', 'Object', 'String', 'Number',
+      'log' // Add 'log' as it's commonly imported from external modules
     ];
 
-    return externalPatterns.some(pattern =>
+    // Check if it matches known external patterns
+    const isKnownExternal = externalPatterns.some(pattern =>
       functionName.startsWith(pattern) || functionName === pattern
     );
+
+    // If it matches known external patterns, it's external
+    if (isKnownExternal) {
+      return true;
+    }
+
+    // For unknown functions not defined in this file, assume they are external
+    // This handles imported functions that aren't in our hardcoded list
+    return true;
   }
 
   /**
