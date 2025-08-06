@@ -58,13 +58,19 @@ function log(operation, data) {
       const consoleLogNode = flow.nodes.find(n => n.data.functionName === 'console.log');
       expect(consoleLogNode).toBeDefined();
       expect(consoleLogNode?.type).toBe('childnode');
-      expect(consoleLogNode?.parentId).toBe('log_0');
+      expect(consoleLogNode?.parentId).toBe(logNode?.id);
 
       const jsonStringifyNode = flow.nodes.find(n => n.data.functionName === 'JSON.stringify');
       expect(jsonStringifyNode).toBeDefined();
       expect(jsonStringifyNode?.type).toBe('childnode');
-      expect(jsonStringifyNode?.parentId).toBe('log_0');
+      expect(jsonStringifyNode?.parentId).toBe(logNode?.id);
       expect(logNode?.data.description).toContain('Logs a given operation name and associated data.');
+
+      // Verify that child nodes do NOT have edges to their parent (they should be visually contained, not connected)
+      const edgesToConsoleLog = flow.edges.filter(edge => edge.target === consoleLogNode?.id);
+      const edgesToJsonStringify = flow.edges.filter(edge => edge.target === jsonStringifyNode?.id);
+      expect(edgesToConsoleLog).toHaveLength(0);
+      expect(edgesToJsonStringify).toHaveLength(0);
     });
 
     it('should generate a flow from the stringStatsStandard.js example', () => {

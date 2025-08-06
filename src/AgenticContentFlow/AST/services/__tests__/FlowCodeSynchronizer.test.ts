@@ -2,8 +2,7 @@ import { FlowCodeSynchronizer } from '../FlowCodeSynchronizer';
 import { FlowStructure, FlowChange, ParsedFileStructure } from '../../types/ASTTypes';
 import { ASTParserServiceInterface } from '../../interfaces/CoreInterfaces';
 import { ASTError } from '../../errors/ASTError';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { afterEach } from 'node:test';
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 
 describe('FlowCodeSynchronizer', () => {
   let synchronizer: FlowCodeSynchronizer;
@@ -468,6 +467,27 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service to return the original function
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'original_0',
+            name: 'original',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function original() {\n  return \'original\';\n}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
 
       // Create changes to add a new node
@@ -504,6 +524,38 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service to return both functions
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'keep_0',
+            name: 'keep',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function keep() {\n  return \'keep\';\n}'
+          },
+          {
+            id: 'remove_1',
+            name: 'remove',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 5, column: 8 }, end: { line: 7, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function remove() {\n  return \'remove\';\n}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const nodeToRemove = flow.nodes.find(n => n.data.functionName === 'remove');
 
@@ -530,6 +582,38 @@ describe('FlowCodeSynchronizer', () => {
           return 'target';
         }
       `;
+
+      // Mock the parser service to return both functions
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'caller_0',
+            name: 'caller',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function caller() {\n  return \'caller\';\n}'
+          },
+          {
+            id: 'target_1',
+            name: 'target',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 5, column: 8 }, end: { line: 7, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function target() {\n  return \'target\';\n}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const callerNode = flow.nodes.find(n => n.data.functionName === 'caller');
@@ -605,6 +689,60 @@ describe('FlowCodeSynchronizer', () => {
         function utility() {}
       `;
 
+      // Mock the parser service to return the functions
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'main_0',
+            name: 'main',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 6, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function main() {\n  helper1();\n  helper2();\n}'
+          },
+          {
+            id: 'helper1_1',
+            name: 'helper1',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 7, column: 8 }, end: { line: 9, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function helper1() {\n  utility();\n}'
+          },
+          {
+            id: 'helper2_2',
+            name: 'helper2',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 10, column: 8 }, end: { line: 10, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function helper2() {}'
+          },
+          {
+            id: 'utility_3',
+            name: 'utility',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 11, column: 8 }, end: { line: 11, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function utility() {}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       synchronizer.syncCodeToFlow(code, 'test.js');
 
       const functionCalls = [
@@ -651,6 +789,27 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service to return the test function
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'test_0',
+            name: 'test',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function test() {\n  return \'test\';\n}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const validation = synchronizer.validateSynchronization();
 
@@ -671,6 +830,39 @@ describe('FlowCodeSynchronizer', () => {
         function test1() {}
         function test2() {}
       `;
+
+      // Mock the parser service for initial code
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'test1_0',
+            name: 'test1',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 2, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function test1() {}'
+          },
+          {
+            id: 'test2_1',
+            name: 'test2',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 3, column: 8 }, end: { line: 3, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function test2() {}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       synchronizer.syncCodeToFlow(code, 'test.js');
 
       // Then manually modify the current code to have different function count
@@ -679,6 +871,49 @@ describe('FlowCodeSynchronizer', () => {
         function test2() {}
         function test3() {}
       `;
+
+      // Mock the parser service for validation to return 3 functions
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'test1_0',
+            name: 'test1',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 2, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function test1() {}'
+          },
+          {
+            id: 'test2_1',
+            name: 'test2',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 3, column: 8 }, end: { line: 3, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function test2() {}'
+          },
+          {
+            id: 'test3_2',
+            name: 'test3',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 4, column: 8 }, end: { line: 4, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function test3() {}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       const validation = synchronizer.validateSynchronization();
 
@@ -711,6 +946,27 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service for initial code
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'original_0',
+            name: 'original',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function original() {\n  return \'original\';\n}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       const initialFlow = synchronizer.syncCodeToFlow(initialCode, 'test.js');
       expect(initialFlow.nodes).toHaveLength(1);
 
@@ -724,6 +980,46 @@ describe('FlowCodeSynchronizer', () => {
           return 'helper';
         }
       `;
+
+      // Mock the parser service for updated code
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'original_0',
+            name: 'original',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function original() {\n  return helper();\n}'
+          },
+          {
+            id: 'helper_1',
+            name: 'helper',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 6, column: 8 }, end: { line: 8, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function helper() {\n  return \'helper\';\n}'
+          }
+        ],
+        calls: [
+          {
+            id: 'call_0',
+            callerFunction: 'original',
+            calledFunction: 'helper',
+            sourceLocation: { start: { line: 3, column: 10 }, end: { line: 3, column: 19 } },
+            isExternal: false
+          }
+        ],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       const updatedFlow = synchronizer.reAnalyzeCodeChanges(updatedCode);
 
@@ -783,6 +1079,46 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service to return the functions
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'oldName_0',
+            name: 'oldName',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function oldName() {\n  return \'old\';\n}'
+          },
+          {
+            id: 'caller_1',
+            name: 'caller',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 6, column: 8 }, end: { line: 8, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function caller() {\n  return oldName();\n}'
+          }
+        ],
+        calls: [
+          {
+            id: 'call_0',
+            callerFunction: 'caller',
+            calledFunction: 'oldName',
+            sourceLocation: { start: { line: 7, column: 10 }, end: { line: 7, column: 19 } },
+            isExternal: false
+          }
+        ],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const updatedFlow = synchronizer.updateNodeNameReferences('oldName', 'newName');
 
@@ -806,6 +1142,47 @@ describe('FlowCodeSynchronizer', () => {
           return nestedFunction();
         }
       `;
+
+      // Mock the parser service to return the functions with nested structure
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'parentFunction_0',
+            name: 'parentFunction',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 7, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function parentFunction() {\n  function nestedFunction() {\n    return \'nested\';\n  }\n  return nestedFunction();\n}'
+          },
+          {
+            id: 'nestedFunction_1',
+            name: 'nestedFunction',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 3, column: 10 }, end: { line: 5, column: 11 } },
+            description: '',
+            isNested: true,
+            scope: 'parentFunction',
+            parentFunction: 'parentFunction',
+            code: 'function nestedFunction() {\n  return \'nested\';\n}'
+          }
+        ],
+        calls: [
+          {
+            id: 'call_0',
+            callerFunction: 'parentFunction',
+            calledFunction: 'nestedFunction',
+            sourceLocation: { start: { line: 6, column: 10 }, end: { line: 6, column: 25 } },
+            isExternal: false
+          }
+        ],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const parentNode = flow.nodes.find(n => n.data.functionName === 'parentFunction');
@@ -836,6 +1213,47 @@ describe('FlowCodeSynchronizer', () => {
           return nested();
         }
       `;
+
+      // Mock the parser service to return the functions with nested structure
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'parent_0',
+            name: 'parent',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 7, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function parent() {\n  function nested() {\n    return \'nested\';\n  }\n  return nested();\n}'
+          },
+          {
+            id: 'nested_1',
+            name: 'nested',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 3, column: 10 }, end: { line: 5, column: 11 } },
+            description: '',
+            isNested: true,
+            scope: 'parent',
+            parentFunction: 'parent',
+            code: 'function nested() {\n  return \'nested\';\n}'
+          }
+        ],
+        calls: [
+          {
+            id: 'call_0',
+            callerFunction: 'parent',
+            calledFunction: 'nested',
+            sourceLocation: { start: { line: 6, column: 10 }, end: { line: 6, column: 17 } },
+            isExternal: false
+          }
+        ],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       synchronizer.syncCodeToFlow(code, 'test.js');
 
@@ -869,6 +1287,53 @@ describe('FlowCodeSynchronizer', () => {
           return func1();
         }
       `;
+
+      // Mock the parser service to return the functions with circular dependencies
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'func1_0',
+            name: 'func1',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function func1() {\n  return func2();\n}'
+          },
+          {
+            id: 'func2_1',
+            name: 'func2',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 6, column: 8 }, end: { line: 8, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function func2() {\n  return func1();\n}'
+          }
+        ],
+        calls: [
+          {
+            id: 'call_0',
+            callerFunction: 'func1',
+            calledFunction: 'func2',
+            sourceLocation: { start: { line: 3, column: 10 }, end: { line: 3, column: 17 } },
+            isExternal: false
+          },
+          {
+            id: 'call_1',
+            callerFunction: 'func2',
+            calledFunction: 'func1',
+            sourceLocation: { start: { line: 7, column: 10 }, end: { line: 7, column: 17 } },
+            isExternal: false
+          }
+        ],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       synchronizer.syncCodeToFlow(code, 'test.js');
       const violations = synchronizer.detectScopeViolations();
@@ -1183,6 +1648,27 @@ describe('FlowCodeSynchronizer', () => {
         }
       `;
 
+      // Mock the parser service to return the function with no parameters
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'noParams_0',
+            name: 'noParams',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function noParams() {\n  return \'no params\';\n}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
+
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const node = flow.nodes[0];
 
@@ -1195,6 +1681,31 @@ describe('FlowCodeSynchronizer', () => {
           return 'complex';
         }
       `;
+
+      // Mock the parser service to return the function with complex parameters
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'complexParams_0',
+            name: 'complexParams',
+            parameters: [
+              { name: 'obj', type: 'object', defaultValue: '{}' },
+              { name: 'arr', type: 'array', defaultValue: '[]' },
+              { name: 'func', type: 'function', defaultValue: '() => {}' }
+            ],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 4, column: 9 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function complexParams(obj = {}, arr = [], func = () => {}) {\n  return \'complex\';\n}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
       const node = flow.nodes[0];
@@ -1213,6 +1724,71 @@ describe('FlowCodeSynchronizer', () => {
         function func4() {}
         function func5() {}
       `;
+
+      // Mock the parser service to return 5 functions
+      mockParserService.parseFile.mockReturnValue({
+        functions: [
+          {
+            id: 'func1_0',
+            name: 'func1',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 2, column: 8 }, end: { line: 2, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function func1() {}'
+          },
+          {
+            id: 'func2_1',
+            name: 'func2',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 3, column: 8 }, end: { line: 3, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function func2() {}'
+          },
+          {
+            id: 'func3_2',
+            name: 'func3',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 4, column: 8 }, end: { line: 4, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function func3() {}'
+          },
+          {
+            id: 'func4_3',
+            name: 'func4',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 5, column: 8 }, end: { line: 5, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function func4() {}'
+          },
+          {
+            id: 'func5_4',
+            name: 'func5',
+            parameters: [],
+            returnType: 'unknown',
+            sourceLocation: { start: { line: 6, column: 8 }, end: { line: 6, column: 19 } },
+            description: '',
+            isNested: false,
+            scope: 'global',
+            code: 'function func5() {}'
+          }
+        ],
+        calls: [],
+        variables: [],
+        comments: [],
+        dependencies: []
+      });
 
       const flow = synchronizer.syncCodeToFlow(code, 'test.js');
 
