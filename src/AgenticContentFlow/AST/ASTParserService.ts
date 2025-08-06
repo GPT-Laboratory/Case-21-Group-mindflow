@@ -6,6 +6,7 @@ import { scopeViolationService } from './services/ScopeViolationService';
 import { ScopeContext } from '../Node/interfaces/ContainerNodeInterfaces';
 import { useNotifications } from '../Notifications/hooks/useNotifications';
 import { ASTError } from './utils/ValidationUtils';
+import { useCodeStore } from '../../stores/codeStore';
 
 export class ASTParserService implements ASTParserServiceInterface {
   constructor(
@@ -53,13 +54,27 @@ export class ASTParserService implements ASTParserServiceInterface {
    * Parse JavaScript code into AST and extract structure
    * Coordinates parsing and extraction operations using injected dependencies
    */
-  parseFile(code: string): ParsedFileStructure {
+  parseFile(code: string, filePath: string = 'unknown'): ParsedFileStructure {
     try {
       // Parse with injected parser
       const ast = this.parser.parse(code);
 
+      // Set source context on function extractor if available
+      const functionExtractor = this.extractors.get('function');
+      if (functionExtractor && 'setSourceContext' in functionExtractor) {
+        (functionExtractor as any).setSourceContext(code, filePath);
+      }
+
       // Extract all components using injected extractors
       const functions = this.extractors.get('function')?.extract(ast) || [];
+      
+      // Set defined functions on call extractor before extracting calls
+      const callExtractor = this.extractors.get('call');
+      if (callExtractor && 'setDefinedFunctions' in callExtractor) {
+        const functionNames = functions.map(f => f.name);
+        (callExtractor as any).setDefinedFunctions(functionNames);
+      }
+      
       const calls = this.extractors.get('call')?.extract(ast) || [];
       const dependencies = this.extractors.get('dependency')?.extract(ast) || [];
       const variables = this.extractors.get('variable')?.extract(ast) || [];
@@ -126,6 +141,14 @@ export class ASTParserService implements ASTParserServiceInterface {
       try {
         // Extract components with individual error handling using injected extractors
         const functions = this.extractWithErrorHandling('function', ast, errors, warnings, 'functions');
+        
+        // Set defined functions on call extractor before extracting calls
+        const callExtractor = this.extractors.get('call');
+        if (callExtractor && 'setDefinedFunctions' in callExtractor) {
+          const functionNames = functions.map(f => f.name);
+          (callExtractor as any).setDefinedFunctions(functionNames);
+        }
+        
         const calls = this.extractWithErrorHandling('call', ast, errors, warnings, 'function calls');
         const dependencies = this.extractWithErrorHandling('dependency', ast, errors, warnings, 'dependencies');
         const variables = this.extractWithErrorHandling('variable', ast, errors, warnings, 'variables');
@@ -294,6 +317,16 @@ export class ASTParserService implements ASTParserServiceInterface {
   ): ExternalDependencyResult {
     try {
       const ast = this.parser.parse(code);
+      
+      // Extract functions from the code to set defined functions on the processor
+      const functions = this.extractors.get('function')?.extract(ast) || [];
+      const functionNames = functions.map(f => f.name);
+      
+      // Set defined functions on the external dependency processor
+      if ('setDefinedFunctions' in externalDependencyProcessor) {
+        (externalDependencyProcessor as any).setDefinedFunctions(functionNames);
+      }
+      
       return externalDependencyProcessor.processExternalDependencies(ast, parentNodeId, parentScope);
     } catch (error) {
       console.error('External dependency processing error:', error);
@@ -310,19 +343,37 @@ export class ASTParserService implements ASTParserServiceInterface {
   /**
    * Parse file and create enhanced structure with child nodes for external dependencies
    */
-  parseFileWithChildNodes(code: string): ParsedFileStructure & { externalDependencyResults: Map<string, ExternalDependencyResult> } {
-    const baseStructure = this.parseFile(code);
+  parseFileWithChildNodes(code: string, filePath: string = 'unknown'): ParsedFileStructure & { externalDependencyResults: Map<string, ExternalDependencyResult> } {
+    const baseStructure = this.parseFile(code, filePath);
     const externalDependencyResults = new Map<string, ExternalDependencyResult>();
+
+    // Get the code store to retrieve function code
+    const codeStore = useCodeStore.getState();
+
+    // Set defined functions on the external dependency processor once for all functions
+    const functionNames = baseStructure.functions.map(f => f.name);
+    if ('setDefinedFunctions' in externalDependencyProcessor) {
+      (externalDependencyProcessor as any).setDefinedFunctions(functionNames);
+    }
 
     // Process external dependencies for each function
     baseStructure.functions.forEach(func => {
       try {
-        const result = this.processExternalDependencies(
-          func.code, 
-          func.id, 
-          this.createScopeFromFunction(func)
-        );
-        externalDependencyResults.set(func.id, result);
+        // Get the actual function code from the code store
+        const functionCode = codeStore.getFunctionCode(func.id);
+        if (functionCode) {
+          // Process external dependencies for this function
+          // The defined functions are already set on the processor above
+          const ast = this.parser.parse(functionCode);
+          const result = externalDependencyProcessor.processExternalDependencies(
+            ast, 
+            func.id, 
+            this.createScopeFromFunction(func)
+          );
+          externalDependencyResults.set(func.id, result);
+        } else {
+          console.warn(`No function code found for function ${func.name} (${func.id})`);
+        }
       } catch (error) {
         console.warn(`Failed to process external dependencies for function ${func.name}:`, error);
       }
