@@ -35,7 +35,13 @@ export class HandleTypeRegistry {
    * Get all handle definitions for a node type from any source
    */
   getNodeHandles(nodeType: string): HandleTypeDefinition[] {
-    // First try cell factory
+    // First try legacy configurations (for backward compatibility with tests)
+    const legacyConfig = this.legacyHandleConfigs.get(nodeType);
+    if (legacyConfig?.handles) {
+      return legacyConfig.handles;
+    }
+    
+    // Then try cell factory
     const cellConfig = getNodeType(nodeType);
     if (cellConfig?.handles?.definitions) {
       return cellConfig.handles.definitions;
@@ -56,16 +62,20 @@ export class HandleTypeRegistry {
       }));
     }
     
-    // Finally try legacy configurations
-    const legacyConfig = this.legacyHandleConfigs.get(nodeType);
-    return legacyConfig?.handles || [];
+    return [];
   }
   
   /**
    * Get the node category for a given node type from any source
    */
   getNodeCategory(nodeType: string): NodeCategory | undefined {
-    // First try cell factory
+    // First try legacy configurations (for backward compatibility with tests)
+    const legacyConfig = this.legacyHandleConfigs.get(nodeType);
+    if (legacyConfig?.category) {
+      return legacyConfig.category;
+    }
+    
+    // Then try cell factory
     const cellConfig = getNodeType(nodeType);
     if (cellConfig?.handles?.category) {
       return cellConfig.handles.category;
@@ -84,9 +94,7 @@ export class HandleTypeRegistry {
       return categoryMap[containerConfig.handles.category] || containerConfig.handles.category as NodeCategory;
     }
     
-    // Finally try legacy configurations
-    const legacyConfig = this.legacyHandleConfigs.get(nodeType);
-    return legacyConfig?.category;
+    return undefined;
   }
   
   /**
@@ -207,12 +215,14 @@ export class HandleTypeRegistry {
     return [...new Set([...cellTypes, ...containerTypes, ...legacyTypes])];
   }
   
-  // Legacy methods for backward compatibility - now no-ops since handles come from node factory
+  // Legacy methods for backward compatibility
   /**
    * @deprecated Handles are now automatically loaded from node factory configurations
    */
-  registerNodeHandles(_config: NodeHandleConfiguration): void {
+  registerNodeHandles(config: NodeHandleConfiguration): void {
     console.warn('registerNodeHandles is deprecated - handles are now loaded automatically from node factory configurations');
+    // Store in legacy configs for backward compatibility with tests
+    this.legacyHandleConfigs.set(config.nodeType, config);
   }
   
   /**
@@ -220,6 +230,8 @@ export class HandleTypeRegistry {
    */
   clear(): void {
     console.warn('clear() is deprecated - handles are managed by the node factory');
+    // Clear legacy configs for backward compatibility with tests
+    this.legacyHandleConfigs.clear();
   }
 }
 
