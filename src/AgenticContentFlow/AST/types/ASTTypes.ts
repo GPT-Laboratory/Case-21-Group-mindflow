@@ -8,7 +8,7 @@ export interface FunctionMetadata {
   isNested: boolean;
   parentFunction?: string;
   scope: ScopeLevel;
-  code: string;
+  filePath?: string; // Path to the source file
 }
 
 export interface Parameter {

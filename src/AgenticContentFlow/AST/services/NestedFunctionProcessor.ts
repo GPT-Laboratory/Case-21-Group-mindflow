@@ -45,7 +45,7 @@ export class NestedFunctionProcessor {
         position: this.calculateNodePosition(func, index),
         data: nodeData,
         canContainChildren: true,
-        childNodeIds: [],
+        childNodeIds: [], // Initialize as empty array
         scope: scope,
         expanded: false,
         depth: this.calculateDepth(func, parsedFile.functions),
@@ -66,8 +66,15 @@ export class NestedFunctionProcessor {
           const childNode = nodes.find(n => n.id === childNodeId);
 
           if (parentNode && childNode) {
-            parentNode.childNodeIds = parentNode.childNodeIds || [];
-            parentNode.childNodeIds.push(childNodeId);
+            // Ensure childNodeIds is initialized
+            if (!parentNode.childNodeIds) {
+              parentNode.childNodeIds = [];
+            }
+            
+            // Add child to parent's childNodeIds if not already present
+            if (!parentNode.childNodeIds.includes(childNodeId)) {
+              parentNode.childNodeIds.push(childNodeId);
+            }
 
             // Update child node with parent reference
             childNode.parentId = parentNodeId;
@@ -83,6 +90,8 @@ export class NestedFunctionProcessor {
         }
       }
     });
+
+
 
     return { nodes, relationships };
   }

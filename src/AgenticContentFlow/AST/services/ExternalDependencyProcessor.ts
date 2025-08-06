@@ -44,6 +44,7 @@ export interface ExternalDependencyResult {
  * Service for processing external dependencies and creating child nodes
  */
 export class ExternalDependencyProcessor {
+    private definedFunctions = new Set<string>();
     private builtInFunctions = new Set([
         // JavaScript built-ins
         'console', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
@@ -67,6 +68,16 @@ export class ExternalDependencyProcessor {
         // Popular external modules that are commonly considered "built-in"
         'react', 'react-dom', 'lodash', 'axios', 'express'
     ]);
+
+    /**
+     * Set the list of functions defined in the current file.
+     * This is used to determine if function calls are internal or external.
+     * 
+     * @param functionNames Array of function names defined in the current file
+     */
+    setDefinedFunctions(functionNames: string[]): void {
+        this.definedFunctions = new Set(functionNames);
+    }
 
     /**
      * Process external dependencies from an AST node
@@ -267,9 +278,19 @@ export class ExternalDependencyProcessor {
             return false;
         }
 
-        // For now, assume all functions are external unless they're clearly local
-        // This could be enhanced with scope analysis
-        return this.isBuiltInFunction(functionName) || !functionName.startsWith('local');
+        // First check if the function is defined in the current file
+        if (this.definedFunctions.has(functionName)) {
+            return false; // Internal function - defined in this file
+        }
+
+        // If not found in defined functions, check if it's a built-in function
+        if (this.isBuiltInFunction(functionName)) {
+            return true; // External built-in function
+        }
+
+        // For unknown functions not defined in this file, assume they are external
+        // This handles imported functions and other external dependencies
+        return true;
     }
 
     /**

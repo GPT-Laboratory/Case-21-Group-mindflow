@@ -6,6 +6,8 @@ import { FunctionMetadata, FunctionCall } from '../types/ASTTypes';
 import { ParserFactory } from '../factories/ParserFactory';
 import { ExtractorFactory } from '../factories/ExtractorFactory';
 import { ASTTraverser } from '../core/ASTTraverser';
+import { useCodeStore } from '../../../stores/codeStore';
+import './ASTNodeTypeRegistration'; // Ensure AST node types are registered
 
 /**
  * Flow node types
@@ -85,7 +87,17 @@ export class FlowGenerator {
     flowName?: string
   ): Flow {
     // Parse the file with external dependencies
-    const parseResult = this.astParser.parseFileWithChildNodes(code);
+    const parseResult = this.astParser.parseFileWithChildNodes(code, fileName || 'unknown');
+    
+    // Debug: Check if code store is populated
+    const codeStore = useCodeStore.getState();
+    console.log('🔍 FlowGenerator: Code store state after parsing:', {
+      fileName,
+      sourceFilesCount: codeStore.sourceFiles.size,
+      functionLocationsCount: codeStore.functionLocations.size,
+      hasSourceCode: !!codeStore.getSourceCode(fileName || 'unknown'),
+      sourceCodeLength: codeStore.getSourceCode(fileName || 'unknown')?.length || 0
+    });
 
     // Reset counters for this flow
     this.edgeIdCounter = 0;
@@ -95,14 +107,31 @@ export class FlowGenerator {
     const moduleDescription = this.extractModuleDescription(parseResult.comments);
 
     // Create container node for the module
-    const containerNode = this.createContainerNode(fileName, moduleTitle, moduleDescription);
+    const containerNode = this.createContainerNode(fileName, moduleTitle, moduleDescription, code);
     const nodes: FlowNode[] = [containerNode];
 
     // Create function nodes
     const functionNodes = parseResult.functions.map((func, index) =>
-      this.createFunctionNode(func, containerNode.id, index)
+      this.createFunctionNode(func, containerNode.id, index, code)
     );
     nodes.push(...functionNodes);
+
+    console.log('🏭 FlowGenerator: Created nodes:', {
+      containerNode: {
+        id: containerNode.id,
+        type: containerNode.type,
+        expanded: containerNode.data.expanded,
+        filePath: containerNode.data.filePath
+      },
+      functionNodes: functionNodes.map(fn => ({
+        id: fn.id,
+        type: fn.type,
+        parentId: fn.parentId,
+        functionName: fn.data.functionName,
+        filePath: fn.data.filePath,
+        hasDescription: !!fn.data.functionDescription
+      }))
+    });
 
     // Create external dependency child nodes
     const externalNodes: FlowNode[] = [];
@@ -116,7 +145,7 @@ export class FlowGenerator {
     nodes.push(...externalNodes);
 
     // Create edges for function calls
-    const edges = this.createEdges(parseResult.calls, parseResult.externalDependencyResults);
+    const edges = this.createEdges(parseResult.calls, parseResult.externalDependencyResults, functionNodes);
 
     return {
       id: flowId || this.generateId(),
@@ -141,7 +170,7 @@ export class FlowGenerator {
   /**
    * Create a container node for a module
    */
-  private createContainerNode(fileName: string, title?: string, description?: string): FlowNode {
+  private createContainerNode(fileName: string, title?: string, description?: string, code?: string): FlowNode {
     return {
       id: 'container',
       type: 'flownode',
@@ -149,8 +178,10 @@ export class FlowGenerator {
         label: title || `${fileName} Module`,
         description: description,
         fileName: fileName,
+        filePath: fileName, // Reference to code store
         isContainer: true,
-        layoutDirection: 'TB'
+        layoutDirection: 'LR',
+        expanded: true // Make container initially open
       },
       position: { x: 0, y: 0 },
       style: { width: 300, height: 400 }
@@ -160,7 +191,7 @@ export class FlowGenerator {
   /**
    * Create a function node
    */
-  private createFunctionNode(func: FunctionMetadata, parentId: string, index: number): FlowNode {
+  private createFunctionNode(func: FunctionMetadata, parentId: string, index: number, fullCode?: string): FlowNode {
     return {
       id: func.id,
       type: 'functionnode',
@@ -170,8 +201,12 @@ export class FlowGenerator {
         label: func.name,
         description: func.description,
         functionName: func.name,
+        functionDescription: func.description, // Add this for CleanNodeDisplay
         parameters: func.parameters,
-        isNested: func.isNested
+        isNested: func.isNested,
+        filePath: func.filePath, // Store the file path for code retrieval
+        returnType: func.returnType,
+        sourceLocation: func.sourceLocation
       }
     };
   }
@@ -204,31 +239,42 @@ export class FlowGenerator {
    */
   private createEdges(
     calls: FunctionCall[],
-    externalDeps: Map<string, ExternalDependencyResult>
+    externalDeps: Map<string, ExternalDependencyResult>,
+    functionNodes: FlowNode[]
   ): FlowEdge[] {
     const edges: FlowEdge[] = [];
+
+    // Create a mapping from function names to node IDs
+    const functionNameToNodeId = new Map<string, string>();
+    functionNodes.forEach(node => {
+      if (node.data.functionName) {
+        functionNameToNodeId.set(node.data.functionName, node.id);
+      }
+    });
 
     // Create edges for internal function calls
     calls.forEach(call => {
       if (!call.isExternal) {
-        edges.push({
-          id: `e${this.edgeIdCounter++}`,
-          source: call.callerFunction,
-          target: call.calledFunction
-        });
+        const sourceNodeId = functionNameToNodeId.get(call.callerFunction);
+        const targetNodeId = functionNameToNodeId.get(call.calledFunction);
+        
+        if (sourceNodeId && targetNodeId) {
+          edges.push({
+            id: `e${this.edgeIdCounter++}`,
+            source: sourceNodeId,
+            target: targetNodeId
+          });
+        } else {
+          console.warn(`Could not create edge: ${call.callerFunction} -> ${call.calledFunction}`, {
+            sourceNodeId,
+            targetNodeId,
+            availableFunctions: Array.from(functionNameToNodeId.keys())
+          });
+        }
       }
     });
 
-    // Create edges for external dependencies
-    externalDeps.forEach((deps, functionId) => {
-      deps.childNodes.forEach(childNode => {
-        edges.push({
-          id: `e${this.edgeIdCounter++}`,
-          source: functionId,
-          target: childNode.id
-        });
-      });
-    });
+    // Note: External dependency child nodes don't need edges - they are visually contained within their parent function
 
     return edges;
   }
