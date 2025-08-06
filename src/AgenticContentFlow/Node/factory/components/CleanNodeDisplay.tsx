@@ -1,11 +1,9 @@
 /** @format */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Code, Info } from 'lucide-react';
+import { Code } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface CleanNodeDisplayProps {
   /** Function name (used as title) */
@@ -47,6 +45,8 @@ interface CleanNodeDisplayProps {
   }>;
   /** Whether this node can contain children */
   canContainChildren?: boolean;
+  /** Show description without Details button (for function nodes with children) */
+  showDescriptionWithoutDetails?: boolean;
 }
 
 /**
@@ -67,9 +67,9 @@ export const CleanNodeDisplay: React.FC<CleanNodeDisplayProps> = ({
   isCompleted = false,
   hasError = false,
   childNodes = [],
-  canContainChildren = false
+  canContainChildren = false,
+  showDescriptionWithoutDetails = false
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Determine the display title - prefer function name, fallback to label
   const displayTitle = functionName || label || 'Unnamed Function';
@@ -117,8 +117,8 @@ export const CleanNodeDisplay: React.FC<CleanNodeDisplayProps> = ({
           </div>
         </div>
 
-        {/* Description - Only show if available and not in compact mode */}
-        {displayDescription && !compact && (
+        {/* Description - Show if available and not in compact mode, or if showDescriptionWithoutDetails is true */}
+        {displayDescription && (!compact || showDescriptionWithoutDetails) && (
           <div className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
             {displayDescription}
           </div>
@@ -132,99 +132,10 @@ export const CleanNodeDisplay: React.FC<CleanNodeDisplayProps> = ({
         )}
       </div>
 
-      {/* Expandable Details Section */}
-      {!compact && (displayDescription || parameters.length > 0 || externalDependencies.length > 0 || childNodes.length > 0) && (
+      {/* Expandable Details Section - Hide if showDescriptionWithoutDetails is true */}
+      {!compact && !showDescriptionWithoutDetails && (displayDescription || parameters.length > 0 || externalDependencies.length > 0 || childNodes.length > 0) && (
         <div className="border-t border-gray-200">
-          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full h-8 px-3 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 justify-between"
-              >
-                <div className="flex items-center gap-1">
-                  <Info className="w-3 h-3" />
-                  <span>Details</span>
-                </div>
-                {isExpanded ? (
-                  <ChevronDown className="w-3 h-3" />
-                ) : (
-                  <ChevronRight className="w-3 h-3" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent className="px-3 pb-3 space-y-3">
-              {/* Full Description */}
-              {displayDescription && (
-                <div>
-                  <div className="text-xs font-medium text-gray-700 mb-1">Description</div>
-                  <div className="text-xs text-gray-600 leading-relaxed">
-                    {displayDescription}
-                  </div>
-                </div>
-              )}
-
-              {/* Parameters */}
-              {parameters.length > 0 && (
-                <div>
-                  <div className="text-xs font-medium text-gray-700 mb-1">Parameters</div>
-                  <div className="space-y-1">
-                    {parameters.map((param, index) => (
-                      <div key={index} className="text-xs text-gray-600 flex items-center gap-2">
-                        <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
-                          {param.name}
-                        </code>
-                        {param.type && (
-                          <span className="text-gray-500">: {param.type}</span>
-                        )}
-                        {param.defaultValue && (
-                          <span className="text-gray-500">= {param.defaultValue}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* External Dependencies */}
-              {externalDependencies.length > 0 && (
-                <div>
-                  <div className="text-xs font-medium text-gray-700 mb-1">Dependencies</div>
-                  <div className="flex flex-wrap gap-1">
-                    {externalDependencies.map((dep, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {dep}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Child Functions (for containers) */}
-              {canContainChildren && childNodes.length > 0 && (
-                <div>
-                  <div className="text-xs font-medium text-gray-700 mb-1">
-                    Child Functions ({childNodes.length})
-                  </div>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {childNodes.map((child) => (
-                      <div key={child.id} className="text-xs p-2 bg-gray-50 rounded border">
-                        <div className="font-medium text-gray-800">
-                          {child.data.functionName || child.data.label || 'Unnamed'}
-                        </div>
-                        {child.data.functionDescription && (
-                          <div className="text-gray-600 mt-0.5 line-clamp-1">
-                            {child.data.functionDescription}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
+        
         </div>
       )}
     </div>

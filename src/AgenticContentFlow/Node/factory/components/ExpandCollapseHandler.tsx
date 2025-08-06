@@ -52,8 +52,8 @@ export const ExpandCollapseHandler: React.FC<ExpandCollapseHandlerProps> = ({
   const handleToggleExpand = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Only allow expand/collapse for container group nodes
-    if (config.group !== 'container') return;
+    // Only allow expand/collapse for nodes that can have children (containers or nodes with children)
+    if (config.group !== 'container' && childCount === 0) return;
     
     const newExpanded = !expanded;
     setExpanded(newExpanded);
@@ -119,8 +119,8 @@ export const ExpandCollapseHandler: React.FC<ExpandCollapseHandlerProps> = ({
     onStateChange
   ]);
 
-  // Don't render if not a container group
-  if (config.group !== 'container') {
+  // Don't render if not a container group and has no children
+  if ( childCount === 0) {
     return null;
   }
 
@@ -163,7 +163,7 @@ export const useExpandCollapseState = (
   const [expanded, setExpanded] = useState(Boolean(node.data?.expanded) || false);
 
   const toggleExpand = useCallback(() => {
-    if (config.group !== 'container') return;
+    if (config.group !== 'container' && childCount === 0) return;
     
     const newExpanded = !expanded;
     setExpanded(newExpanded);
@@ -216,7 +216,7 @@ export const useExpandCollapseState = (
     childCount,
     currentState,
     toggleExpand,
-    canExpand: config.group === 'container'
+    canExpand: config.group === 'container' || childCount > 0
   };
 };
 
