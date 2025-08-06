@@ -248,8 +248,8 @@ describe('ASTParserService', () => {
 
       expect(result.success).toBe(true);
       expect(result.warnings.length).toBe(2); // Two warnings for dependency and call failures
-      expect(result.warnings[0].type).toBe('dependency');
-      expect(result.warnings[1].type).toBe('semantic');
+      expect(result.warnings[0].type).toBe('semantic'); // call extractor fails first
+      expect(result.warnings[1].type).toBe('dependency'); // dependency extractor fails second
     });
 
     it('should work without notification hook', () => {
