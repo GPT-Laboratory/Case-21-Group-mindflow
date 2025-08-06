@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNodeContext } from '../../Node/context/useNodeContext';
 import { useEdgeContext } from '../../Edge/store/useEdgeContext';
 import { useTransaction } from '@jalez/react-state-history';
+import { useCodeStore } from '../../../stores/codeStore';
 
 /**
  * Custom hook that provides the core deletion logic with proper transaction handling
@@ -11,6 +12,7 @@ export const useDeletionService = () => {
   const { removeNodes } = useNodeContext();
   const { onEdgeRemove, visibleEdges } = useEdgeContext();
   const { withTransaction } = useTransaction();
+  const { removeFlowNodeCode } = useCodeStore();
 
   const performDeletion = useCallback((selectedNodes: any[], selectedEdges: any[]) => {
     const hasSelectedNodes = selectedNodes.length > 0;
@@ -24,6 +26,19 @@ export const useDeletionService = () => {
         );
         
         if (hasSelectedNodes) {
+          // Clean up code store before removing nodes
+          selectedNodes.forEach(node => {
+            if (node.type === 'flownode' && node.data?.filePath) {
+              // Container node - remove the entire file's code
+              removeFlowNodeCode(node.id, node.data.filePath);
+            } else if (node.type === 'functionnode') {
+              // Function node - remove just the function location
+              removeFlowNodeCode(node.id);
+            } else if (node.type === 'childnode') {
+              // Child nodes don't have associated code, skip cleanup
+            }
+          });
+          
           removeNodes(selectedNodes);
         }
         

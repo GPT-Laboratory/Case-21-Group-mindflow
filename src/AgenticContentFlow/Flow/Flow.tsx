@@ -92,11 +92,11 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     
     // Debug: Check if the updated node data is present
     const updatedNode = visibleNodes.find(node => node.id === 'api-user-request');
-    if (updatedNode && updatedNode.data?.instanceCode) {
+    if (updatedNode && updatedNode.data?.filePath) {
       console.log('🔍 [Flow] Found updated node in filteredNodes:', {
         nodeId: updatedNode.id,
-        hasInstanceCode: !!updatedNode.data.instanceCode,
-        instanceCodeLength: typeof updatedNode.data.instanceCode === 'string' ? updatedNode.data.instanceCode.length : 0,
+        hasFilePath: !!updatedNode.data.filePath,
+        filePath: updatedNode.data.filePath,
         lastGenerated: updatedNode.data.lastGenerated
       });
     }
