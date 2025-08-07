@@ -20,6 +20,7 @@ import { useNodeContext } from '../../Node/context/useNodeContext';
 import { useEdgeContext } from '../../Edge/store/useEdgeContext';
 import { useNotifications } from '../../Notifications/hooks/useNotifications';
 import { useCodeStore } from '../../../stores/codeStore';
+import { applyInitialNodeVisibility } from '../../Node/factory/utils/nodeHierarchyUtils';
 import '../services/ASTNodeTypeRegistration'; // Ensure AST node types are registered
 
 interface CodeImportExportControlProps {
@@ -80,7 +81,10 @@ export const CodeImportExportControl: React.FC<CodeImportExportControlProps> = (
         }
       });
       
-      setNodes(flow.nodes);
+      // Apply initial visibility based on parent's expanded state
+      const nodesWithVisibility = applyInitialNodeVisibility(flow.nodes);
+      
+      setNodes(nodesWithVisibility);
       setEdges(flow.edges);
 
       setIsImportOpen(false);
