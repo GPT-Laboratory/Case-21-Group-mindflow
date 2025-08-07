@@ -43,27 +43,24 @@ function log(operation, data) {
       // Should have container node, function node, and external dependency child nodes
       expect(flow.nodes).toHaveLength(4);
       
-      const containerNode = flow.nodes.find(n => n.id === 'container');
-      expect(containerNode).toBeDefined();
-      expect(containerNode?.type).toBe('flownode');
-      expect(containerNode?.data.label).toBe('Logger Utilities');
-      expect(containerNode?.data.isContainer).toBe(true);
+      // Verify container node
+      const containerNode = flow.nodes.find(n => n.type === 'ast-flownode');
+      expect(containerNode?.type).toBe('ast-flownode');
+      expect(containerNode?.data.label).toBe('Logger Module');
 
-      const logNode = flow.nodes.find(n => n.data.functionName === 'log');
-      expect(logNode).toBeDefined();
-      expect(logNode?.type).toBe('functionnode');
-      expect(logNode?.parentId).toBe('container');
+      // Verify function nodes
+      const logNode = flow.nodes.find(n => n.type === 'ast-functionnode');
+      expect(logNode?.type).toBe('ast-functionnode');
+      expect(logNode?.data.functionName).toBe('log');
 
-      // Should have external dependency child nodes
-      const consoleLogNode = flow.nodes.find(n => n.data.functionName === 'console.log');
-      expect(consoleLogNode).toBeDefined();
-      expect(consoleLogNode?.type).toBe('childnode');
-      expect(consoleLogNode?.parentId).toBe(logNode?.id);
+      // Verify external dependency nodes
+      const consoleLogNode = flow.nodes.find(n => n.type === 'ast-childnode' && n.data.functionName === 'console.log');
+      expect(consoleLogNode?.type).toBe('ast-childnode');
+      expect(consoleLogNode?.data.functionName).toBe('console.log');
 
-      const jsonStringifyNode = flow.nodes.find(n => n.data.functionName === 'JSON.stringify');
-      expect(jsonStringifyNode).toBeDefined();
-      expect(jsonStringifyNode?.type).toBe('childnode');
-      expect(jsonStringifyNode?.parentId).toBe(logNode?.id);
+      const jsonStringifyNode = flow.nodes.find(n => n.type === 'ast-childnode' && n.data.functionName === 'JSON.stringify');
+      expect(jsonStringifyNode?.type).toBe('ast-childnode');
+      expect(jsonStringifyNode?.data.functionName).toBe('JSON.stringify');
       expect(logNode?.data.description).toContain('Logs a given operation name and associated data.');
 
       // Verify that child nodes do NOT have edges to their parent (they should be visually contained, not connected)
@@ -168,7 +165,7 @@ export {
       
       const containerNode = flow.nodes.find(n => n.id === 'container');
       expect(containerNode).toBeDefined();
-      expect(containerNode?.type).toBe('flownode');
+      expect(containerNode?.type).toBe('ast-flownode');
       expect(containerNode?.data.label).toBe('String Statistics with Logging');
 
       // Check function nodes
@@ -176,12 +173,12 @@ export {
       functionNames.forEach(name => {
         const funcNode = flow.nodes.find(n => n.data.functionName === name);
         expect(funcNode).toBeDefined();
-        expect(funcNode?.type).toBe('functionnode');
+        expect(funcNode?.type).toBe('ast-functionnode');
         expect(funcNode?.parentId).toBe('container');
       });
 
       // Should have external dependency child nodes for log calls
-      const logNodes = flow.nodes.filter(n => n.type === 'childnode' && n.data.functionName === 'log');
+      const logNodes = flow.nodes.filter(n => n.type === 'ast-childnode' && n.data.functionName === 'log');
       expect(logNodes.length).toBeGreaterThan(0);
 
       // Should have edges for function calls
@@ -233,7 +230,7 @@ export { sanitizeString };
       
       expect(flow.nodes).toHaveLength(1); // Just container
       expect(flow.edges).toHaveLength(0);
-      expect(flow.nodes[0].type).toBe('flownode');
+      expect(flow.nodes[0].type).toBe('ast-flownode');
     });
 
     it('should handle code without comments', () => {

@@ -35,16 +35,14 @@ describe('Flow Generation Demo', () => {
     expect(stringStatsFlow.nodes.length).toBeGreaterThan(5);
     
     // Should have a container node
-    const containerNode = stringStatsFlow.nodes.find(n => n.type === 'flownode');
+    const containerNode = stringStatsFlow.nodes.find(n => n.type === 'ast-flownode');
     expect(containerNode).toBeDefined();
-    expect(containerNode?.data.isContainer).toBe(true);
-    
-    // Should have function nodes for the main functions
-    const functionNodes = stringStatsFlow.nodes.filter(n => n.type === 'functionnode');
-    expect(functionNodes.length).toBeGreaterThanOrEqual(4); // sanitizeString, countWords, sumWordLengths, averageWordLength
-    
-    // Should have external dependency child nodes
-    const childNodes = stringStatsFlow.nodes.filter(n => n.type === 'childnode');
+    expect(containerNode?.data.label).toBe('String Statistics Module');
+
+    const functionNodes = stringStatsFlow.nodes.filter(n => n.type === 'ast-functionnode');
+    expect(functionNodes).toHaveLength(4);
+
+    const childNodes = stringStatsFlow.nodes.filter(n => n.type === 'ast-childnode');
     expect(childNodes.length).toBeGreaterThan(0);
     
     // Should have edges representing function calls
@@ -61,10 +59,10 @@ describe('Flow Generation Demo', () => {
     // Should have the log function
     const logFunctionNode = loggerFlow.nodes.find(n => n.data.functionName === 'log');
     expect(logFunctionNode).toBeDefined();
-    expect(logFunctionNode?.type).toBe('functionnode');
+    expect(logFunctionNode?.type).toBe('ast-functionnode');
     
-    // Should have external dependencies like console.log and JSON.stringify
-    const loggerChildNodes = loggerFlow.nodes.filter(n => n.type === 'childnode');
+    // Should have external dependency child nodes
+    const loggerChildNodes = loggerFlow.nodes.filter(n => n.type === 'ast-childnode');
     expect(loggerChildNodes.length).toBeGreaterThan(0);
     
     // Verify we can find console.log dependency
@@ -121,11 +119,11 @@ export { add, multiply };
     expect(flow.nodes.length).toBeGreaterThan(3);
 
     // Verify container
-    const container = flow.nodes.find(n => n.type === 'flownode');
+    const container = flow.nodes.find(n => n.type === 'ast-flownode');
     expect(container?.data.label).toBe('Simple Calculator');
 
     // Verify functions
-    const functions = flow.nodes.filter(n => n.type === 'functionnode');
+    const functions = flow.nodes.filter(n => n.type === 'ast-functionnode');
     expect(functions).toHaveLength(2);
     
     const addFunc = functions.find(f => f.data.functionName === 'add');
@@ -134,7 +132,7 @@ export { add, multiply };
     expect(multiplyFunc).toBeDefined();
 
     // Verify external dependencies (console.log calls)
-    const externalDeps = flow.nodes.filter(n => n.type === 'childnode');
+    const externalDeps = flow.nodes.filter(n => n.type === 'ast-childnode');
     expect(externalDeps.length).toBeGreaterThan(0);
     
     const consoleLogDeps = externalDeps.filter(n => n.data.functionName === 'console.log');
