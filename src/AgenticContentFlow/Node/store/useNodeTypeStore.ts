@@ -101,7 +101,11 @@ export const useUnifiedNodeTypeStore = create<UnifiedNodeTypeStore>()(
             nodeTypesMap[nodeType.nodeType] = nodeType;
           });
           
-          set({ nodeTypes: nodeTypesMap, isLoading: false });
+          // Merge API data with existing node types instead of replacing
+          set((state) => ({
+            nodeTypes: { ...state.nodeTypes, ...nodeTypesMap },
+            isLoading: false
+          }));
         } catch (error) {
           set({ 
             error: error instanceof Error ? error.message : 'Failed to fetch node types', 

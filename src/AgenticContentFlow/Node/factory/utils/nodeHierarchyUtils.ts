@@ -23,15 +23,10 @@ export function updateNodeHierarchyVisibility(
     const childNode = nodeMap.get(childId);
     if (!childNode) continue;
 
-    // Update child node visibility
+    // Update child node visibility using hidden property (affects edges)
     const updatedChildNode = {
       ...childNode,
-      style: {
-        ...childNode.style,
-        display: expanded ? 'block' : 'none',
-        opacity: expanded ? 1 : 0,
-        pointerEvents: expanded ? 'auto' as const : 'none' as const
-      }
+      hidden: !expanded,
     };
 
     updatedNodes.push(updatedChildNode);
@@ -39,16 +34,115 @@ export function updateNodeHierarchyVisibility(
     // Recursively update grandchildren if this child is also a container
     const grandchildIdSet = nodeParentIdMapWithChildIdSet.get(childId);
     if (grandchildIdSet && grandchildIdSet.size > 0) {
-      const updatedGrandchildren = updateNodeHierarchyVisibility(
-        updatedChildNode,
-        nodeMap,
-        nodeParentIdMapWithChildIdSet,
-        expanded && Boolean(childNode.data?.expanded)
-      );
-      updatedNodes.push(...updatedGrandchildren);
+      // Check if child is expanded (default to true if not specified)
+      let isChildExpanded = true;
+      if (Object.prototype.hasOwnProperty.call(childNode.data, "expanded")) {
+        isChildExpanded = childNode.data.expanded as boolean;
+      }
+      
+      if (isChildExpanded) {
+        const updatedGrandchildren = updateNodeHierarchyVisibility(
+          updatedChildNode,
+          nodeMap,
+          nodeParentIdMapWithChildIdSet,
+          expanded
+        );
+        updatedNodes.push(...updatedGrandchildren);
+      }
     }
   }
 
+  return updatedNodes;
+} 
+
+/**
+ * Applies initial visibility to all nodes based on their parent's expanded state
+ * This function should be called when nodes are first loaded/imported
+ */
+export function applyInitialNodeVisibility(
+  nodes: Node[],
+  nodeParentIdMapWithChildIdSet?: Map<string, Set<string>>
+): Node[] {
+  const nodeMap = new Map<string, Node>();
+  const updatedNodes: Node[] = [];
+  
+  // First, create a map of all nodes
+  nodes.forEach(node => {
+    nodeMap.set(node.id, node);
+  });
+  
+  // Build parent-child relationships if not provided
+  let parentChildMap: Map<string, Set<string>> = nodeParentIdMapWithChildIdSet || new Map<string, Set<string>>();
+  if (!nodeParentIdMapWithChildIdSet) {
+    
+    // Initialize with empty sets for all nodes
+    nodes.forEach(node => {
+      parentChildMap.set(node.id, new Set());
+    });
+    
+    // Build relationships based on node IDs and types
+    nodes.forEach(node => {
+      // Check if this is a child node based on naming convention
+      if (node.type === 'childnode' && node.id.includes('-ext-dep-')) {
+        // Extract parent function ID from child node ID
+        // Example: "sanitizeString_functiondeclaration_45kvzi-ext-dep-0" -> "sanitizeString_functiondeclaration_45kvzi"
+        const parentIdMatch = node.id.match(/^(.+)-ext-dep-\d+$/);
+        if (parentIdMatch) {
+          const parentId = parentIdMatch[1];
+          const parentNode = nodeMap.get(parentId);
+          
+          if (parentNode) {
+            // Add child to parent's set
+            const parentSet = parentChildMap.get(parentId);
+            if (parentSet) {
+              parentSet.add(node.id);
+            }
+            
+            // Set parentId on the child node
+            node.parentId = parentId;
+          }
+        }
+      }
+      
+      // Also check explicit parentId relationships
+      if (node.parentId) {
+        const parentSet = parentChildMap.get(node.parentId);
+        if (parentSet) {
+          parentSet.add(node.id);
+        }
+      }
+    });
+  }
+  
+  // Process each node to apply visibility
+  nodes.forEach(node => {
+    let updatedNode = { ...node };
+    
+    // Check if this node has a parent
+    const parentId = node.parentId;
+    if (parentId) {
+      const parentNode = nodeMap.get(parentId);
+      if (parentNode) {
+        // Check if parent is expanded (default to false if not specified)
+        const isParentExpanded = Boolean(parentNode.data?.expanded);
+        
+        // Set hidden property based on parent's expanded state
+        updatedNode = {
+          ...updatedNode,
+          hidden: !isParentExpanded,
+        };
+      }
+    } else {
+      // Root level nodes should always be visible
+      updatedNode = {
+        ...updatedNode,
+        hidden: false,
+      };
+    }
+    
+    updatedNodes.push(updatedNode);
+  });
+  
   return updatedNodes;
 }
 

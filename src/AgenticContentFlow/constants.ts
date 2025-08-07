@@ -1,11 +1,6 @@
 /** @format */
 
-export const PANEL_DIMENSIONS = {
-  MIN_WIDTH: 400,
-  MAX_WIDTH: 1200,
-  DEFAULT_WIDTH: 600,
-  MIN_HEIGHT: 500,
-} as const;
+
 
 // Viewport constants
 export const VIEWPORT_CONSTRAINTS = {

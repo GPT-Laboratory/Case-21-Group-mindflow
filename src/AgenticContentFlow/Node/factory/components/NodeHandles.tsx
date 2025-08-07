@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { TypedHandle } from "../../../Handle/components/TypedHandle";
+import { ExcalidrawTypedHandle } from "../../../Handle/components/ExcalidrawTypedHandle";
 import { handleRegistry } from "../../../Handle/registry/handleTypeRegistry";
 
 interface ConnectionHandlesProps {
@@ -32,16 +33,42 @@ const ConnectionHandles = ({ nodeType, color }: ConnectionHandlesProps) => {
         return null;
     }
 
+    // Determine if this is a function node (cell-like node)
+    const isFunctionNode = nodeType.includes('function') || nodeType.includes('cell') || nodeType.includes('process');
+    
+    // Debug logging
+    console.log('NodeHandles render:', {
+        nodeType,
+        isFunctionNode,
+        handleDefinitions: handleDefinitions.length,
+        color
+    });
+
     return (
         <>
-            {handleDefinitions.map((handleDef, index) => (
-                <TypedHandle
-                    key={`${handleDef.position}-${index}`}
-                    nodeType={nodeType}
-                    handleDefinition={handleDef}
-                    nodeBackgroundColor={color} // Pass the node's background color
-                />
-            ))}
+            {handleDefinitions.map((handleDef, index) => {
+                // Use ExcalidrawTypedHandle for function nodes, regular TypedHandle for others
+                if (isFunctionNode) {
+                    console.log('Rendering ExcalidrawTypedHandle for:', handleDef);
+                    return (
+                        <ExcalidrawTypedHandle
+                            key={`${handleDef.position}-${index}`}
+                            nodeType={nodeType}
+                            handleDefinition={handleDef}
+                            nodeBackgroundColor={color}
+                        />
+                    );
+                } else {
+                    return (
+                        <TypedHandle
+                            key={`${handleDef.position}-${index}`}
+                            nodeType={nodeType}
+                            handleDefinition={handleDef}
+                            nodeBackgroundColor={color}
+                        />
+                    );
+                }
+            })}
         </>
     );
 }

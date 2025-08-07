@@ -18,18 +18,24 @@ export async function initializeUnifiedNodeTypeStore(): Promise<void> {
 
   const {
     fetchNodeTypes,
-    getAllNodeTypeNames
+    getAllNodeTypeNames,
+    addMultipleNodeTypes
   } = useUnifiedNodeTypeStore.getState();
 
   try {
-    // Fetch node types from API
+    // Step 1: Register AST node types first to ensure they're preserved
+    const { ASTNodeTypeRegistration } = await import('../../AST/services/ASTNodeTypeRegistration');
+    ASTNodeTypeRegistration.initializeASTNodeTypes();
+    console.log('✅ AST node types registered');
+
+    // Step 2: Fetch node types from API (will merge with existing AST types)
     await fetchNodeTypes();
     
     // Check if we have node types loaded
     const nodeTypeNames = getAllNodeTypeNames();
     
     if (nodeTypeNames.length > 0) {
-      console.log(`✅ Loaded ${nodeTypeNames.length} node types from API`);
+      console.log(`✅ Loaded ${nodeTypeNames.length} node types from API and local registrations`);
       isInitialized = true;
     } else {
       console.log('⚠️ No node types loaded from API, using fallback templates');

@@ -12,7 +12,7 @@ import './ASTNodeTypeRegistration'; // Ensure AST node types are registered
 /**
  * Flow node types
  */
-export type FlowNodeType = 'flownode' | 'functionnode' | 'childnode' | 'external-function';
+export type FlowNodeType = 'ast-flownode' | 'ast-functionnode' | 'ast-childnode' | 'external-function';
 
 /**
  * Flow node interface
@@ -172,8 +172,8 @@ export class FlowGenerator {
    */
   private createContainerNode(fileName: string, title?: string, description?: string, code?: string): FlowNode {
     return {
-      id: 'container',
-      type: 'flownode',
+      id: 'container-'+fileName,
+      type: 'ast-flownode',
       data: {
         label: title || `${fileName} Module`,
         description: description,
@@ -184,7 +184,6 @@ export class FlowGenerator {
         expanded: true // Make container initially open
       },
       position: { x: 0, y: 0 },
-      style: { width: 300, height: 400 }
     };
   }
 
@@ -194,7 +193,7 @@ export class FlowGenerator {
   private createFunctionNode(func: FunctionMetadata, parentId: string, index: number, fullCode?: string): FlowNode {
     return {
       id: func.id,
-      type: 'functionnode',
+      type: 'ast-functionnode',
       parentId: parentId,
       position: { x: 150, y: 80 + (index * 70) },
       data: {
@@ -220,7 +219,7 @@ export class FlowGenerator {
   ): FlowNode[] {
     return extDeps.childNodes.map((childNode, index) => ({
       id: childNode.id,
-      type: 'childnode' as FlowNodeType,
+      type: 'ast-childnode' as FlowNodeType,
       parentId: parentFunctionId,
       position: { x: 300, y: 80 + (index * 30) },
       data: {
