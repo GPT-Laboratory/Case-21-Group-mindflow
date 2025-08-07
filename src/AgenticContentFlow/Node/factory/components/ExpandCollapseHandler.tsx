@@ -4,7 +4,7 @@ import { useNodeContext } from '../../context/useNodeContext';
 import { FrameJSON } from '../types/FrameJSON';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { EnhancedContainerNode } from '../../interfaces/ContainerNodeInterfaces';
+import { updateNodeHierarchyVisibility } from '../utils/nodeHierarchyUtils';
 
 interface ExpandCollapseState {
   expanded: boolean;
@@ -35,7 +35,6 @@ export const ExpandCollapseHandler: React.FC<ExpandCollapseHandlerProps> = ({
     nodeMap, 
     updateNodes,
     getChildNodes,
-    canNodeContainChildren 
   } = useNodeContext();
   
   // Get child count using enhanced container functionality
@@ -58,9 +57,13 @@ export const ExpandCollapseHandler: React.FC<ExpandCollapseHandlerProps> = ({
     const newExpanded = !expanded;
     setExpanded(newExpanded);
     
-    // Use default dimensions from config
-    const collapsedDimensions = { width: 200, height: 200 };
-    const expandedDimensions = { width: 300, height: 300 };
+    // Calculate dimensions based on config and node type
+    const baseDimensions = config.defaultDimensions || { width: 200, height: 200 };
+    const collapsedDimensions = {
+      width: Math.min(baseDimensions.width, 200),
+      height: Math.min(baseDimensions.height, 200)
+    };
+    const expandedDimensions = baseDimensions;
     
     // Update the parent node with new dimensions and expanded state
     const updatedParentNode = {
@@ -168,8 +171,12 @@ export const useExpandCollapseState = (
     const newExpanded = !expanded;
     setExpanded(newExpanded);
     
-    const collapsedDimensions = { width: 200, height: 200 };
-    const expandedDimensions = { width: 300, height: 300 };
+    const baseDimensions = config.defaultDimensions || { width: 200, height: 200 };
+    const collapsedDimensions = {
+      width: Math.min(baseDimensions.width, 200),
+      height: Math.min(baseDimensions.height, 200)
+    };
+    const expandedDimensions = baseDimensions;
     
     const updatedParentNode = {
       ...node,
@@ -195,8 +202,12 @@ export const useExpandCollapseState = (
     updateNodes([updatedParentNode, ...updatedChildNodes]);
   }, [expanded, config, node, nodeMap, nodeParentIdMapWithChildIdSet, updateNodes]);
 
-  const collapsedDimensions = { width: 200, height: 200 };
-  const expandedDimensions = { width: 300, height: 300 };
+  const baseDimensions = config.defaultDimensions || { width: 200, height: 200 };
+  const collapsedDimensions = {
+    width: Math.min(baseDimensions.width, 200),
+    height: Math.min(baseDimensions.height, 200)
+  };
+  const expandedDimensions = baseDimensions;
   
   const currentState: ExpandCollapseState = {
     expanded,
@@ -219,56 +230,3 @@ export const useExpandCollapseState = (
     canExpand: config.group === 'container' || childCount > 0
   };
 };
-
-/**
- * Updates the visibility of all child nodes in a hierarchy
- */
-function updateNodeHierarchyVisibility(
-  parentNode: Node,
-  nodeMap: Map<string, Node>,
-  nodeParentIdMapWithChildIdSet: Map<string, Set<string>>,
-  expanded: boolean
-): Node[] {
-  const updatedNodes: Node[] = [];
-  const childIdSet = nodeParentIdMapWithChildIdSet.get(parentNode.id);
-  
-  if (!childIdSet) {
-    return updatedNodes;
-  }
-
-  // Recursively update all children
-  for (const childId of childIdSet) {
-    const childNode = nodeMap.get(childId);
-    if (!childNode) continue;
-
-    // Update child node visibility using hidden property (affects edges)
-    const updatedChildNode = {
-      ...childNode,
-      hidden: !expanded,
-    };
-
-    updatedNodes.push(updatedChildNode);
-
-    // Recursively update grandchildren if this child is also a container
-    const grandchildIdSet = nodeParentIdMapWithChildIdSet.get(childId);
-    if (grandchildIdSet && grandchildIdSet.size > 0) {
-      // Check if child is expanded (default to true if not specified)
-      let isChildExpanded = true;
-      if (Object.prototype.hasOwnProperty.call(childNode.data, "expanded")) {
-        isChildExpanded = childNode.data.expanded as boolean;
-      }
-      
-      if (isChildExpanded) {
-        const updatedGrandchildren = updateNodeHierarchyVisibility(
-          updatedChildNode,
-          nodeMap,
-          nodeParentIdMapWithChildIdSet,
-          expanded
-        );
-        updatedNodes.push(...updatedGrandchildren);
-      }
-    }
-  }
-
-  return updatedNodes;
-} 

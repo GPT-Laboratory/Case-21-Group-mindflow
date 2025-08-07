@@ -68,15 +68,15 @@ class FlowSyncService {
       const nodeUIStateMap = new Map();
       
       currentNodes.forEach(node => {
-        if (node.type === 'functionnode' && node.data.functionName) {
+        if (node.type === 'ast-functionnode' && node.data.functionName) {
           nodePositionMap.set(node.data.functionName, node.position);
           nodeUIStateMap.set(node.data.functionName, {
-            selected: node.selected,
-            width: node.width,
-            height: node.height,
-            expanded: node.data.expanded
+            position: node.position,
+            expanded: node.data.expanded,
+            width: node.style?.width,
+            height: node.style?.height
           });
-        } else if (node.type === 'flownode') {
+        } else if (node.type === 'ast-flownode') {
           // Preserve container node state
           nodePositionMap.set('container', node.position);
           nodeUIStateMap.set('container', {
@@ -90,7 +90,7 @@ class FlowSyncService {
 
       // Update the nodes with preserved positions and UI state
       const updatedNodes = updatedFlow.nodes.map(node => {
-        if (node.type === 'functionnode' && node.data.functionName) {
+        if (node.type === 'ast-functionnode' && node.data.functionName) {
           const savedPosition = nodePositionMap.get(node.data.functionName);
           const savedUIState = nodeUIStateMap.get(node.data.functionName);
           
@@ -98,8 +98,11 @@ class FlowSyncService {
             ...node,
             position: savedPosition || node.position,
             selected: savedUIState?.selected || false,
-            width: savedUIState?.width || node.width,
-            height: savedUIState?.height || node.height,
+            style: {
+              ...node.style,
+              width: savedUIState?.width || node.style?.width,
+              height: savedUIState?.height || node.style?.height,
+            },
             data: {
               ...node.data,
               expanded: savedUIState?.expanded ?? node.data.expanded
@@ -108,7 +111,7 @@ class FlowSyncService {
         }
         
         // For container node, preserve its state
-        if (node.type === 'flownode') {
+        if (node.type === 'ast-flownode') {
           const savedPosition = nodePositionMap.get('container');
           const savedUIState = nodeUIStateMap.get('container');
           
@@ -116,8 +119,11 @@ class FlowSyncService {
             ...node,
             position: savedPosition || node.position,
             selected: savedUIState?.selected || false,
-            width: savedUIState?.width || node.width,
-            height: savedUIState?.height || node.height,
+            style: {
+              ...node.style,
+              width: savedUIState?.width || node.style?.width,
+              height: savedUIState?.height || node.style?.height,
+            },
             data: {
               ...node.data,
               expanded: savedUIState?.expanded ?? node.data.expanded
@@ -199,15 +205,15 @@ class FlowSyncService {
       const nodeUIStateMap = new Map();
       
       currentNodes.forEach(node => {
-        if (node.type === 'functionnode' && node.data.functionName) {
+        if (node.type === 'ast-functionnode' && node.data.functionName) {
           nodePositionMap.set(node.data.functionName, node.position);
           nodeUIStateMap.set(node.data.functionName, {
-            selected: node.selected,
-            width: node.width,
-            height: node.height,
-            expanded: node.data.expanded
+            position: node.position,
+            expanded: node.data.expanded,
+            width: node.style?.width,
+            height: node.style?.height
           });
-        } else if (node.type === 'flownode') {
+        } else if (node.type === 'ast-flownode') {
           nodePositionMap.set('container', node.position);
           nodeUIStateMap.set('container', {
             selected: node.selected,
@@ -219,7 +225,7 @@ class FlowSyncService {
       });
 
       const updatedNodes = updatedFlow.nodes.map(node => {
-        if (node.type === 'functionnode' && node.data.functionName) {
+        if (node.type === 'ast-functionnode' && node.data.functionName) {
           const savedPosition = nodePositionMap.get(node.data.functionName);
           const savedUIState = nodeUIStateMap.get(node.data.functionName);
           
@@ -227,8 +233,11 @@ class FlowSyncService {
             ...node,
             position: savedPosition || node.position,
             selected: savedUIState?.selected || false,
-            width: savedUIState?.width || node.width,
-            height: savedUIState?.height || node.height,
+            style: {
+              ...node.style,
+              width: savedUIState?.width || node.style?.width,
+              height: savedUIState?.height || node.style?.height,
+            },
             data: {
               ...node.data,
               expanded: savedUIState?.expanded ?? node.data.expanded
@@ -236,7 +245,7 @@ class FlowSyncService {
           };
         }
         
-        if (node.type === 'flownode') {
+        if (node.type === 'ast-flownode') {
           const savedPosition = nodePositionMap.get('container');
           const savedUIState = nodeUIStateMap.get('container');
           
@@ -244,8 +253,11 @@ class FlowSyncService {
             ...node,
             position: savedPosition || node.position,
             selected: savedUIState?.selected || false,
-            width: savedUIState?.width || node.width,
-            height: savedUIState?.height || node.height,
+            style: {
+              ...node.style,
+              width: savedUIState?.width || node.style?.width,
+              height: savedUIState?.height || node.style?.height,
+            },
             data: {
               ...node.data,
               expanded: savedUIState?.expanded ?? node.data.expanded
