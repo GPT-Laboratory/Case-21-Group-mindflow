@@ -1,0 +1,20 @@
+{
+  "courseId": 1,
+  "modules": [
+    {
+      "id": 1,
+      "name": "Module 1",
+      "exercises": [
+        { "id": 1, "name": "Exercise 1" },
+        { "id": 2, "name": "Exercise 2" }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Module 2",
+      "exercises": [
+        { "id": 1, "name": "Exercise 1" }
+      ]
+    }
+  ]
+}

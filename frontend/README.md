@@ -33,58 +33,34 @@ The project is organized into the following main directories:
 - `src/AgenticContentFlow/Documentation`: Contains documentation and notes for development.
 - `src/AgenticContentFlow/test`: Includes test data and utilities for testing.
 
-## Features
-
-- **Document Management:** Upload PDFs or text files to process and embed using PostgreSQL pgvector.
-- **RAG Capabilities:** Search for context within the uploaded documents exercise-wise.
-- **Automated Validation:** Evaluate content flow JSON against uploaded materials using a local Ollama model.
-- **Dockerized Stack:** Easy to launch PostgreSQL, FastAPI Backend, and React Frontend using Docker Compose.
-- **Mindmap Creation and Editing:** (Frontend feature built-in) Tools for creating nodes, edges, and layouts for mindmaps.
-- **Customizable Layouts**: Includes algorithms for hierarchical and other layout types.
-- **Keyboard Shortcuts**: Support for efficient navigation and editing using keyboard shortcuts.
-
-## API Details (Backend running on `:8000`)
-
-### Document Management & RAG
-- `POST /api/rag/upload`: Upload a document (`file`) and an optional `exercise` string to process and embed text chunks.
-- `GET /api/rag/documents`: Fetch all documents, or filter by `?exercise=term`.
-- `DELETE /api/rag/documents/{doc_id}`: Remove a document and its embeddings.
-- `GET /api/rag/search`: Search document vectors by `query` and optional `exercise`.
-
-### Evaluation
-- `POST /api/eval/evaluate`: Pass `flow_data` (JSON) and `exercise` string to prompt Ollama to evaluate the logical connections of the mindmap based on the document context.
-
-## Local Setup Warning
-
-The AI features require a local instance of [Ollama](https://ollama.com/) running on your host machine to validate the content logic. By default, the application accesses it via `http://host.docker.internal:11434` and requests the model configured in the backend `.env` file (e.g., `llama3.2`). Ensure you have downloaded the required model via `ollama run llama3.2` and `ollama run nomic-embed-text` before starting the service.
-
 ## Getting Started
 
-Using Docker Compose is the recommended way to start the entire system:
+1. Clone the repository:
 
-1. Clone the repository: `git clone https://github.com/Jalez/agentic-content-flow.git`
-2. Navigate to the folder: `cd agentic-content-flow`
-3. Optional: Configure models in `backend/.env`.
-4. Start the stack: `docker-compose up --build -d`
-5. Open the frontend in your browser at `http://localhost:80` and the backend swagger UI at `http://localhost:8000/docs`.
+   ```bash
+   git clone https://github.com/Jalez/agentic-content-flow.git
+   ```
 
-### Manual Development Setup
+2. Install dependencies:
 
-If you wish to run components manually:
+   ```bash
+   npm install
+   npm uninstall @jalez/react-flow-smart-edge
+   npm install @jalez/react-flow-smart-edge
+   ```
 
-**Backend:**
-1. Navigate to the backend folder: `cd backend`
-2. Install pip dependencies: `pip install -r requirements.txt` (Ensure PostgreSQL DB is running and variables exist in your `.env`)
-3. Run the API: `uvicorn main:app --reload`
+3. Start the development server:
 
-**Frontend:**
-1. Navigate to frontend folder: `cd frontend`
-2. Install NPM dependencies: `npm install`
-3. Run dev server: `npm run dev`
+   ```bash
+   npm run dev
+   ```
+
+4. Open the application in your browser at `http://localhost:3000`.
 
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests to improve the project.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:

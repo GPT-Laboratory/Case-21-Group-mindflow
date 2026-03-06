@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+langchain
+langchain-community
+langchain-core
+langchain-postgres
+psycopg2-binary
+pgvector
+python-dotenv
+pypdf
+python-multipart
+sqlalchemy
+pydantic
+requests
+sentence-transformers
+torch
+langchain-huggingface

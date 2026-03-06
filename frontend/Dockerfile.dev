@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+RUN npm uninstall @jalez/react-flow-smart-edge
+RUN npm install @jalez/react-flow-smart-edge
+
+COPY . .
+
+# Expose port
+EXPOSE 5173
+
+# Run Vite in dev mode
+CMD ["npm", "run", "dev", "--", "--host"]

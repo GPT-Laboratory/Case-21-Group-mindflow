@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: agentic_db
+    environment:
+      POSTGRES_USER: agenticflow_user
+      POSTGRES_PASSWORD: agenticflow_pass
+      POSTGRES_DB: agenticflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agentic_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_USER=agenticflow_user
+      - POSTGRES_PASSWORD=agenticflow_pass
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=agenticflow_db
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - VALIDATION_MODEL=llama3.2
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - VALID_THRESHOLD=0.6
+    volumes:
+      - ./backend:/app
+      - docfiles_volume:/app/docfiles
+    depends_on:
+      - db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: agentic_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - API_PROXY_TARGET=http://backend:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  docfiles_volume:
