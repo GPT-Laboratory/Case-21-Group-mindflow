@@ -3,20 +3,23 @@ import AgenticContentFlow from "./AgenticContentFlow";
 import DocumentManager from "./components/DocumentManager";
 import Navbar from "./components/Navbar";
 import { NotificationProvider } from "./AgenticContentFlow/Notifications";
+import { CourseDataProvider } from './hooks/CourseDataContext';
 
 function App() {
   return (
     <BrowserRouter>
       <NotificationProvider>
-        <div className="flex flex-col w-[100vw] h-[100vh] bg-background text-foreground overflow-hidden">
-          <Navbar />
-          <div className="flex-1 overflow-hidden relative">
-            <Routes>
-              <Route path="/" element={<AgenticContentFlow />} />
-              <Route path="/documents" element={<DocumentManager />} />
-            </Routes>
+        <CourseDataProvider>
+          <div className="flex flex-col w-[100vw] h-[100vh] bg-background text-foreground overflow-hidden">
+            <Navbar />
+            <div className="flex-1 overflow-hidden relative">
+              <Routes>
+                <Route path="/" element={<AgenticContentFlow />} />
+                <Route path="/documents" element={<DocumentManager />} />
+              </Routes>
+            </div>
           </div>
-        </div>
+        </CourseDataProvider>
       </NotificationProvider>
     </BrowserRouter>
   );

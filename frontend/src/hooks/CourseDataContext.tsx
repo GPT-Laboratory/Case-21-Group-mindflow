@@ -30,7 +30,7 @@ export const CourseDataProvider: React.FC<{ children: ReactNode }> = ({ children
 export const useCourseData = () => {
     const context = useContext(CourseDataContext);
     if (context === undefined) {
-        throw new Error('useCourseDataStore must be used within a CourseDataProvider');
+        throw new Error('useCourseData must be used within a CourseDataProvider');
     }
     return context;
 };

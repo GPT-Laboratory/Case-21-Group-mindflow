@@ -34,14 +34,13 @@ import GridControlsRegistration from "./Flow/controls/GridControlsRegistration";
 import UnifiedControlsPanel from "./Controls/registry/UnifiedControlsPanel";
 import { GenerationControl } from "./Generator/ui";
 import { ShortcutsRegistration } from "./ShortCuts/ShortcutControlRegistration";
-import { SaveFlowControlRegistration } from "./Controls/SaveFlowControlRegistration";
-import { CodeImportExportControlsRegistration } from "./AST/ui/CodeImportExportControlsRegistration";
-import { NodeSearchControlRegistration } from "./Controls/Components/NodeSearchControlRegistration";
-import { ShortcutsDisplayPanel } from "./ShortCuts/ShortcutsDisplayPanel";
 import { ShortcutsProvider } from "@jalez/react-shortcuts-provider";
+import { ShortcutsDisplayPanel } from "./ShortCuts/ShortcutsDisplayPanel";
+import { NodeSearchControlRegistration } from "./Controls/Components/NodeSearchControlRegistration";
+import { CodeImportExportControlsRegistration } from "./AST/ui/CodeImportExportControlsRegistration";
+import { SaveFlowControlRegistration } from "./Controls/SaveFlowControlRegistration";
 import SubmitDiagramRegistration from "./Controls/SubmitDiagramRegistration";
 import GlobalSelectorRegistration from "./Controls/GlobalSelectorRegistration";
-import { CourseDataProvider } from '@/hooks/CourseDataContext';
 
 // Register edge types before any rendering occurs
 ensureEdgeTypesRegistered();
@@ -101,56 +100,53 @@ export function AgenticContentFlowContent() {
           updateEdges={handleEdgeUpdate}
         >
           <ShortcutsProvider>
-            {/* Move CourseDataProvider here to wrap everything */}
-            <CourseDataProvider>
-              <div className="flex h-full w-full overflow-visible">
-                {/* Flows Panel - Left side */}
-                <FlowsPanel />
+            <div className="flex h-full w-full overflow-visible">
+              {/* Flows Panel - Left side */}
+              <FlowsPanel />
 
-                {/* Flow area (includes Controls Panel and Flow) */}
-                <div className="flex-1 flex flex-col">
-                  {/* Controls Panel - Full width of Flow area */}
-                  <UnifiedControlsPanel position="top" />
+              {/* Flow area (includes Controls Panel and Flow) */}
+              <div className="flex-1 flex flex-col">
+                {/* Controls Panel - Full width of Flow area */}
+                <UnifiedControlsPanel position="top" />
 
-                  {/* Flow takes up remaining space */}
-                  <div className="flex-1 border-2 border-border rounded-lg overflow-hidden">
-                    <FlowContainer ref={flowWrapper} onWheel={handleWheel}>
-                      <Flow>
-                        {showGrid && (
-                          <Background
-                            variant={gridVariant}
-                            gap={GRID_SETTINGS.BACKGROUND_GAP}
-                            size={GRID_SETTINGS.BACKGROUND_SIZE}
-                            color="var(--color-border)"
-                          />
-                        )}
-                        <SelectLogic />
-                        <Minimap />
-                        <ShortcutsDisplayPanel />
+                {/* Flow takes up remaining space */}
+                <div className="flex-1 border-2 border-border rounded-lg overflow-hidden">
+                  <FlowContainer ref={flowWrapper} onWheel={handleWheel}>
+                    <Flow>
+                      {showGrid && (
+                        <Background
+                          variant={gridVariant}
+                          gap={GRID_SETTINGS.BACKGROUND_GAP}
+                          size={GRID_SETTINGS.BACKGROUND_SIZE}
+                          color="var(--color-border)"
+                        />
+                      )}
+                      <SelectLogic />
+                      <Minimap />
+                      <ShortcutsDisplayPanel />
 
-                        {/* Register available controls here */}
-                        <GridControlsRegistration />
-                        <LayoutControlsRegistration />
-                        <CopyWorkflowControlsRegistration />
-                        <APISetupControlsRegistration />
-                        <ShortcutsRegistration />
-                        <SaveFlowControlRegistration />
-                        <CodeImportExportControlsRegistration />
-                        <NodeSearchControlRegistration />
-                        <SubmitDiagramRegistration />
-                        <GlobalSelectorRegistration />
-                      </Flow>
-                    </FlowContainer>
-                  </div>
-
-                  {/* Generation Panel - Full width of Flow area */}
-                  <GenerationControl type="flow" />
+                      {/* Register available controls here */}
+                      <GridControlsRegistration />
+                      <LayoutControlsRegistration />
+                      <CopyWorkflowControlsRegistration />
+                      <APISetupControlsRegistration />
+                      <ShortcutsRegistration />
+                      <SaveFlowControlRegistration />
+                      <CodeImportExportControlsRegistration />
+                      <NodeSearchControlRegistration />
+                      <SubmitDiagramRegistration />
+                      <GlobalSelectorRegistration />
+                    </Flow>
+                  </FlowContainer>
                 </div>
 
-                {/* Node Configuration Panel - Side by side */}
-                <NodeConfigPanel />
+                {/* Generation Panel - Full width of Flow area */}
+                <GenerationControl type="flow" />
               </div>
-            </CourseDataProvider>
+
+              {/* Node Configuration Panel - Side by side */}
+              <NodeConfigPanel />
+            </div>
           </ShortcutsProvider>
         </LayoutProvider>
       </GeneratorProvider>
