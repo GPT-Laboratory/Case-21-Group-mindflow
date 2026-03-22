@@ -196,14 +196,14 @@ const NodeTypeList: React.FC<NodeTypeListProps> = ({
             className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent focus:outline-none focus:ring-0"
             onClick={() => setFocusedIndex(0)}
           >
-            Process Nodes ({groupedNodeTypes.cell.length})
+            Topic Nodes ({groupedNodeTypes.cell.length})
           </TabsTrigger>
           <TabsTrigger 
             value="container" 
             className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent focus:outline-none focus:ring-0"
             onClick={() => setFocusedIndex(0)}
           >
-            Container Nodes ({groupedNodeTypes.container.length})
+            Group Nodes ({groupedNodeTypes.container.length})
           </TabsTrigger>
         </TabsList>
         

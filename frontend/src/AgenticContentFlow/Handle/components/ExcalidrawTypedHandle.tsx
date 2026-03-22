@@ -13,6 +13,7 @@ import HandleSpeedDial from "./HandleSpeedDial";
 export interface ExcalidrawTypedHandleProps {
   nodeType: string;
   handleDefinition: HandleTypeDefinition;
+  originalHandleId?: string; // Stable handle ID that doesn't change with layout direction
   nodeBackgroundColor?: string;
   onConnectionAttempt?: (isValid: boolean, targetType?: string) => void;
   speedDialRadius?: number;
@@ -51,6 +52,7 @@ const getReactFlowHandleType = (handleType: 'source' | 'target' | 'both'): Handl
 export const ExcalidrawTypedHandle: React.FC<ExcalidrawTypedHandleProps> = ({
   nodeType,
   handleDefinition,
+  originalHandleId,
   nodeBackgroundColor,
   onConnectionAttempt,
   speedDialRadius,
@@ -86,7 +88,7 @@ export const ExcalidrawTypedHandle: React.FC<ExcalidrawTypedHandleProps> = ({
         ref={handleRef}
         type={getReactFlowHandleType(handleDefinition.type)}
         position={positionMap[handleDefinition.position]}
-        id={handleDefinition.position}
+        id={originalHandleId || handleDefinition.position}
         nodeColor={nodeBackgroundColor}
         variant="default"
         size="md"

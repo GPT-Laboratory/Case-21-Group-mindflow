@@ -14,6 +14,7 @@ import HandleSpeedDial from "./HandleSpeedDial";
 export interface TypedHandleProps extends Omit<BaseHandleProps, 'position' | 'id' | 'type'> {
   nodeType: string;
   handleDefinition: HandleTypeDefinition;
+  originalHandleId?: string; // Stable handle ID that doesn't change with layout direction
   nodeBackgroundColor?: string; // New prop for node's background color
   onConnectionAttempt?: (isValid: boolean, targetType?: string) => void;
   // Speed dial configuration props
@@ -51,17 +52,18 @@ const getReactFlowHandleType = (handleType: 'source' | 'target' | 'both'): Handl
 };
 
 export const TypedHandle = forwardRef<HTMLDivElement, TypedHandleProps>(
-  ({ 
-    nodeType, 
-    handleDefinition, 
-    nodeBackgroundColor, 
-    onConnectionAttempt, 
+  ({
+    nodeType,
+    handleDefinition,
+    originalHandleId,
+    nodeBackgroundColor,
+    onConnectionAttempt,
     speedDialRadius,
     speedDialButtonSize,
     speedDialIconSize,
     speedDialArcSpan,
-    style = {}, 
-    ...props 
+    style = {},
+    ...props
   }, ref) => {
     
     const [isHovered, setIsHovered] = useState(false);
@@ -153,7 +155,7 @@ export const TypedHandle = forwardRef<HTMLDivElement, TypedHandleProps>(
           {...props}
           type={getReactFlowHandleType(handleDefinition.type)}
           position={positionMap[handleDefinition.position]}
-          id={handleDefinition.position}
+          id={originalHandleId || handleDefinition.position}
           style={{
             ...handleStyle,
             transition: 'all 300ms ease',

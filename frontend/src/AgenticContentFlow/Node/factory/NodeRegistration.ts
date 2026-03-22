@@ -6,6 +6,53 @@ import { registerNodeType } from '@/AgenticContentFlow/Node/registry/nodeTypeReg
 import { UnifiedNodeWrapper } from '@/AgenticContentFlow/Node/factory/components/NodeWrapper';
 import { FrameJSON } from '@/AgenticContentFlow/Node/factory/types/FrameJSON';
 import { getNodeType } from '@/AgenticContentFlow/Node/store/NodeTypeStoreInitializer';
+import { UnifiedStyleManager } from '@/AgenticContentFlow/Node/factory/utils/UnifiedStyleManager';
+
+const resolveNodeVisualColor = (node?: Node<NodeData>): string | undefined => {
+  if (!node) {
+    return undefined;
+  }
+
+  if (node.data?.nodeColor) {
+    return node.data.nodeColor as string;
+  }
+
+  const nodeConfig = node.type ? getNodeType(String(node.type)) : null;
+  if (!nodeConfig) {
+    return undefined;
+  }
+
+  return UnifiedStyleManager.generateStyleConfig(
+    nodeConfig,
+    node.data ?? {},
+    {
+      selected: false,
+      expanded: false,
+      isProcessing: false,
+      hasError: false,
+      isCompleted: false,
+    }
+  ).backgroundColor;
+};
+
+const resolveInitialNodeColor = (config: FrameJSON, eventNode?: Node<NodeData>): string => {
+  const inheritedColor = resolveNodeVisualColor(eventNode);
+  if (inheritedColor) {
+    return inheritedColor;
+  }
+
+  return UnifiedStyleManager.generateStyleConfig(
+    config,
+    {},
+    {
+      selected: false,
+      expanded: false,
+      isProcessing: false,
+      hasError: false,
+      isCompleted: false,
+    }
+  ).backgroundColor;
+};
 
 /**
  * Unified Node Registration System
@@ -49,6 +96,7 @@ export class UnifiedNodeRegistration {
       eventNode?: Node<NodeData>;
     } & Record<string, any>): Node<NodeData> => {
       const { id, position, eventNode, ...customData } = params;
+      const nodeColor = resolveInitialNodeColor(config, eventNode);
       
       return {
         id,
@@ -62,6 +110,8 @@ export class UnifiedNodeRegistration {
           // Set parent relationships if available
           parent: eventNode?.id,
           subject: eventNode?.data.subject || config.category,
+          // Persist initial visual color so node body and handles match immediately.
+          nodeColor,
           // Pass any custom data
           ...customData
         },

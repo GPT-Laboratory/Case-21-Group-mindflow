@@ -8,30 +8,32 @@ export interface EdgeColors {
   strokeWidth: number;
 }
 
-export function getEdgeColors(lifecyclePhase: LifecyclePhase): EdgeColors {
+export function getEdgeColors(lifecyclePhase: LifecyclePhase, sourceNodeColor?: string): EdgeColors {
+  const edgeColor = sourceNodeColor || '#000000';
+
   switch (lifecyclePhase) {
     case 'black':
       return {
-        edgeColor: '#000000',
-        packageColor: '#000000',
+        edgeColor,
+        packageColor: edgeColor,
         strokeWidth: 2,
       };
     case 'blue':
       return {
-        edgeColor: '#3b82f6',
-        packageColor: '#3b82f6',
+        edgeColor,
+        packageColor: edgeColor,
         strokeWidth: 3,
       };
     case 'green':
       return {
-        edgeColor: '#10b981',
-        packageColor: '#10b981',
+        edgeColor,
+        packageColor: edgeColor,
         strokeWidth: 3,
       };
     default:
       return {
-        edgeColor: '#000000',
-        packageColor: '#000000',
+        edgeColor,
+        packageColor: edgeColor,
         strokeWidth: 2,
       };
   }

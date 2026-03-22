@@ -24,9 +24,9 @@ export class UnifiedStyleManager {
   ): UnifiedStyleConfig {
     const { selected } = state;
     
-    // Get depth-based background color
+    // Use user-set color if available, otherwise depth-based
     const depth = nodeData.depth || 0;
-    const backgroundColor = this.getDepthColor(depth, config.category);
+    const backgroundColor = nodeData.nodeColor || this.getDepthColor(depth, config.category);
     
     // Determine border color based on state
     const borderColor = selected ? '#3b82f6' : backgroundColor;
@@ -224,9 +224,9 @@ export class UnifiedStyleManager {
 
   /**
    * Calculate the actual visual color for handle representation
-   * Uses the same logic as minimap color to ensure consistency
+   * Uses the node's background color directly so handles match the node
    */
   static calculateHandleColor(config: FrameJSON, styleConfig: UnifiedStyleConfig): string {
-    return this.calculateMinimapColor(config, styleConfig);
+    return styleConfig.backgroundColor;
   }
 } 

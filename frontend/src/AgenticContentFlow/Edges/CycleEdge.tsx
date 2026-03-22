@@ -1,13 +1,15 @@
 /** @format */
 import { StepEdge, EdgeProps, Node } from '@xyflow/react'
 import { pathfindingJumpPointNoDiagonal, SmartEdge, SmartEdgeOptions, svgDrawSmoothLinePath } from '@jalez/react-flow-smart-edge'
-import { CSSProperties, useState } from 'react';
+import { CSSProperties, useMemo, useState } from 'react';
 import { Package, PackageOpen } from 'lucide-react';
 import { EdgeControls } from './EdgeControls';
 import { useEdgeAnimation } from './hooks/useEdgeAnimation';
 import { useEdgeControls } from './hooks/useEdgeControls';
 import { getEdgeColors } from './utils/edgeStyles';
 import { useNodeContext } from '../Node/context/useNodeContext';
+import { getNodeType } from '../Node/store/NodeTypeStoreInitializer';
+import { UnifiedStyleManager } from '../Node/factory/utils/UnifiedStyleManager';
 
 const StepConfiguration: SmartEdgeOptions = {
 	drawEdge: svgDrawSmoothLinePath,
@@ -102,7 +104,34 @@ export function CycleEdge({
     onDurationChange: setAnimationDuration,
   });
 
-  const colors = getEdgeColors(lifecyclePhase);
+  const sourceNodeColor = useMemo(() => {
+    if (!sourceNode) {
+      return undefined;
+    }
+
+    if (sourceNode.data?.nodeColor) {
+      return sourceNode.data.nodeColor as string;
+    }
+
+    const sourceConfig = sourceNode.type ? getNodeType(String(sourceNode.type)) : null;
+    if (!sourceConfig) {
+      return undefined;
+    }
+
+    return UnifiedStyleManager.generateStyleConfig(
+      sourceConfig,
+      sourceNode.data ?? {},
+      {
+        selected: false,
+        expanded: false,
+        isProcessing: false,
+        hasError: false,
+        isCompleted: false,
+      }
+    ).backgroundColor;
+  }, [sourceNode]);
+
+  const colors = getEdgeColors(lifecyclePhase, sourceNodeColor);
   const edgeStyle: CSSProperties = {
     stroke: colors.edgeColor,
     strokeWidth: colors.strokeWidth,

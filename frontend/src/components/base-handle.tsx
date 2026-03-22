@@ -30,7 +30,7 @@ export const BaseHandle = forwardRef<HTMLDivElement, BaseHandleProps>(
         // Merge the base styles with any custom styles passed in
         style={{ ...handleBaseStyles, ...style }}
         className={cn(
-          "rounded-full bg-slate-100 transition dark:bg-secondary flex items-center justify-center shadow-[1px_-1px_black]",
+          "rounded-full transition dark:bg-secondary flex items-center justify-center shadow-[1px_-1px_black]",
           // Removed "border border-slate-300" to avoid conflicts with borderColor
           className,
         )}

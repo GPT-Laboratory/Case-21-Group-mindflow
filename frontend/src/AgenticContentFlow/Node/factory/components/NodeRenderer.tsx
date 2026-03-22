@@ -119,6 +119,9 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
 
 
   // Cell-specific props (also used for closed containers)
+  const hasCustomNodeColor = Boolean(nodeInFlow?.data?.nodeColor);
+  const headerGradientClass = hasCustomNodeColor ? "" : (config.visual.headerGradient || "");
+
   const cellProps = {
     onTransitionEnd: () => updateNodeInternals(id),
     selected: selected,
@@ -129,7 +132,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
       "w-full h-full flex flex-col select-none transition-all duration-200 ease-in-out",
       "rounded-lg shadow-lg",
       "!min-w-0 !min-h-0",
-      config.visual.headerGradient || ""
+      headerGradientClass
     ),
     style: {
       width: currentDimensions.width,
@@ -156,7 +159,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
           color={UnifiedStyleManager.calculateHandleColor(config, styleConfig)}
         />
         <NodeHeader
-          className={cn("dragHandle", config.visual.headerGradient || "", "border-none")}
+          className={cn("dragHandle", headerGradientClass, "border-none")}
           color={styleConfig.backgroundColor}
           icon={mainIcon}
           label={hasASTData ? (nodeInFlow?.data?.functionName || nodeLabel) : nodeLabel}

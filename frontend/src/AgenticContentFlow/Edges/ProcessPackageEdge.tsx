@@ -1,11 +1,14 @@
 /** @format */
 import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Package, PackageOpen } from 'lucide-react';
 import { EdgeControls } from './EdgeControls';
 import { useEdgeAnimation } from './hooks/useEdgeAnimation';
 import { useEdgeControls } from './hooks/useEdgeControls';
 import { getEdgeColors } from './utils/edgeStyles';
+import { useNodeContext } from '../Node/context/useNodeContext';
+import { getNodeType } from '../Node/store/NodeTypeStoreInitializer';
+import { UnifiedStyleManager } from '../Node/factory/utils/UnifiedStyleManager';
 
 export function AnimatedPackageEdge({
   id,
@@ -20,6 +23,8 @@ export function AnimatedPackageEdge({
   selected,
 }: EdgeProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { nodeMap } = useNodeContext();
+  const sourceNode = source ? nodeMap.get(source) : undefined;
 
   // Animation logic
   const {
@@ -45,6 +50,33 @@ export function AnimatedPackageEdge({
     onDurationChange: setAnimationDuration,
   });
 
+  const sourceNodeColor = useMemo(() => {
+    if (!sourceNode) {
+      return undefined;
+    }
+
+    if (sourceNode.data?.nodeColor) {
+      return sourceNode.data.nodeColor as string;
+    }
+
+    const sourceConfig = sourceNode.type ? getNodeType(String(sourceNode.type)) : null;
+    if (!sourceConfig) {
+      return undefined;
+    }
+
+    return UnifiedStyleManager.generateStyleConfig(
+      sourceConfig,
+      sourceNode.data ?? {},
+      {
+        selected: false,
+        expanded: false,
+        isProcessing: false,
+        hasError: false,
+        isCompleted: false,
+      }
+    ).backgroundColor;
+  }, [sourceNode]);
+
   // Compute the smooth step path
   const [edgePath] = getSmoothStepPath({
     sourceX,
@@ -55,7 +87,7 @@ export function AnimatedPackageEdge({
     targetPosition,
   });
 
-  const colors = getEdgeColors(lifecyclePhase);
+  const colors = getEdgeColors(lifecyclePhase, sourceNodeColor);
   const edgeStyle = {
     stroke: colors.edgeColor,
     strokeWidth: colors.strokeWidth,

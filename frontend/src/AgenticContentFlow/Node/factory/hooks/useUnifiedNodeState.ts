@@ -1,9 +1,10 @@
 /** @format */
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, createElement } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { FrameJSON, UnifiedNodeInstanceData, ExpandCollapseState } from '../types/FrameJSON';
 import { UnifiedStyleManager } from '../utils/UnifiedStyleManager';
+import { NodeColorPicker } from '../components/NodeColorPicker';
 
 interface UseUnifiedNodeStateProps {
   id: string;
@@ -107,8 +108,22 @@ export const useUnifiedNodeState = ({
     'idle' // Will be overridden by parent
   );
 
-  // Generate menu items (simplified - same for all nodes)
-  const menuItems: React.ReactNode[] = [];
+  // Generate menu items with color picker
+  const { setNodes } = useReactFlow();
+  const menuItems: React.ReactNode[] = [
+    createElement(NodeColorPicker, {
+      key: 'color-picker',
+      nodeId: id,
+      currentColor: styleConfig.backgroundColor,
+      onColorChange: (color: string) => {
+        setNodes((nodes) =>
+          nodes.map((n) =>
+            n.id === id ? { ...n, data: { ...n.data, nodeColor: color } } : n
+          )
+        );
+      },
+    }),
+  ];
 
   // Get node label
   const nodeLabel = nodeData?.instanceData?.label || nodeData?.label || config.defaultLabel;
