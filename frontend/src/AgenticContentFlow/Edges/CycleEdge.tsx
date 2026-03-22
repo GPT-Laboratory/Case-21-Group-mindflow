@@ -28,6 +28,7 @@ export function CycleEdge({
   targetPosition,
   source,
   target,
+  markerEnd,
   selected,
   ...props
 }: EdgeProps) {
@@ -157,6 +158,7 @@ export function CycleEdge({
         options={StepConfiguration} 
         nodes={nodes as any} // eslint-disable-line @typescript-eslint/no-explicit-any
         style={edgeStyle as any}
+        markerEnd={markerEnd as any}
       />
 
       <EdgeControls

@@ -16,13 +16,15 @@ import { ensureNodeTypesRegistered } from "../Nodes/registerBasicNodeTypes";
 import NodeConfigPanel from "../Panel/NodePanel";
 import { useNotifications } from "../Notifications";
 import UnifiedControlsPanel from "../Controls/registry/UnifiedControlsPanel";
+import { getNodeType } from "../Node/store/NodeTypeStoreInitializer";
+import { UnifiedStyleManager } from "../Node/factory/utils/UnifiedStyleManager";
 
 
 const defaultEdgeOptions = {
   zIndex: 10000, //WARNING: THIS NEEDS TO BE HIGHER THAN THE Z-INDEX OF THE NODE OVERLAY
   type: "default",
   //animated: true,
-  markerEnd: { type: MarkerType.Arrow },
+  markerEnd: { type: MarkerType.ArrowClosed, width: 26, height: 26 },
 };
 
 export interface FlowProps {
@@ -72,6 +74,7 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     });
   const {
     nodes,
+    nodeMap,
     localNodes,
     isNewState,
     changeStateAge,
@@ -122,6 +125,42 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
     return deduplicatedNodes;
   }, [nodes, localNodes, isDragging]);
 
+  const coloredVisibleEdges = useMemo(() => {
+    return visibleEdges.map((edge) => {
+      const sourceNode = edge.source ? nodeMap.get(edge.source) : undefined;
+      let sourceColor = '#000000';
+
+      if (sourceNode?.data?.nodeColor) {
+        sourceColor = sourceNode.data.nodeColor as string;
+      } else if (sourceNode) {
+        const sourceConfig = sourceNode.type ? getNodeType(String(sourceNode.type)) : null;
+        if (sourceConfig) {
+          sourceColor = UnifiedStyleManager.generateStyleConfig(
+            sourceConfig,
+            sourceNode.data ?? {},
+            {
+              selected: false,
+              expanded: false,
+              isProcessing: false,
+              hasError: false,
+              isCompleted: false,
+            }
+          ).backgroundColor;
+        }
+      }
+
+      return {
+        ...edge,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: sourceColor,
+          width: 26,
+          height: 26,
+        },
+      };
+    });
+  }, [visibleEdges, nodeMap]);
+
 
 
   useEffect(() => {
@@ -147,7 +186,7 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
   });
   const { DetermineEdgeClickFunction } = useEdgeSelect({
     nodes,
-    edges: visibleEdges,
+    edges: coloredVisibleEdges,
   });
 
   // Add this to get clearSelection and deleteSelected
@@ -251,7 +290,7 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
         onNodeDragStop={isFactorySystemReady ? handleNodeDragStop : undefined}
         onNodeClick={isFactorySystemReady ? DetermineNodeClickFunction : undefined}
         onNodeDoubleClick={isFactorySystemReady ? DetermineNodeClickFunction : undefined}
-        edges={isFactorySystemReady ? visibleEdges : []}
+        edges={isFactorySystemReady ? coloredVisibleEdges : []}
         onEdgesChange={isFactorySystemReady ? onEdgesChange : undefined}
         onEdgeClick={isFactorySystemReady ? DetermineEdgeClickFunction : undefined}
         onEdgeDoubleClick={isFactorySystemReady ? DetermineEdgeClickFunction : undefined}

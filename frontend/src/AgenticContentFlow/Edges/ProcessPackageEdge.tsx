@@ -20,6 +20,7 @@ export function AnimatedPackageEdge({
   targetPosition,
   source,
   target,
+  markerEnd,
   selected,
 }: EdgeProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -103,6 +104,7 @@ export function AnimatedPackageEdge({
       <BaseEdge
         id={id}
         path={edgePath}
+        markerEnd={markerEnd}
         style={edgeStyle}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
