@@ -32,7 +32,6 @@ const ControlButton: React.FC<ControlButtonProps> = ({
 
   return (
     <Button
-      size="icon"
       variant={active ? "default" : "secondary"}
       onClick={handleClick}
       disabled={disabled}
@@ -40,7 +39,6 @@ const ControlButton: React.FC<ControlButtonProps> = ({
          shadow-none rounded-full text-gray-500 hover:bg-gray-100
          ${active ? "bg-gray-200" : "bg-transparent"}
          ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-      style={{ minWidth: '24px', minHeight: '24px' }}
       title={tooltip}
     >
       {icon}

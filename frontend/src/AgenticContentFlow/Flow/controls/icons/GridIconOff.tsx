@@ -3,6 +3,8 @@ import React from "react";
 interface GridIconOffProps extends React.SVGProps<SVGSVGElement> {}
 
 export const GridIconOff = ({ className, ...props }: GridIconOffProps) => {
+  const mergedClassName = ["size-4", "block", className].filter(Boolean).join(" ");
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -12,11 +14,11 @@ export const GridIconOff = ({ className, ...props }: GridIconOffProps) => {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className={mergedClassName}
       {...props}
     >
       {/* Base grid (same as GridIconOn) */}
-      <rect x="3" y="3" rx="2" />
+      <rect x="3" y="3" width="18" height="18" rx="2" />
       <path d="M3 9h18" />
       <path d="M3 15h18" />
       <path d="M9 3v18" />

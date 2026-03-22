@@ -70,7 +70,7 @@ const GridControls: React.FC = () => {
   return (
     <ControlDropdown
       tooltip="Grid Settings"
-      icon={showGrid ? <GridIconOn /> : <GridIconOff />}
+      icon={showGrid ? <GridIconOn className="size-4" /> : <GridIconOff className="size-4" />}
       items={gridItems}
     />
   );

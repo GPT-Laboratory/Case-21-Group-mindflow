@@ -53,7 +53,7 @@ const RegisteredControls: React.FC<RegisteredControlsProps> = memo(({
     if (!controls.length) return null;
     
     return (
-      <div className={cn("flex gap-1", className)}>
+      <div className={cn("flex items-center gap-1", className)}>
         {controls.map((entry: ControlEntry, index) => {
           const { Component, props } = entry;
           // Render with props if available, otherwise render without props

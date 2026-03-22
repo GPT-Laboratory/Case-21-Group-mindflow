@@ -36,7 +36,7 @@ const ControlDropdown: React.FC<ControlDropdownProps> = ({
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
-        <span>
+        <span className="inline-flex">
           <ControlButton
             tooltip={tooltip}
             onClick={(e) => e.preventDefault()}
