@@ -1,6 +1,7 @@
-from sqlalchemy import Column, String, Integer, DateTime, JSON
+from sqlalchemy import Column, String, Integer, DateTime, JSON, Boolean, ForeignKey
 from database import Base
 import datetime
+
 
 class Flow(Base):
     __tablename__ = "flows"
@@ -15,4 +16,23 @@ class Flow(Base):
     nodes = Column(JSON, nullable=False)
     edges = Column(JSON, nullable=False)
     metadata_json = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Settings fields (adapted from css-artist game settings)
+    owner_id = Column(String, nullable=True)
+    is_published = Column(Boolean, default=False)
+    access_key_required = Column(Boolean, default=False)
+    access_key = Column(String, nullable=True)
+    course_id = Column(String, nullable=True, index=True)
+    module_id = Column(String, nullable=True, index=True)
+    exercise_id = Column(String, nullable=True, index=True)
+
+
+class FlowCollaborator(Base):
+    __tablename__ = "flow_collaborators"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    flow_id = Column(String, ForeignKey("flows.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, nullable=False)
+    added_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

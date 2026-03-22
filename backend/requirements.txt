@@ -15,3 +15,4 @@ requests
 sentence-transformers
 torch
 langchain-huggingface
+oauthlib

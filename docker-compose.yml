@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: agenticflow_pass
       POSTGRES_DB: agenticflow_db
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile
     container_name: agentic_backend
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       - POSTGRES_USER=agenticflow_user
       - POSTGRES_PASSWORD=agenticflow_pass
@@ -30,6 +30,7 @@ services:
       - VALIDATION_MODEL=llama3.2
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - VALID_THRESHOLD=0.6
+      - FRONTEND_URL=http://localhost:5173
     volumes:
       - ./backend:/app
       - docfiles_volume:/app/docfiles

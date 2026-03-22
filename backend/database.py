@@ -28,9 +28,11 @@ def get_db():
 
 # Avoid circular imports by importing models here just for table creation
 from models.document import Document
-from models.flow import Flow
+from models.flow import Flow, FlowCollaborator
 from models.node_type import NodeType
 from models.topic import Topic
 from models.evaluation import EvaluationResult
+from models.lti_credential import LTICredential
+from models.lti_session import LTISession
 
 Base.metadata.create_all(bind=engine)

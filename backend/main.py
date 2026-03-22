@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import rag, eval, flows, node_types, data
+from routers import rag, eval, flows, node_types, data, lti, flow_config
 
 # Create Database tables (in a real scenario, use alembic for migrations)
 Base.metadata.create_all(bind=engine)
@@ -21,6 +21,8 @@ app.include_router(eval.router, prefix="/api/eval", tags=["Evaluation"])
 app.include_router(flows.router, prefix="/api/flows", tags=["Flows"])
 app.include_router(node_types.router, prefix="/api/nodeTypes", tags=["Node Types"])
 app.include_router(data.router, prefix="/api", tags=["Data"])
+app.include_router(lti.router, prefix="/api/lti", tags=["LTI"])
+app.include_router(flow_config.router, prefix="/api/flows", tags=["Flow Config"])
 
 @app.get("/")
 def read_root():
@@ -46,6 +48,12 @@ def read_root():
             "DELETE /api/received": "Clear received data",
             "GET /api/rag/documents": "Get uploaded documents",
             "POST /api/rag/upload": "Upload and process document",
-            "POST /api/eval/evaluate": "Evaluate flow with LLM"
+            "POST /api/eval/evaluate": "Evaluate flow with LLM",
+            "POST /api/lti/launch": "LTI 1.0 general login launch",
+            "POST /api/lti/exercise/{id}": "LTI 1.0 exercise-specific launch",
+            "POST /api/lti/submit-grade": "Submit grade back to LMS",
+            "GET /api/lti/session": "Get current LTI session info",
+            "GET /api/lti/credentials": "List LTI consumer credentials",
+            "POST /api/lti/credentials": "Create new LTI credentials"
         }
     }
