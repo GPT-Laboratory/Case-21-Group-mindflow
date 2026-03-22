@@ -33,7 +33,7 @@ export const createNodeTemplate = (
       parent: eventNode?.id,
       subject: eventNode?.data.subject || "general",
       nodeLevel: params.nodeLevel || "basic",
-      details: params.details || "Add details about this concept",
+      details: params.details ?? "",
     },
     position,
     parentId: eventNode?.parentId,

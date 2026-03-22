@@ -104,7 +104,7 @@ export class UnifiedNodeRegistration {
         data: {
           // Merge default data with any overrides
           label: params.label || config.defaultLabel,
-          details: params.details || config.description,
+          details: params.details ?? '',
           nodeLevel: params.nodeLevel || 'basic',
           expanded: params.expanded ?? false,
           // Set parent relationships if available
@@ -117,7 +117,7 @@ export class UnifiedNodeRegistration {
         },
         style: {
           width: config.defaultDimensions.width,
-          height: config.defaultDimensions.height,
+          minHeight: config.defaultDimensions.height,
         },
         position,
         parentId: eventNode?.parentId,

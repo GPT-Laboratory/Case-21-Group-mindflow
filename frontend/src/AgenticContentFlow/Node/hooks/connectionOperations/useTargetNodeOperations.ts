@@ -53,7 +53,7 @@ export const useTargetNodeOperations = () => {
         position: newPosition,
         eventNode,
         label: "New Concept",
-        details: "Add details about this concept",
+        details: "",
       });
 
       if (!newChildNode) {

@@ -210,7 +210,7 @@ export const createConnectionNode = (
         id: newNodeId,
         position: position || { x: 0, y: 0 },
         eventNode: updatedFromNode,
-        details: "Add details about this concept",
+        details: "",
 
     });
 

@@ -49,14 +49,14 @@ export const useNodePlacement = (): UseNodePlacementReturn => {
     const newNode = createNodeFromTemplate(selectedNodeType, {
       id: newNodeId,
       position: clickPosition,
-      details: "Add details about this concept",
+      details: "",
     });
 
     if (newNode) {
       // Adjust position so the center of the node is at the click position
       // Get the node dimensions (default to 200x100 if not specified)
       const nodeWidth = Number(newNode.style?.width) || 200;
-      const nodeHeight = Number(newNode.style?.height) || 100;
+      const nodeHeight = Number(newNode.style?.height ?? newNode.style?.minHeight) || 100;
       
       // Calculate the offset to center the node
       const centerOffsetX = nodeWidth / 2;

@@ -129,24 +129,19 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
     processing: isProcessing,
     processState: 'idle' as const,
     className: cn(
-      "w-full h-full flex flex-col select-none transition-all duration-200 ease-in-out",
+      "w-full flex flex-col select-none transition-all duration-200 ease-in-out",
       "rounded-lg shadow-lg",
       "!min-w-0 !min-h-0",
       headerGradientClass
     ),
     style: {
       width: currentDimensions.width,
-      height: currentDimensions.height,
+      minHeight: config.defaultDimensions.height,
       backgroundColor: styleConfig.backgroundColor, // Depth-based color
       ...processingStyles,
       userSelect: 'auto' as const
     }
   };
-
-
-  // Check if this node has AST-parsed function data
-  const hasASTData = nodeInFlow?.data?.functionName || nodeInFlow?.data?.functionDescription;
-
 
 
   return (
@@ -162,7 +157,9 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
           className={cn("dragHandle", headerGradientClass, "border-none")}
           color={styleConfig.backgroundColor}
           icon={mainIcon}
-          label={hasASTData ? (nodeInFlow?.data?.functionName || nodeLabel) : nodeLabel}
+          label={nodeLabel}
+          editableLabel
+          labelPlaceholder="Topic"
           isProcessing={isProcessing}
           isCompleted={isCompleted}
           hasError={hasError}

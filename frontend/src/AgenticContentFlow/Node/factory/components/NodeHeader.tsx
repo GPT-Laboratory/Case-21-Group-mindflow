@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useCallback,
+  useMemo,
   HTMLAttributes,
   ReactNode,
 } from "react";
@@ -9,12 +10,15 @@ import { cn } from "@/lib/utils";
 import { MoreVertical, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 /* NODE HEADER -------------------------------------------------------------- */
 
 export interface NodeHeaderProps extends HTMLAttributes<HTMLElement> {
   icon?: ReactNode;
   label?: string;
+  labelPlaceholder?: string;
+  editableLabel?: boolean;
   isProcessing?: boolean;
   isCompleted?: boolean;
   hasError?: boolean;
@@ -28,12 +32,45 @@ export interface NodeHeaderProps extends HTMLAttributes<HTMLElement> {
 }
 
 export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
-  ({ className, icon, label, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, generationMessage, isLabelUpdating, ...props }, ref) => {
+  ({ className, icon, label, labelPlaceholder = "Topic", editableLabel = false, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, generationMessage, isLabelUpdating, ...props }, ref) => {
+    const id = useNodeId();
+    const { setNodes } = useReactFlow();
+
+    const safeLabel = useMemo(() => label ?? "", [label]);
+
+    const handleLabelChange = useCallback(
+      (value: string) => {
+        if (!id) return;
+
+        setNodes((nodes) =>
+          nodes.map((node) => {
+            if (node.id !== id) {
+              return node;
+            }
+
+            const instanceData = (node.data?.instanceData ?? {}) as Record<string, unknown>;
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                label: value,
+                instanceData: {
+                  ...instanceData,
+                  label: value,
+                },
+              },
+            };
+          })
+        );
+      },
+      [id, setNodes]
+    );
+
     return (
       <header 
         ref={ref} 
         className={cn(
-          "flex items-center justify-between gap-2 p-1 text-slate-700 border-b border-slate-200 dark:text-slate-300 dark:border-slate-700",
+          "flex items-center justify-between gap-2 p-1 text-slate-700 dark:text-slate-300",
           "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-md",
           className
         )}
@@ -45,13 +82,29 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
           </div>
         )}
         
-        {label && (
+        {(editableLabel || label) && (
           <div className={cn(
-            "flex-1 font-semibold relative text-ellipsis overflow-hidden whitespace-nowrap",
+            "flex-1 font-semibold relative",
             isLabelUpdating && "animate-pulse text-yellow-600 dark:text-yellow-400",
             labelClassName
           )}>
-            {label}
+            {editableLabel ? (
+              <Input
+                value={safeLabel}
+                placeholder={labelPlaceholder}
+                className={cn(
+                  "nodrag nopan h-8 border-none bg-transparent px-1 py-0 text-base font-semibold shadow-none",
+                  "focus-visible:ring-0 focus-visible:border-none"
+                )}
+                onPointerDown={(event) => event.stopPropagation()}
+                onMouseDown={(event) => event.stopPropagation()}
+                onChange={(event) => handleLabelChange(event.target.value)}
+              />
+            ) : (
+              <div className="text-ellipsis overflow-hidden whitespace-nowrap">
+                {safeLabel}
+              </div>
+            )}
           </div>
         )}
         

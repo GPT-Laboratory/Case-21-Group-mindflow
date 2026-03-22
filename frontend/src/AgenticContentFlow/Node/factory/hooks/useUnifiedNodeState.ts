@@ -126,7 +126,11 @@ export const useUnifiedNodeState = ({
   ];
 
   // Get node label
-  const nodeLabel = nodeData?.instanceData?.label || nodeData?.label || config.defaultLabel;
+  const nodeLabel =
+    nodeData?.instanceData?.label ||
+    nodeData?.label ||
+    nodeData?.functionName ||
+    config.defaultLabel;
 
   // Check if node has variants
   const hasVariants = UnifiedStyleManager.hasVariants(config);
