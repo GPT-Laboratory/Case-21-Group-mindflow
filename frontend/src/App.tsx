@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AgenticContentFlow from "./AgenticContentFlow";
 import DocumentManager from "./components/DocumentManager";
+import FlowSettings from "./components/FlowSettings";
+import Homepage from "./components/Homepage";
+import HomeLanding from "./components/HomeLanding";
 import Navbar from "./components/Navbar";
 import { NotificationProvider } from "./AgenticContentFlow/Notifications";
 import { CourseDataProvider } from './hooks/CourseDataContext';
@@ -14,7 +17,11 @@ function App() {
             <Navbar />
             <div className="flex-1 overflow-hidden relative">
               <Routes>
-                <Route path="/" element={<AgenticContentFlow />} />
+                <Route path="/" element={<HomeLanding />} />
+                <Route path="/flows" element={<Homepage />} />
+                <Route path="/flows/new" element={<AgenticContentFlow />} />
+                <Route path="/flows/:flowId" element={<AgenticContentFlow />} />
+                <Route path="/flows/:flowId/settings" element={<FlowSettings />} />
                 <Route path="/documents" element={<DocumentManager />} />
               </Routes>
             </div>

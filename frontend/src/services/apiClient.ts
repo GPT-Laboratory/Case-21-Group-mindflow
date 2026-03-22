@@ -207,3 +207,123 @@ export const evalApi = {
         return response.json();
     },
 };
+
+// ─── Flow Config / Settings ──────────────────────────────────────────────────
+
+export interface FlowConfig {
+    flow_id: string;
+    name: string;
+    description: string | null;
+    is_published: boolean;
+    access_key_required: boolean;
+    access_key: string | null;
+    owner_id: string | null;
+    course_id: string | null;
+    module_id: string | null;
+    exercise_id: string | null;
+    lti_exercise_url: string | null;
+    collaborators: { user_id: string; added_by: string | null; created_at: string | null }[];
+}
+
+export interface FlowConfigUpdate {
+    name?: string;
+    description?: string;
+    is_published?: boolean;
+    access_key_required?: boolean;
+    access_key?: string;
+    course_id?: string;
+    module_id?: string;
+    exercise_id?: string;
+}
+
+export const flowConfigApi = {
+    getConfig: async (flowId: string): Promise<FlowConfig> => {
+        const response = await fetch(`/api/flows/${flowId}/config`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    updateConfig: async (flowId: string, updates: FlowConfigUpdate): Promise<FlowConfig> => {
+        const response = await fetch(`/api/flows/${flowId}/config`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    regenerateKey: async (flowId: string): Promise<{ access_key: string }> => {
+        const response = await fetch(`/api/flows/${flowId}/config/regenerate-key`, {
+            method: 'POST',
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    listCollaborators: async (flowId: string): Promise<{ collaborators: FlowConfig['collaborators'] }> => {
+        const response = await fetch(`/api/flows/${flowId}/collaborators`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    addCollaborator: async (flowId: string, userId: string): Promise<{ collaborators: FlowConfig['collaborators'] }> => {
+        const response = await fetch(`/api/flows/${flowId}/collaborators`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId }),
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error((err as any).detail || `HTTP ${response.status}`);
+        }
+        return response.json();
+    },
+
+    removeCollaborator: async (flowId: string, userId: string): Promise<{ collaborators: FlowConfig['collaborators'] }> => {
+        const response = await fetch(`/api/flows/${flowId}/collaborators/${encodeURIComponent(userId)}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+};
+
+// ─── LTI ─────────────────────────────────────────────────────────────────────
+
+export interface LTICredential {
+    id: string;
+    consumer_key: string;
+    consumer_secret: string;
+    description: string;
+    created_at: string | null;
+}
+
+export const ltiApi = {
+    getCredentials: async (): Promise<LTICredential[]> => {
+        const response = await fetch('/api/lti/credentials');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    createCredential: async (description?: string): Promise<LTICredential & { launch_url: string; exercise_launch_url_template: string }> => {
+        const response = await fetch('/api/lti/credentials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description: description || '' }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    deleteCredential: async (id: string): Promise<void> => {
+        const response = await fetch(`/api/lti/credentials/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    },
+
+    getSession: async (): Promise<{ authenticated: boolean; user_name?: string; user_email?: string; roles?: string; exercise_id?: string; has_outcome_service?: boolean }> => {
+        const response = await fetch('/api/lti/session');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+};

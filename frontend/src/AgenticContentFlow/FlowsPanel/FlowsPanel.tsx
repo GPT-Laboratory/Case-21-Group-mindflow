@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useEdgeContext } from '../Edge/store/useEdgeContext';
 import { useNodeContext } from '../Node/context/useNodeContext';
 import { PanelToggleDragHandle } from '../Panel/components/PanelHandle';
@@ -7,6 +7,7 @@ import { useFlowsStore } from '../stores/useFlowsStore';
 import { useNotifications } from '../Notifications/hooks/useNotifications';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { FlowsPanelHeader, FlowsList } from './components';
+import { CreateFlowDialog } from './components/CreateFlowDialog';
 
 const DEFAULT_SIZES = {
   top: { width: 0, height: 350 },
@@ -33,6 +34,8 @@ export const FlowsPanel: React.FC = () => {
     getAllFlows
   } = useFlowsStore();
 
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+
   const { size, isResizing, handleResizeStart } = useResizePanel({
     position,
     defaultSizes: DEFAULT_SIZES,
@@ -42,7 +45,6 @@ export const FlowsPanel: React.FC = () => {
   useEffect(() => {
     fetchFlows().catch((error) => {
       console.warn('Failed to fetch flows from server:', error.message);
-      // Continue with empty flows list - user can still create new flows
     });
   }, [fetchFlows]);
 
@@ -50,7 +52,6 @@ export const FlowsPanel: React.FC = () => {
   useEffect(() => {
     if (error) {
       showErrorToast('Flows Error', error);
-      // Clear error after displaying so it doesn't re-trigger
       useFlowsStore.getState().clearError();
     }
   }, [error, showErrorToast]);
@@ -62,6 +63,7 @@ export const FlowsPanel: React.FC = () => {
       setNodes([]);
       setEdges([]);
       setSelectedFlow(null);
+      setShowCreateDialog(true);
       return;
     }
 
@@ -75,6 +77,23 @@ export const FlowsPanel: React.FC = () => {
       showErrorToast('Flow Error', `Flow "${flowId}" not found`);
     }
   };
+
+  const handleCreateFlow = useCallback(async (name: string, description: string) => {
+    const { createFlow } = useFlowsStore.getState();
+    const newFlow = await createFlow({
+      name,
+      description,
+      nodes: [],
+      edges: [],
+    });
+    if (newFlow) {
+      setNodes([]);
+      setEdges([]);
+      setSelectedFlow(newFlow.id);
+      showSuccessToast('Flow Created', `Created "${name}" successfully`);
+      setShowCreateDialog(false);
+    }
+  }, [setNodes, setEdges, setSelectedFlow, showSuccessToast]);
 
   const handleDeleteFlow = async (flowId: string) => {
     if (flowId === 'create-new') return;
@@ -141,6 +160,12 @@ export const FlowsPanel: React.FC = () => {
           </div>
         </TooltipProvider>
       )}
+
+      <CreateFlowDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onCreate={handleCreateFlow}
+      />
     </div>
   );
 };

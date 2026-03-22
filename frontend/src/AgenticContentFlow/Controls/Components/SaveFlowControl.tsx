@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import ControlButton from './ControlButton';
 import { useSaveFlow } from '../../hooks/useSaveFlow';
+import { useFlowsStore } from '../../stores/useFlowsStore';
 
 interface SaveFlowControlProps {}
 
@@ -25,6 +26,18 @@ export const SaveFlowControl: React.FC<SaveFlowControlProps> = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+
+  // Pre-fill name/description when opening dialog for existing flow
+  const handleOpen = () => {
+    if (hasCurrentFlow) {
+      const { selectedFlowId, flows } = useFlowsStore.getState();
+      if (selectedFlowId && flows[selectedFlowId]) {
+        setName(flows[selectedFlowId].name);
+        setDescription(flows[selectedFlowId].description || '');
+      }
+    }
+    setIsOpen(true);
+  };
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -50,7 +63,7 @@ export const SaveFlowControl: React.FC<SaveFlowControlProps> = () => {
         <span>
           <ControlButton
             tooltip={isSaving ? "Saving..." : "Save Flow"}
-            onClick={() => setIsOpen(true)}
+            onClick={handleOpen}
             icon={isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             disabled={isSaving}
           />

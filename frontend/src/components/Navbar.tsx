@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, LayoutDashboard, Database } from 'lucide-react';
+import { FileText, Home, Database, Workflow } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const Navbar: React.FC = () => {
@@ -8,27 +8,44 @@ const Navbar: React.FC = () => {
 
     const navItems = [
         {
-            label: 'Flow Designer',
+            label: 'Home',
             path: '/',
-            icon: <LayoutDashboard className="w-4 h-4" />,
+            icon: <Home className="w-4 h-4" />,
         },
         {
-            label: 'Document Manager',
+            label: 'Documents',
             path: '/documents',
             icon: <FileText className="w-4 h-4" />,
         },
+        {
+            label: 'Flows',
+            path: '/flows',
+            icon: <Workflow className="w-4 h-4" />,
+        },
     ];
+
+    const isItemActive = (path: string): boolean => {
+        if (path === '/') {
+            return location.pathname === '/';
+        }
+
+        if (path === '/flows') {
+            return location.pathname === '/flows' || location.pathname.startsWith('/flows/');
+        }
+
+        return location.pathname === path || location.pathname.startsWith(`${path}/`);
+    };
 
     return (
         <nav className="h-14 border-b border-border bg-card flex items-center justify-between px-6 shrink-0 z-50">
-            <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <Database className="w-6 h-6 text-primary" />
                 <span className="font-bold text-lg tracking-tight">Agentic Flow</span>
-            </div>
+            </Link>
 
             <div className="flex items-center gap-1">
                 {navItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+                    const isActive = isItemActive(item.path);
                     return (
                         <Link
                             key={item.path}

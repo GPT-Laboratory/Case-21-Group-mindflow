@@ -7,6 +7,7 @@ import {
 } from "@xyflow/react";
 import { SelectProvider } from "./Select/contexts/SelectContext";
 import { useCallback, useRef, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { useViewPreferencesStore } from "./stores";
 import { NodeProvider, useNodeContext } from "./Node/context/useNodeContext";
 import { EdgeProvider, useEdgeContext } from "./Edge/store/useEdgeContext";
@@ -25,20 +26,24 @@ import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
 import { GeneratorProvider } from "./Generator/context/GeneratorContext";
 import NodeConfigPanel from "./Panel/NodePanel";
 import { FlowsPanel } from "./FlowsPanel";
+import { useFlowsStore } from "./stores/useFlowsStore";
+import { FlowsService } from "./services/FlowsService";
+import { useAutoSave } from "./hooks/useAutoSave";
 
 import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React Flow
 import ReactStateHistory from "./History/ReactStateHistory";
 import { LayoutProvider } from "@jalez/react-flow-automated-layout";
-import { APISetupControlsRegistration } from "./Generator";
+//import { APISetupControlsRegistration } from "./Generator";
 import GridControlsRegistration from "./Flow/controls/GridControlsRegistration";
 import UnifiedControlsPanel from "./Controls/registry/UnifiedControlsPanel";
-import { GenerationControl } from "./Generator/ui";
+//import { GenerationControl } from "./Generator/ui";
 import { ShortcutsRegistration } from "./ShortCuts/ShortcutControlRegistration";
 import { ShortcutsProvider } from "@jalez/react-shortcuts-provider";
 import { ShortcutsDisplayPanel } from "./ShortCuts/ShortcutsDisplayPanel";
 import { NodeSearchControlRegistration } from "./Controls/Components/NodeSearchControlRegistration";
 import { CodeImportExportControlsRegistration } from "./AST/ui/CodeImportExportControlsRegistration";
 import { SaveFlowControlRegistration } from "./Controls/SaveFlowControlRegistration";
+import { FlowSettingsControlRegistration } from "./Controls/FlowSettingsControlRegistration";
 import SubmitDiagramRegistration from "./Controls/SubmitDiagramRegistration";
 import GlobalSelectorRegistration from "./Controls/GlobalSelectorRegistration";
 
@@ -47,14 +52,57 @@ ensureEdgeTypesRegistered();
 
 export function AgenticContentFlowContent() {
   const flowWrapper = useRef<HTMLDivElement>(null);
+  const { flowId } = useParams<{ flowId?: string }>();
   const { showGrid, gridVariant } = useViewPreferencesStore();
-  const { updateNodes } = useNodeContext();
-  const { updateEdges } = useEdgeContext();
+  const { setNodes, updateNodes } = useNodeContext();
+  const { setEdges, updateEdges } = useEdgeContext();
 
   // Initialize node types on component mount
   useEffect(() => {
     ensureNodeTypesRegistered().catch(console.error);
   }, []);
+
+  // Load flow from URL param
+  const flowLoadedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!flowId || flowId === 'new') return;
+    if (flowLoadedRef.current === flowId) return;
+
+    let cancelled = false;
+
+    const loadFlow = async () => {
+      // First check if it's already in the store (e.g. from localStorage persist)
+      const storeFlow = useFlowsStore.getState().flows[flowId];
+      if (storeFlow && storeFlow.nodes?.length > 0) {
+        if (cancelled) return;
+        setNodes(storeFlow.nodes);
+        setEdges(storeFlow.edges);
+        useFlowsStore.getState().setSelectedFlow(flowId);
+        flowLoadedRef.current = flowId;
+        return;
+      }
+
+      // Fetch the specific flow from the API
+      try {
+        const flow = await FlowsService.getFlow(flowId);
+        if (cancelled) return;
+        setNodes(flow.nodes);
+        setEdges(flow.edges);
+        useFlowsStore.getState().setSelectedFlow(flowId);
+        useFlowsStore.getState().addFlow(flow);
+        flowLoadedRef.current = flowId;
+      } catch (err) {
+        console.warn('Failed to load flow:', err);
+      }
+    };
+
+    loadFlow();
+    return () => { cancelled = true; };
+  }, [flowId, setNodes, setEdges]);
+
+  // Auto-save when nodes/edges change
+  useAutoSave();
 
   // Use custom hooks for functionality
   const { handleWheel } = useViewportManager(flowWrapper);
@@ -129,9 +177,10 @@ export function AgenticContentFlowContent() {
                       <GridControlsRegistration />
                       <LayoutControlsRegistration />
                       <CopyWorkflowControlsRegistration />
-                      <APISetupControlsRegistration />
+                      {/* <APISetupControlsRegistration /> */}
                       <ShortcutsRegistration />
                       <SaveFlowControlRegistration />
+                      <FlowSettingsControlRegistration />
                       <CodeImportExportControlsRegistration />
                       <NodeSearchControlRegistration />
                       <SubmitDiagramRegistration />
@@ -141,7 +190,7 @@ export function AgenticContentFlowContent() {
                 </div>
 
                 {/* Generation Panel - Full width of Flow area */}
-                <GenerationControl type="flow" />
+                {/* <GenerationControl type="flow" /> */}
               </div>
 
               {/* Node Configuration Panel - Side by side */}
