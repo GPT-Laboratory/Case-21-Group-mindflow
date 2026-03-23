@@ -67,7 +67,16 @@ export function AgenticContentFlowContent() {
   const flowLoadedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!flowId || flowId === 'new') return;
+    // Clear canvas when creating a new flow
+    if (!flowId || flowId === 'new') {
+      if (flowLoadedRef.current !== null) {
+        setNodes([]);
+        setEdges([]);
+        useFlowsStore.getState().setSelectedFlow(null);
+        flowLoadedRef.current = null;
+      }
+      return;
+    }
     if (flowLoadedRef.current === flowId) return;
 
     let cancelled = false;
