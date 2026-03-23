@@ -7,7 +7,7 @@ import {
 } from "@xyflow/react";
 import { SelectProvider } from "./Select/contexts/SelectContext";
 import { useCallback, useRef, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useViewPreferencesStore } from "./stores";
 import { NodeProvider, useNodeContext } from "./Node/context/useNodeContext";
 import { EdgeProvider, useEdgeContext } from "./Edge/store/useEdgeContext";
@@ -53,6 +53,7 @@ ensureEdgeTypesRegistered();
 export function AgenticContentFlowContent() {
   const flowWrapper = useRef<HTMLDivElement>(null);
   const { flowId } = useParams<{ flowId?: string }>();
+  const navigate = useNavigate();
   const { showGrid, gridVariant } = useViewPreferencesStore();
   const { setNodes, updateNodes } = useNodeContext();
   const { setEdges, updateEdges } = useEdgeContext();
@@ -62,7 +63,7 @@ export function AgenticContentFlowContent() {
     ensureNodeTypesRegistered().catch(console.error);
   }, []);
 
-  // Load flow from URL param
+  // Load flow from URL param — always verify with API (auth-gated)
   const flowLoadedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -72,18 +73,6 @@ export function AgenticContentFlowContent() {
     let cancelled = false;
 
     const loadFlow = async () => {
-      // First check if it's already in the store (e.g. from localStorage persist)
-      const storeFlow = useFlowsStore.getState().flows[flowId];
-      if (storeFlow && storeFlow.nodes?.length > 0) {
-        if (cancelled) return;
-        setNodes(storeFlow.nodes);
-        setEdges(storeFlow.edges);
-        useFlowsStore.getState().setSelectedFlow(flowId);
-        flowLoadedRef.current = flowId;
-        return;
-      }
-
-      // Fetch the specific flow from the API
       try {
         const flow = await FlowsService.getFlow(flowId);
         if (cancelled) return;
@@ -92,14 +81,20 @@ export function AgenticContentFlowContent() {
         useFlowsStore.getState().setSelectedFlow(flowId);
         useFlowsStore.getState().addFlow(flow);
         flowLoadedRef.current = flowId;
-      } catch (err) {
-        console.warn('Failed to load flow:', err);
+      } catch (err: any) {
+        if (cancelled) return;
+        const status = err?.message?.match(/HTTP (\d+)/)?.[1];
+        if (status === '401' || status === '403') {
+          navigate('/flows', { replace: true });
+        } else {
+          console.warn('Failed to load flow:', err);
+        }
       }
     };
 
     loadFlow();
     return () => { cancelled = true; };
-  }, [flowId, setNodes, setEdges]);
+  }, [flowId, setNodes, setEdges, navigate]);
 
   // Auto-save when nodes/edges change
   useAutoSave();

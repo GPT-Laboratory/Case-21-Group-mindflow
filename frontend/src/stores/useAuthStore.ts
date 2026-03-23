@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authApi, ltiApi } from '@/services/apiClient';
+import { useFlowsStore } from '@/AgenticContentFlow/stores/useFlowsStore';
 
 interface AuthState {
     authenticated: boolean;
@@ -75,6 +76,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     logout: async () => {
         await authApi.logout();
+        useFlowsStore.getState().clearAllFlows();
         set({
             authenticated: false,
             provider: null,

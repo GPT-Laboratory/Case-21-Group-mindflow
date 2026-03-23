@@ -67,8 +67,6 @@ def get_flows(
                 Flow.owner_id == user.user_id,
                 Flow.id.in_(collab_flow_ids) if collab_flow_ids else False,
                 Flow.is_published == True,
-                # Show unowned flows to instructors (legacy/migration)
-                Flow.owner_id.is_(None),
             )
         ).order_by(Flow.last_modified.desc()).all()
     else:

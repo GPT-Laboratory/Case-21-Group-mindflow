@@ -172,4 +172,5 @@ def auth_session(request: Request):
 def logout(request: Request):
     response = JSONResponse({"message": "Logged out"})
     response.delete_cookie(key=AUTH_SESSION_COOKIE, path="/")
+    response.delete_cookie(key="lti_session_token", path="/")
     return response
