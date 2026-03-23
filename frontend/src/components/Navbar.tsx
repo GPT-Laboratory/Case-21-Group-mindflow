@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Home, Database, Workflow, User, LogIn, KeyRound, LogOut } from 'lucide-react';
+import { FileText, Home, Brain, Workflow, User, LogIn, KeyRound, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/useAuthStore';
 import {
@@ -83,8 +83,8 @@ const Navbar: React.FC = () => {
     return (
         <nav className="h-14 border-b border-border bg-card flex items-center justify-between px-6 shrink-0 z-50">
             <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <Database className="w-6 h-6 text-primary" />
-                <span className="font-bold text-lg tracking-tight">Agentic Flow</span>
+                <Brain className="w-6 h-6 text-primary" />
+                <span className="font-bold text-lg tracking-tight">Mindflow</span>
             </Link>
 
             <div className="flex items-center gap-1">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, FileText, Network, Plus } from 'lucide-react';
+import { ArrowRight, FileText, Brain, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const HomeLanding: React.FC = () => {
@@ -11,9 +11,9 @@ const HomeLanding: React.FC = () => {
       <div className="max-w-5xl mx-auto px-6 py-16">
         <div className="text-center mb-14">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
-            <Network className="w-8 h-8 text-primary" />
+            <Brain className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-3">Agentic Content Flow</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-3">Mindflow</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Build, manage, and evaluate mindmap-based exercises with AI-assisted workflows.
           </p>

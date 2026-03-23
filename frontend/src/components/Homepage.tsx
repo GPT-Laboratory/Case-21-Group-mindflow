@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Network, Loader2, Trash2, Globe } from 'lucide-react';
+import { Plus, ArrowRight, Brain, Loader2, Trash2, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -80,10 +80,10 @@ const Homepage: React.FC = () => {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
-            <Network className="w-8 h-8 text-primary" />
+            <Brain className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-4xl font-bold tracking-tight mb-3">
-            Agentic Content Flow
+            Mindflow
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {isInstructor
@@ -119,7 +119,7 @@ const Homepage: React.FC = () => {
                 {ownFlows.length === 0 ? (
                   <Card className="border-dashed">
                     <CardContent className="flex flex-col items-center justify-center py-12">
-                      <Network className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                      <Brain className="w-12 h-12 text-muted-foreground/40 mb-4" />
                       <p className="text-muted-foreground mb-4">No flows yet. Create your first one to get started.</p>
                       <Button variant="outline" onClick={() => navigate('/flows/new')} className="gap-2">
                         <Plus className="w-4 h-4" />
@@ -155,7 +155,7 @@ const Homepage: React.FC = () => {
             {!isInstructor && publishedFlows.length === 0 && (
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Network className="w-12 h-12 text-muted-foreground/40 mb-4" />
+                  <Brain className="w-12 h-12 text-muted-foreground/40 mb-4" />
                   <p className="text-muted-foreground">
                     {authenticated
                       ? 'No exercises available yet. Your instructor will publish them when ready.'

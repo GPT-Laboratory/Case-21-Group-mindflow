@@ -6,7 +6,7 @@ from routers import rag, eval, flows, node_types, data, lti, flow_config, auth
 # Create Database tables (in a real scenario, use alembic for migrations)
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Agentic Content Flow API")
+app = FastAPI(title="Mindflow API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +28,7 @@ app.include_router(flow_config.router, prefix="/api/flows", tags=["Flow Config"]
 @app.get("/")
 def read_root():
     return {
-        "message": "Agentic Content Flow API is running",
+        "message": "Mindflow API is running",
         "endpoints": {
             "GET /": "API Information",
             "GET /api/flows": "Get all flows",
