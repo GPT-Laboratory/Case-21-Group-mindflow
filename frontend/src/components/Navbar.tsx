@@ -20,6 +20,7 @@ const Navbar: React.FC = () => {
         userName,
         userEmail,
         roles,
+        isInstructor,
         loading,
         fetchSession,
         startGoogleLogin,
@@ -35,23 +36,27 @@ const Navbar: React.FC = () => {
             label: 'Home',
             path: '/',
             icon: <Home className="w-4 h-4" />,
+            instructorOnly: false,
         },
         {
             label: 'Documents',
             path: '/documents',
             icon: <FileText className="w-4 h-4" />,
+            instructorOnly: true,
         },
         {
             label: 'Flows',
             path: '/flows',
             icon: <Workflow className="w-4 h-4" />,
+            instructorOnly: false,
         },
         {
             label: 'LTI',
             path: '/lti',
             icon: <KeyRound className="w-4 h-4" />,
+            instructorOnly: true,
         },
-    ];
+    ].filter((item) => !item.instructorOnly || isInstructor);
 
     const isItemActive = (path: string): boolean => {
         if (path === '/') {

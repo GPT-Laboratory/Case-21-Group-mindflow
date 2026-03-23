@@ -253,9 +253,11 @@ def remove_collaborator(
     flow_id: str,
     user_id: str,
     db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_instructor),
 ):
     """Remove a collaborator from a flow."""
-    _get_flow_or_404(flow_id, db)
+    flow = _get_flow_or_404(flow_id, db)
+    _require_flow_owner(flow, user, db)
 
     collab = db.query(FlowCollaborator).filter(
         FlowCollaborator.flow_id == flow_id,
