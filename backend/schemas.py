@@ -50,6 +50,8 @@ class FlowResponse(FlowBase):
     id: str
     lastModified: datetime
     createdAt: datetime
+    owner_id: Optional[str] = None
+    is_published: bool = False
 
     class Config:
         from_attributes = True

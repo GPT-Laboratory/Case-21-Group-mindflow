@@ -39,10 +39,13 @@ export const SelectProvider = ({ children }: { children: ReactNode }) => {
       if (isInputFocused) {
         return;
       }
-      
-      if (event.key === "Delete" || event.key === "Backspace") {
+
+      // macOS behavior: only Cmd+Backspace should trigger delete confirmation.
+      const isMacDeleteShortcut = event.metaKey && event.key === "Backspace";
+      if (isMacDeleteShortcut) {
         // Show confirmation dialog instead of directly deleting
         if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+          event.preventDefault();
           setShowDeleteDialog(true);
         }
       }

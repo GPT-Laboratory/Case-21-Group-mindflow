@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models.flow import Flow, FlowCollaborator
+from services.auth_service import CurrentUser, require_instructor
 
 router = APIRouter()
 
@@ -92,14 +93,31 @@ def _generate_access_key() -> str:
     return secrets.token_hex(4).upper()
 
 
+def _require_flow_owner(flow: Flow, user: CurrentUser, db: Session):
+    """Raise 403 if user is not owner or collaborator of the flow."""
+    if flow.owner_id == user.user_id:
+        return
+    collab = db.query(FlowCollaborator).filter(
+        FlowCollaborator.flow_id == flow.id,
+        FlowCollaborator.user_id == user.user_id,
+    ).first()
+    if not collab:
+        raise HTTPException(status_code=403, detail="Only the owner or collaborators can modify this flow")
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
 
 @router.get("/{flow_id}/config")
-def get_flow_config(flow_id: str, db: Session = Depends(get_db)):
+def get_flow_config(
+    flow_id: str,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_instructor),
+):
     """Get flow configuration/settings."""
     flow = _get_flow_or_404(flow_id, db)
+    _require_flow_owner(flow, user, db)
     collaborators = _get_collaborators(flow_id, db)
 
     return FlowConfigResponse(
@@ -123,9 +141,11 @@ def update_flow_config(
     flow_id: str,
     updates: FlowConfigUpdate,
     db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_instructor),
 ):
     """Update flow configuration/settings (partial update)."""
     flow = _get_flow_or_404(flow_id, db)
+    _require_flow_owner(flow, user, db)
 
     if updates.name is not None:
         flow.name = updates.name
@@ -167,9 +187,14 @@ def update_flow_config(
 
 
 @router.post("/{flow_id}/config/regenerate-key")
-def regenerate_access_key(flow_id: str, db: Session = Depends(get_db)):
+def regenerate_access_key(
+    flow_id: str,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_instructor),
+):
     """Generate a new access key for the flow."""
     flow = _get_flow_or_404(flow_id, db)
+    _require_flow_owner(flow, user, db)
     flow.access_key = _generate_access_key()
     flow.access_key_required = True
     db.commit()
@@ -182,9 +207,14 @@ def regenerate_access_key(flow_id: str, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 @router.get("/{flow_id}/collaborators")
-def list_collaborators(flow_id: str, db: Session = Depends(get_db)):
+def list_collaborators(
+    flow_id: str,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_instructor),
+):
     """List collaborators for a flow."""
-    _get_flow_or_404(flow_id, db)
+    flow = _get_flow_or_404(flow_id, db)
+    _require_flow_owner(flow, user, db)
     return {"collaborators": _get_collaborators(flow_id, db)}
 
 
@@ -193,9 +223,11 @@ def add_collaborator(
     flow_id: str,
     data: CollaboratorAdd,
     db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_instructor),
 ):
     """Add a collaborator to a flow."""
     flow = _get_flow_or_404(flow_id, db)
+    _require_flow_owner(flow, user, db)
 
     # Check if already a collaborator
     existing = db.query(FlowCollaborator).filter(

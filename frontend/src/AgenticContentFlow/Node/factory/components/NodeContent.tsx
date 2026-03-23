@@ -18,6 +18,7 @@ export const NodeContent: React.FC<NodeContentProps> = ({ node, expanded }) => {
   const { setNodes } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const isFocusedRef = React.useRef(false);
   const MIN_TEXTAREA_HEIGHT = 48;
 
   const configDescription = node?.data?.config?.description;
@@ -45,6 +46,15 @@ export const NodeContent: React.FC<NodeContentProps> = ({ node, expanded }) => {
   const content = normalizeContent(
     node?.data?.details ?? node?.data?.description ?? node?.data?.functionDescription ?? ''
   );
+
+  // Keep a local draft to avoid caret jumps caused by node-level rerenders.
+  const [draftContent, setDraftContent] = React.useState(content);
+
+  React.useEffect(() => {
+    if (!isFocusedRef.current && draftContent !== content) {
+      setDraftContent(content);
+    }
+  }, [content, draftContent]);
 
   const handleContentChange = React.useCallback(
     (value: string) => {
@@ -100,20 +110,28 @@ export const NodeContent: React.FC<NodeContentProps> = ({ node, expanded }) => {
     if (!id) return;
     const rafId = window.requestAnimationFrame(() => updateNodeInternals(id));
     return () => window.cancelAnimationFrame(rafId);
-  }, [content, id, resizeTextarea, updateNodeInternals]);
+  }, [draftContent, id, resizeTextarea, updateNodeInternals]);
 
   return (
     <div className="px-2 pb-2 pt-1">
       <Textarea
         ref={textareaRef}
-        value={content}
+        value={draftContent}
         placeholder="Add content"
         rows={1}
         className="nodrag nopan min-h-[48px] resize-none overflow-hidden rounded-md border border-slate-300/70 bg-slate-100/80 px-2 py-1.5 text-sm leading-5 text-slate-700 shadow-none placeholder:text-slate-500 focus-visible:border-slate-400 focus-visible:ring-0 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-200 dark:placeholder:text-slate-400"
         onPointerDown={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
+        onFocus={() => {
+          isFocusedRef.current = true;
+        }}
+        onBlur={() => {
+          isFocusedRef.current = false;
+        }}
         onChange={(event) => {
-          handleContentChange(event.target.value);
+          const nextValue = event.target.value;
+          setDraftContent(nextValue);
+          handleContentChange(nextValue);
           resizeTextarea();
         }}
       />

@@ -306,6 +306,7 @@ export const Flow: React.FC<FlowProps> = memo(({ children }) => {
         onSelectionStart={isFactorySystemReady ? handleSelectionDragStart : undefined}
         onSelectionEnd={isFactorySystemReady ? handleSelectionEnd : undefined}
         selectionKeyCode="Control"
+        deleteKeyCode={null}
         //multiSelectionKeyCode="Control"
         fitView
         zoomOnScroll={isFactorySystemReady}

@@ -12,7 +12,6 @@ from typing import Optional
 from datetime import datetime, timedelta, timezone
 
 import requests
-from oauthlib.oauth1 import SignatureOnlyEndpoint, RequestValidator
 from sqlalchemy.orm import Session
 
 from models.lti_credential import LTICredential
@@ -21,125 +20,110 @@ from models.lti_session import LTISession
 
 
 # ---------------------------------------------------------------------------
-# OAuth 1.0 Request Validator (similar to educhat's LTIRequestValidator)
-# ---------------------------------------------------------------------------
-
-class LTIRequestValidator(RequestValidator):
-    """Validates LTI OAuth 1.0 requests against stored credentials."""
-
-    def __init__(self, db: Session):
-        super().__init__()
-        self.db = db
-        self._cached_secrets = {}
-
-    @property
-    def enforce_ssl(self):
-        return False
-
-    @property
-    def check_nonce(self):
-        return True
-
-    @property
-    def dummy_client(self):
-        return "DUMMY_KEY"
-
-    @property
-    def client_key_length(self):
-        return (1, 256)
-
-    @property
-    def nonce_length(self):
-        return (1, 256)
-
-    def validate_client_key(self, client_key, request):
-        cred = self.db.query(LTICredential).filter(
-            LTICredential.consumer_key == client_key
-        ).first()
-        return cred is not None
-
-    def get_client_secret(self, client_key, request):
-        if client_key in self._cached_secrets:
-            return self._cached_secrets[client_key]
-        cred = self.db.query(LTICredential).filter(
-            LTICredential.consumer_key == client_key
-        ).first()
-        if cred:
-            self._cached_secrets[client_key] = cred.consumer_secret
-            return cred.consumer_secret
-        return "DUMMY_SECRET"
-
-    def validate_timestamp_and_nonce(self, client_key, timestamp, nonce,
-                                     request_token=None, access_token=None):
-        if not client_key or not timestamp or not nonce:
-            return False
-
-        try:
-            ts = int(timestamp)
-        except (TypeError, ValueError):
-            return False
-
-        max_age_seconds = int(os.getenv("LTI_MAX_TIMESTAMP_AGE_SECONDS", "300"))
-        now = int(time.time())
-        if abs(now - ts) > max_age_seconds:
-            return False
-
-        existing_nonce = self.db.query(LTINonce).filter(
-            LTINonce.consumer_key == client_key,
-            LTINonce.nonce == nonce,
-        ).first()
-        if existing_nonce:
-            return False
-
-        nonce_record = LTINonce(
-            consumer_key=client_key,
-            nonce=nonce,
-            oauth_timestamp=str(timestamp),
-        )
-        self.db.add(nonce_record)
-        self.db.commit()
-        return True
-
-    def get_request_token_secret(self, client_key, token, request):
-        return ""
-
-    def get_access_token_secret(self, client_key, token, request):
-        return ""
-
-
-# ---------------------------------------------------------------------------
 # OAuth Signature Verification
 # ---------------------------------------------------------------------------
+
+def _pct_encode(s: str) -> str:
+    """RFC 5849 §3.6 percent-encoding (unreserved characters only)."""
+    return urllib.parse.quote(str(s), safe='')
+
+
+def _normalize_base_uri(uri: str) -> str:
+    """Normalize the base string URI per RFC 5849 §3.4.1.2."""
+    p = urllib.parse.urlparse(uri)
+    scheme = p.scheme.lower()
+    host = (p.hostname or "").lower()
+    port = p.port
+    if (scheme == "http" and port == 80) or (scheme == "https" and port == 443):
+        port = None
+    netloc = f"{host}:{port}" if port else host
+    return f"{scheme}://{netloc}{p.path}"
+
 
 def verify_lti_signature(
     uri: str,
     http_method: str,
-    body: dict,
+    body: str,
     headers: dict,
     db: Session
 ) -> tuple[bool, Optional[str]]:
     """
-    Verify OAuth 1.0 signature on an LTI launch request.
+    Verify an OAuth 1.0 HMAC-SHA1 signature on an LTI launch request.
+
+    Uses a direct RFC 5849 implementation instead of oauthlib, which has
+    known issues with signature verification in proxied environments
+    (see also: educhat's ``SignatureOnlyEndpointCompromised`` workaround).
+
+    ``body`` must be the raw application/x-www-form-urlencoded string exactly
+    as received from the LMS.
+
     Returns (is_valid, error_message).
     """
-    validator = LTIRequestValidator(db)
-    endpoint = SignatureOnlyEndpoint(validator)
+    import base64
 
-    # Build the body string for oauthlib
-    body_str = urllib.parse.urlencode(body, doseq=True)
+    # Parse raw body params
+    params = urllib.parse.parse_qsl(body, keep_blank_values=True)
+    params_dict = dict(params)
 
+    received_sig = params_dict.get("oauth_signature")
+    if not received_sig:
+        return False, "Missing oauth_signature"
+
+    consumer_key = params_dict.get("oauth_consumer_key", "")
+    if not consumer_key:
+        return False, "Missing oauth_consumer_key"
+
+    sig_method = params_dict.get("oauth_signature_method", "")
+    if sig_method != "HMAC-SHA1":
+        return False, f"Unsupported signature method: {sig_method}"
+
+    # Look up the consumer secret
+    credential = db.query(LTICredential).filter(
+        LTICredential.consumer_key == consumer_key
+    ).first()
+    if not credential:
+        return False, "Unknown consumer key"
+
+    # Validate timestamp
+    timestamp = params_dict.get("oauth_timestamp", "")
     try:
-        valid, _request = endpoint.validate_request(
-            uri=uri,
-            http_method=http_method.upper(),
-            body=body_str,
-            headers=headers
-        )
-        if not valid:
-            return False, "Invalid OAuth signature"
-        return True, None
-    except Exception as e:
-        return False, f"OAuth verification error: {str(e)}"
+        ts = int(timestamp)
+    except (TypeError, ValueError):
+        return False, "Invalid timestamp"
+
+    max_age = int(os.getenv("LTI_MAX_TIMESTAMP_AGE_SECONDS", "300"))
+    if abs(int(time.time()) - ts) > max_age:
+        return False, f"Timestamp too old (delta > {max_age}s)"
+
+    # Check nonce replay
+    nonce = params_dict.get("oauth_nonce", "")
+    if nonce:
+        existing = db.query(LTINonce).filter(
+            LTINonce.consumer_key == consumer_key,
+            LTINonce.nonce == nonce,
+        ).first()
+        if existing:
+            return False, "Nonce already used"
+        db.add(LTINonce(consumer_key=consumer_key, nonce=nonce, oauth_timestamp=timestamp))
+        db.commit()
+
+    # Build signature base string per RFC 5849 §3.4.1
+    base_uri = _normalize_base_uri(uri)
+    params_no_sig = [(k, v) for k, v in params if k != "oauth_signature"]
+    encoded_pairs = sorted((_pct_encode(k), _pct_encode(v)) for k, v in params_no_sig)
+    norm_params = "&".join(f"{k}={v}" for k, v in encoded_pairs)
+    base_string = f"{http_method.upper()}&{_pct_encode(base_uri)}&{_pct_encode(norm_params)}"
+
+    # HMAC-SHA1
+    signing_key = f"{_pct_encode(credential.consumer_secret)}&"
+    expected_sig = base64.b64encode(
+        hmac.new(signing_key.encode(), base_string.encode(), hashlib.sha1).digest()
+    ).decode()
+
+    if not hmac.compare_digest(expected_sig, received_sig):
+        return False, "Invalid OAuth signature"
+
+    return True, None
 
 
 # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ Provides:
   - POST /api/lti/credentials     — Create new LTI credentials
 """
 import os
+import urllib.parse
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -37,6 +38,32 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 LTI_SESSION_COOKIE = "lti_session_token"
 
 
+def _public_url(request: Request) -> str:
+    """
+    Reconstruct the public-facing URL the LMS used to reach this endpoint.
+
+    When behind a reverse proxy (Vite dev proxy, nginx, etc.) the URL that
+    FastAPI sees (request.url) points at the internal backend, not the
+    public origin the LMS signed its OAuth request against.  We try, in
+    order:
+      1. X-Forwarded-Proto / X-Forwarded-Host headers (set by nginx, etc.)
+      2. FRONTEND_URL env-var + the request path  (covers the Vite dev proxy
+         which sets changeOrigin but no forwarded headers)
+      3. Fall back to request.url as-is (direct access, no proxy)
+    """
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_proto and forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}{request.url.path}"
+
+    # Vite dev proxy (changeOrigin=true) rewrites Host but doesn't add
+    # forwarded headers.  Use the configured FRONTEND_URL instead.
+    if FRONTEND_URL:
+        return f"{FRONTEND_URL.rstrip('/')}{request.url.path}"
+
+    return str(request.url)
+
+
 def _cookie_settings(request: Request) -> dict:
     forwarded_proto = request.headers.get("x-forwarded-proto", "")
     is_https = request.url.scheme == "https" or forwarded_proto == "https"
@@ -63,9 +90,10 @@ async def lti_launch(request: Request, db: Session = Depends(get_db)):
     LMS sends a signed POST with LTI parameters.
     Validates OAuth signature, creates session, and redirects to frontend.
     """
-    # Parse form data (LTI launches are form-encoded POST)
-    form_data = await request.form()
-    body = dict(form_data)
+    # Read the raw form body so the OAuth signature is verified against the
+    # exact bytes the LMS signed (avoids decode-then-re-encode mismatches).
+    raw_body = (await request.body()).decode("utf-8")
+    body = dict(urllib.parse.parse_qsl(raw_body, keep_blank_values=True))
 
     if not is_lti_launch(body):
         raise HTTPException(status_code=400, detail="Not a valid LTI launch request")
@@ -79,18 +107,13 @@ async def lti_launch(request: Request, db: Session = Depends(get_db)):
     if not credential:
         raise HTTPException(status_code=403, detail="Unknown consumer key")
 
-    # Verify OAuth signature
-    request_url = str(request.url)
-    # Use the forwarded URL if behind a proxy
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    forwarded_host = request.headers.get("x-forwarded-host")
-    if forwarded_proto and forwarded_host:
-        request_url = f"{forwarded_proto}://{forwarded_host}{request.url.path}"
+    # Verify OAuth signature against the public-facing URL
+    request_url = _public_url(request)
 
     is_valid, error = verify_lti_signature(
         uri=request_url,
         http_method="POST",
-        body=body,
+        body=raw_body,
         headers=dict(request.headers),
         db=db,
     )
@@ -132,8 +155,8 @@ async def lti_exercise_launch(
     Similar to /launch but scoped to a specific exercise (flow).
     The exercise_id maps to the exercise in the evaluation system.
     """
-    form_data = await request.form()
-    body = dict(form_data)
+    raw_body = (await request.body()).decode("utf-8")
+    body = dict(urllib.parse.parse_qsl(raw_body, keep_blank_values=True))
 
     if not is_lti_launch(body):
         raise HTTPException(status_code=400, detail="Not a valid LTI launch request")
@@ -146,17 +169,13 @@ async def lti_exercise_launch(
     if not credential:
         raise HTTPException(status_code=403, detail="Unknown consumer key")
 
-    # Verify OAuth signature
-    request_url = str(request.url)
-    forwarded_proto = request.headers.get("x-forwarded-proto")
-    forwarded_host = request.headers.get("x-forwarded-host")
-    if forwarded_proto and forwarded_host:
-        request_url = f"{forwarded_proto}://{forwarded_host}{request.url.path}"
+    # Verify OAuth signature against the public-facing URL
+    request_url = _public_url(request)
 
     is_valid, error = verify_lti_signature(
         uri=request_url,
         http_method="POST",
-        body=body,
+        body=raw_body,
         headers=dict(request.headers),
         db=db,
     )
