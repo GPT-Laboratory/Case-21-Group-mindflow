@@ -4,7 +4,7 @@ import { useNodeContext } from '../Node/context/useNodeContext';
 import { useEdgeContext } from '../Edge/store/useEdgeContext';
 import { useCourseData } from '@/hooks/CourseDataContext';
 import { toast } from 'sonner';
-import { evalApi } from '@/services/apiClient';
+import { evalApi, ltiApi } from '@/services/apiClient';
 import {
     Dialog,
     DialogContent,
@@ -31,6 +31,7 @@ const SubmitDiagramControl: React.FC = () => {
     const [showPrompt, setShowPrompt] = useState(false);
     const [showResultModal, setShowResultModal] = useState(false);
     const [evaluationResult, setEvaluationResult] = useState<{ is_valid: boolean; feedback: string; points?: number } | null>(null);
+    const [gradePassbackStatus, setGradePassbackStatus] = useState<string | null>(null);
 
     const { nodes } = useNodeContext();
     const { edges } = useEdgeContext();
@@ -59,6 +60,31 @@ const SubmitDiagramControl: React.FC = () => {
             toast.success('Diagram submitted successfully!');
             console.log('Evaluation Result:', result);
             setEvaluationResult(result);
+            setGradePassbackStatus(null);
+
+            const numericPoints = typeof result.points === 'number' ? result.points : null;
+            if (numericPoints !== null) {
+                try {
+                    const session = await ltiApi.getSession();
+                    if (session.authenticated && session.has_outcome_service) {
+                        const passback = await ltiApi.submitGrade(numericPoints, 100);
+                        if (passback.success) {
+                            const msg = passback.message || 'Grade submitted to LMS.';
+                            setGradePassbackStatus(msg);
+                            toast.success(msg);
+                        } else {
+                            const msg = passback.error || 'Grade passback failed.';
+                            setGradePassbackStatus(msg);
+                            toast.error(msg);
+                        }
+                    }
+                } catch (passbackError) {
+                    const msg = passbackError instanceof Error ? passbackError.message : 'Grade passback failed.';
+                    setGradePassbackStatus(msg);
+                    toast.error(msg);
+                }
+            }
+
             setShowResultModal(true);
             setShowPrompt(false);
         } catch (error) {
@@ -130,6 +156,14 @@ const SubmitDiagramControl: React.FC = () => {
                                         {evaluationResult.feedback || "No feedback provided."}
                                     </p>
                                 </div>
+                                {gradePassbackStatus && (
+                                    <div className="space-y-2">
+                                        <span className="font-semibold text-sm">LTI Grade Passback:</span>
+                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                            {gradePassbackStatus}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="flex justify-center flex-col items-center">
