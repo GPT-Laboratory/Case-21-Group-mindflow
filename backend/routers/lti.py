@@ -17,8 +17,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db
+from models.auth_user import AuthUser
 from models.lti_credential import LTICredential
 from models.lti_session import LTISession
+from services.auth_service import require_authenticated_user
 from services.lti_service import (
     is_lti_launch,
     verify_lti_signature,
@@ -33,6 +35,21 @@ router = APIRouter()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 LTI_SESSION_COOKIE = "lti_session_token"
+
+
+def _cookie_settings(request: Request) -> dict:
+    forwarded_proto = request.headers.get("x-forwarded-proto", "")
+    is_https = request.url.scheme == "https" or forwarded_proto == "https"
+
+    # Browsers reject SameSite=None without Secure.
+    same_site = "none" if is_https else "lax"
+    return {
+        "max_age": 86400,
+        "httponly": True,
+        "samesite": same_site,
+        "secure": is_https,
+        "path": "/",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -99,11 +116,7 @@ async def lti_launch(request: Request, db: Session = Depends(get_db)):
     response.set_cookie(
         key=LTI_SESSION_COOKIE,
         value=lti_session.session_token,
-        max_age=86400,  # 24 hours
-        httponly=True,
-        samesite="none",
-        secure=request.url.scheme == "https",
-        path="/",
+        **_cookie_settings(request),
     )
     return response
 
@@ -172,11 +185,7 @@ async def lti_exercise_launch(
     response.set_cookie(
         key=LTI_SESSION_COOKIE,
         value=lti_session.session_token,
-        max_age=86400,
-        httponly=True,
-        samesite="none",
-        secure=request.url.scheme == "https",
-        path="/",
+        **_cookie_settings(request),
     )
     return response
 
@@ -267,35 +276,106 @@ def submit_grade_endpoint(
 # ---------------------------------------------------------------------------
 
 class CredentialCreate(BaseModel):
-    description: Optional[str] = ""
+    action: str
 
 
 @router.get("/credentials")
-def list_credentials(db: Session = Depends(get_db)):
-    """List all LTI consumer credentials."""
-    credentials = db.query(LTICredential).all()
-    return [
-        {
-            "id": c.id,
-            "consumer_key": c.consumer_key,
-            "consumer_secret": c.consumer_secret,
-            "description": c.description,
-            "created_at": c.created_at.isoformat() if c.created_at else None,
-        }
-        for c in credentials
-    ]
+def get_credentials(
+    current_user: AuthUser = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """Return current user's credentials or auto-generate a new pair."""
+    credential = db.query(LTICredential).filter(
+        LTICredential.user_id == current_user.id
+    ).first()
+
+    if not credential:
+        credential = LTICredential(
+            user_id=current_user.id,
+            consumer_key=LTICredential.generate_key(),
+            consumer_secret=LTICredential.generate_secret(),
+            description=f"Google user: {current_user.email}",
+        )
+        db.add(credential)
+        db.commit()
+        db.refresh(credential)
+
+    return {
+        "consumerKey": credential.consumer_key,
+        "consumerSecret": credential.consumer_secret,
+    }
 
 
 @router.post("/credentials")
-def create_credential(
+def regenerate_credential(
     data: CredentialCreate,
+    current_user: AuthUser = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
-    """Create a new LTI consumer key/secret pair."""
+    """Regenerate current user's LTI secret."""
+    if data.action != "regenerate":
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    credential = db.query(LTICredential).filter(
+        LTICredential.user_id == current_user.id
+    ).first()
+    if not credential:
+        raise HTTPException(status_code=404, detail="No credentials found. Call GET first")
+
+    credential.consumer_secret = LTICredential.generate_secret()
+    db.commit()
+    db.refresh(credential)
+
+    return {
+        "consumerKey": credential.consumer_key,
+        "consumerSecret": credential.consumer_secret,
+    }
+
+
+@router.delete("/credentials/{credential_id}")
+def delete_credential(
+    credential_id: str,
+    current_user: AuthUser = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """Delete only the current user's credential."""
+    credential = db.query(LTICredential).filter(
+        LTICredential.id == credential_id,
+        LTICredential.user_id == current_user.id,
+    ).first()
+    if not credential:
+        raise HTTPException(status_code=404, detail="Credential not found")
+
+    db.delete(credential)
+    db.commit()
+    return {"message": "Credential deleted"}
+
+
+@router.post("/credentials/create")
+def create_credential_legacy(
+    current_user: AuthUser = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """Legacy endpoint retained for older frontend versions."""
+    existing = db.query(LTICredential).filter(
+        LTICredential.user_id == current_user.id
+    ).first()
+    if existing:
+        return {
+            "id": existing.id,
+            "consumer_key": existing.consumer_key,
+            "consumer_secret": existing.consumer_secret,
+            "description": existing.description,
+            "message": "LTI credentials already exist for this user.",
+            "launch_url": "/api/lti/launch",
+            "exercise_launch_url_template": "/api/lti/exercise/{exercise_id}",
+        }
+
     credential = LTICredential(
+        user_id=current_user.id,
         consumer_key=LTICredential.generate_key(),
         consumer_secret=LTICredential.generate_secret(),
-        description=data.description,
+        description=f"Google user: {current_user.email}",
     )
     db.add(credential)
     db.commit()
@@ -310,17 +390,3 @@ def create_credential(
         "launch_url": "/api/lti/launch",
         "exercise_launch_url_template": "/api/lti/exercise/{exercise_id}",
     }
-
-
-@router.delete("/credentials/{credential_id}")
-def delete_credential(credential_id: str, db: Session = Depends(get_db)):
-    """Delete an LTI consumer credential."""
-    credential = db.query(LTICredential).filter(
-        LTICredential.id == credential_id
-    ).first()
-    if not credential:
-        raise HTTPException(status_code=404, detail="Credential not found")
-
-    db.delete(credential)
-    db.commit()
-    return {"message": "Credential deleted"}

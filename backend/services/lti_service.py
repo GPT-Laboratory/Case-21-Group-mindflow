@@ -4,6 +4,7 @@ Based on patterns from css_artist and proj-s2025-educhat-part2 projects.
 """
 import hashlib
 import hmac
+import os
 import time
 import uuid
 import urllib.parse
@@ -15,6 +16,7 @@ from oauthlib.oauth1 import SignatureOnlyEndpoint, RequestValidator
 from sqlalchemy.orm import Session
 
 from models.lti_credential import LTICredential
+from models.lti_nonce import LTINonce
 from models.lti_session import LTISession
 
 
@@ -36,7 +38,7 @@ class LTIRequestValidator(RequestValidator):
 
     @property
     def check_nonce(self):
-        return False
+        return True
 
     @property
     def dummy_client(self):
@@ -69,7 +71,33 @@ class LTIRequestValidator(RequestValidator):
 
     def validate_timestamp_and_nonce(self, client_key, timestamp, nonce,
                                      request_token=None, access_token=None):
-        # Be lenient with timestamps (LMS clocks may drift)
+        if not client_key or not timestamp or not nonce:
+            return False
+
+        try:
+            ts = int(timestamp)
+        except (TypeError, ValueError):
+            return False
+
+        max_age_seconds = int(os.getenv("LTI_MAX_TIMESTAMP_AGE_SECONDS", "300"))
+        now = int(time.time())
+        if abs(now - ts) > max_age_seconds:
+            return False
+
+        existing_nonce = self.db.query(LTINonce).filter(
+            LTINonce.consumer_key == client_key,
+            LTINonce.nonce == nonce,
+        ).first()
+        if existing_nonce:
+            return False
+
+        nonce_record = LTINonce(
+            consumer_key=client_key,
+            nonce=nonce,
+            oauth_timestamp=str(timestamp),
+        )
+        self.db.add(nonce_record)
+        self.db.commit()
         return True
 
     def get_request_token_secret(self, client_key, token, request):

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import rag, eval, flows, node_types, data, lti, flow_config
+from routers import rag, eval, flows, node_types, data, lti, flow_config, auth
 
 # Create Database tables (in a real scenario, use alembic for migrations)
 Base.metadata.create_all(bind=engine)
@@ -21,6 +21,7 @@ app.include_router(eval.router, prefix="/api/eval", tags=["Evaluation"])
 app.include_router(flows.router, prefix="/api/flows", tags=["Flows"])
 app.include_router(node_types.router, prefix="/api/nodeTypes", tags=["Node Types"])
 app.include_router(data.router, prefix="/api", tags=["Data"])
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(lti.router, prefix="/api/lti", tags=["LTI"])
 app.include_router(flow_config.router, prefix="/api/flows", tags=["Flow Config"])
 
@@ -46,6 +47,10 @@ def read_root():
             "POST /api/data": "Generic data endpoint",
             "GET /api/received": "View all received data",
             "DELETE /api/received": "Clear received data",
+            "GET /api/auth/google/login": "Start Google OAuth login",
+            "GET /api/auth/google/callback": "Google OAuth callback",
+            "GET /api/auth/session": "Get current auth session",
+            "POST /api/auth/logout": "Clear auth session",
             "GET /api/rag/documents": "Get uploaded documents",
             "POST /api/rag/upload": "Upload and process document",
             "POST /api/eval/evaluate": "Evaluate flow with LLM",

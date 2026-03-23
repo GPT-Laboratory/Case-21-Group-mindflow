@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -34,5 +34,12 @@ from models.topic import Topic
 from models.evaluation import EvaluationResult
 from models.lti_credential import LTICredential
 from models.lti_session import LTISession
+from models.lti_nonce import LTINonce
+from models.auth_user import AuthUser
 
 Base.metadata.create_all(bind=engine)
+
+# Lightweight schema sync for older local DBs where these columns may not exist.
+with engine.begin() as conn:
+    conn.execute(text("ALTER TABLE lti_credentials ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS idx_lti_credentials_user_id ON lti_credentials(user_id)"))
