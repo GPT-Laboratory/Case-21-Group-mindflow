@@ -48,6 +48,8 @@ export interface FlowData {
     nodes: any[];
     edges: any[];
     metadata?: Record<string, any>;
+    owner_id?: string | null;
+    is_published?: boolean;
 }
 
 export interface FlowPayload {
@@ -343,7 +345,7 @@ export const ltiApi = {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
     },
 
-    getSession: async (): Promise<{ authenticated: boolean; user_name?: string; user_email?: string; roles?: string; exercise_id?: string; has_outcome_service?: boolean }> => {
+    getSession: async (): Promise<{ authenticated: boolean; user_id?: string; user_name?: string; user_email?: string; roles?: string; exercise_id?: string; has_outcome_service?: boolean }> => {
         const response = await fetch('/api/lti/session');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();

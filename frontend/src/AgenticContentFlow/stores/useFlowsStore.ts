@@ -19,6 +19,8 @@ export interface Flow {
   nodes: Node[];
   edges: Edge[];
   metadata?: Record<string, any>;
+  owner_id?: string | null;
+  is_published?: boolean;
 }
 
 /**
