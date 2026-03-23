@@ -292,25 +292,47 @@ export const flowConfigApi = {
 // ─── LTI ─────────────────────────────────────────────────────────────────────
 
 export interface LTICredential {
-    id: string;
-    consumer_key: string;
-    consumer_secret: string;
-    description: string;
-    created_at: string | null;
+    consumerKey: string;
+    consumerSecret: string;
 }
 
+export interface AuthSession {
+    authenticated: boolean;
+    provider?: string;
+    user_id?: string;
+    user_name?: string;
+    user_email?: string;
+}
+
+export const authApi = {
+    getSession: async (): Promise<AuthSession> => {
+        const response = await fetch('/api/auth/session');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
+    startGoogleLogin: (): void => {
+        window.location.href = '/api/auth/google/login';
+    },
+
+    logout: async (): Promise<void> => {
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    },
+};
+
 export const ltiApi = {
-    getCredentials: async (): Promise<LTICredential[]> => {
+    getCredentials: async (): Promise<LTICredential> => {
         const response = await fetch('/api/lti/credentials');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     },
 
-    createCredential: async (description?: string): Promise<LTICredential & { launch_url: string; exercise_launch_url_template: string }> => {
+    regenerateCredential: async (): Promise<LTICredential> => {
         const response = await fetch('/api/lti/credentials', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: description || '' }),
+            body: JSON.stringify({ action: 'regenerate' }),
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
@@ -325,5 +347,19 @@ export const ltiApi = {
         const response = await fetch('/api/lti/session');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
+    },
+
+    submitGrade: async (points: number, max_points: number = 100): Promise<{ success: boolean; message?: string; error?: string; response_body?: string }> => {
+        const response = await fetch('/api/lti/submit-grade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ points, max_points }),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error((payload as any).detail || (payload as any).error || `HTTP ${response.status}`);
+        }
+        return payload;
     },
 };

@@ -1,10 +1,34 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Home, Database, Workflow } from 'lucide-react';
+import { FileText, Home, Database, Workflow, User, LogIn, KeyRound, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/useAuthStore';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Navbar: React.FC = () => {
     const location = useLocation();
+    const {
+        authenticated,
+        provider,
+        userName,
+        userEmail,
+        roles,
+        loading,
+        fetchSession,
+        startGoogleLogin,
+        logout,
+    } = useAuthStore();
+
+    useEffect(() => {
+        fetchSession();
+    }, [fetchSession]);
 
     const navItems = [
         {
@@ -22,6 +46,11 @@ const Navbar: React.FC = () => {
             path: '/flows',
             icon: <Workflow className="w-4 h-4" />,
         },
+        {
+            label: 'LTI',
+            path: '/lti',
+            icon: <KeyRound className="w-4 h-4" />,
+        },
     ];
 
     const isItemActive = (path: string): boolean => {
@@ -34,6 +63,16 @@ const Navbar: React.FC = () => {
         }
 
         return location.pathname === path || location.pathname.startsWith(`${path}/`);
+    };
+
+    const getInitials = (name: string | null): string => {
+        if (!name) return '?';
+        return name
+            .split(' ')
+            .map((part) => part[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
     };
 
     return (
@@ -62,7 +101,53 @@ const Navbar: React.FC = () => {
                 })}
             </div>
 
-            <div className="w-[100px]" /> {/* Spacer for balance */}
+            <div className="w-[100px] flex items-center justify-end">
+                {loading ? (
+                    <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                ) : authenticated ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                aria-label="User menu"
+                            >
+                                {getInitials(userName)}
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-sm font-medium leading-none">{userName}</p>
+                                    {userEmail && (
+                                        <p className="text-xs text-muted-foreground leading-none">{userEmail}</p>
+                                    )}
+                                    {roles && (
+                                        <p className="text-xs text-muted-foreground leading-none capitalize">{roles}</p>
+                                    )}
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                                <User className="w-3.5 h-3.5 mr-2" />
+                                Signed in via {provider === 'google' ? 'Google' : 'LTI'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => logout()}>
+                                <LogOut className="w-3.5 h-3.5 mr-2" />
+                                Sign out
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : (
+                    <button
+                        onClick={startGoogleLogin}
+                        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Sign in with Google to manage private LTI credentials"
+                    >
+                        <LogIn className="w-4 h-4" />
+                        <span className="text-xs font-medium">Google Login</span>
+                    </button>
+                )}
+            </div>
         </nav>
     );
 };

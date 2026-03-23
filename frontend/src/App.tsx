@@ -4,6 +4,7 @@ import DocumentManager from "./components/DocumentManager";
 import FlowSettings from "./components/FlowSettings";
 import Homepage from "./components/Homepage";
 import HomeLanding from "./components/HomeLanding";
+import LTISettings from "./components/LTISettings";
 import Navbar from "./components/Navbar";
 import { NotificationProvider } from "./AgenticContentFlow/Notifications";
 import { CourseDataProvider } from './hooks/CourseDataContext';
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/flows/new" element={<AgenticContentFlow />} />
                 <Route path="/flows/:flowId" element={<AgenticContentFlow />} />
                 <Route path="/flows/:flowId/settings" element={<FlowSettings />} />
+                <Route path="/lti" element={<LTISettings />} />
                 <Route path="/documents" element={<DocumentManager />} />
               </Routes>
             </div>
