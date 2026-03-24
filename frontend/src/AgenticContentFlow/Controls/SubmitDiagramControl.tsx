@@ -20,9 +20,6 @@ const SubmitDiagramControl: React.FC = () => {
         selectedDocumentId
     } = useCourseData();
 
-    // Debugging logs to verify the values
-    console.log('SubmitDiagramControl - selectedDocumentId:', selectedDocumentId);
-
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
     const [showResultModal, setShowResultModal] = useState(false);
@@ -47,7 +44,6 @@ const SubmitDiagramControl: React.FC = () => {
             });
 
             toast.success('Diagram submitted successfully!');
-            console.log('Evaluation Result:', result);
             setEvaluationResult(result);
             setGradePassbackStatus(null);
 
@@ -77,7 +73,11 @@ const SubmitDiagramControl: React.FC = () => {
             setShowResultModal(true);
             setShowPrompt(false);
         } catch (error) {
-            console.error('Submission failed:', error);
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : 'Evaluation failed. Please try again.';
+            toast.error(message);
         } finally {
             setIsSubmitting(false);
         }
