@@ -46,7 +46,6 @@ import { CodeImportExportControlsRegistration } from "./AST/ui/CodeImportExportC
 import { SaveFlowControlRegistration } from "./Controls/SaveFlowControlRegistration";
 import { FlowSettingsControlRegistration } from "./Controls/FlowSettingsControlRegistration";
 import SubmitDiagramRegistration from "./Controls/SubmitDiagramRegistration";
-import GlobalSelectorRegistration from "./Controls/GlobalSelectorRegistration";
 
 // Register edge types before any rendering occurs
 ensureEdgeTypesRegistered();
@@ -191,7 +190,6 @@ export function AgenticContentFlowContent() {
                       <CodeImportExportControlsRegistration />
                       <NodeSearchControlRegistration />
                       <SubmitDiagramRegistration />
-                      <GlobalSelectorRegistration />
                     </Flow>
                   </FlowContainer>
                 </div>

@@ -39,7 +39,6 @@ def get_validation_prompt(
     missing_topics,
     flow_topics,
     context,
-    exercise_id,
     total_db,
     missing_main_count,
     missing_detail_count

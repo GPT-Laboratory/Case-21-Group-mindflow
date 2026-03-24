@@ -101,25 +101,14 @@ Upload a course document. Chunking, embedding, and topic extraction run in the b
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `file` | file | ✅ | PDF or plain-text file |
-| `course_id` | string | ❌ | Course identifier |
-| `module_id` | string | ❌ | Module identifier |
-| `module_name` | string | ❌ | Human-readable module name |
-| `exercise_id` | string | ❌ | Exercise identifier (scopes RAG context) |
-| `exercise_name` | string | ❌ | Human-readable exercise name |
 
-**Response:** `DocumentResponse` — includes `id`, `filename`, `processing_status`, and all scope fields.
+**Response:** `DocumentResponse` — includes `id`, `filename`, `processing_status`.
 
 ---
 
 #### `GET /api/rag/documents`
 
-List all uploaded documents. Supports filtering via query params.
-
-| Param | Description |
-|---|---|
-| `course_id` | Filter by course |
-| `module_id` | Filter by module |
-| `exercise_id` | Filter by exercise |
+List all uploaded documents.
 
 ---
 
@@ -136,9 +125,7 @@ Run a semantic search over the embedded document chunks.
 | Param | Required | Description |
 |---|---|---|
 | `query` | ✅ | Natural language search string |
-| `course_id` | ✅ | Scope to a course |
-| `module_id` | ✅ | Scope to a module |
-| `exercise_id` | ❌ | Optionally narrow to a specific exercise |
+| `document_id` | ✅ | Scope to a specific document |
 
 **Response:** List of `{ content, metadata }` objects.
 

@@ -9,15 +9,13 @@ router = APIRouter()
 
 @router.post("/evaluate")
 def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):
-    print(f"--- Starting AI Evaluation for exercise: {request.exercise_id or 'Default'} ---")
+    print(f"--- Starting AI Evaluation for document: {request.document_id} ---")
     print(f"Input Flow JSON: {request.flow_data}")
     
     # Create the pending record
     eval_record = EvaluationResult(
         flow_data=request.flow_data,
-        course_id=request.course_id,
-        module_id=request.module_id,
-        exercise_id=request.exercise_id,
+        document_id=request.document_id,
         status="pending"
     )
     db.add(eval_record)
@@ -27,9 +25,7 @@ def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):
     try:
         result = validate_flow_with_rag(
             request.flow_data, 
-            request.course_id, 
-            request.module_id, 
-            request.exercise_id,
+            request.document_id, 
             db
         )
         

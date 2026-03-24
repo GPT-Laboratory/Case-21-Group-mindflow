@@ -12,6 +12,4 @@ class EvaluationResult(Base):
     feedback = Column(String, nullable=True)
     points = Column(Integer, nullable=True)
     
-    course_id = Column(String, index=True, nullable=True)
-    module_id = Column(String, index=True, nullable=True)
-    exercise_id = Column(String, index=True, nullable=True)
+    document_id = Column(Integer, index=True, nullable=True)

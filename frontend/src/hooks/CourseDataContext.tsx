@@ -4,15 +4,8 @@ import { useCourseData as useBaseCourseData } from './useCourseDataStore';
 import type { CourseData, Module, Exercise } from './useCourseDataStore';
 
 interface CourseDataContextType {
-    courseId: number;
-    modules: Module[];
-    exercises: Exercise[];
-    selectedModuleId: number | null;
-    selectedExerciseId: number | null;
-    currentModule: Module | null;
-    currentExercise: Exercise | null;
-    selectModule: (id: number) => void;
-    selectExercise: (id: number) => void;
+    selectedDocumentId: number | null;
+    setSelectedDocumentId: (id: number | null) => void;
 }
 
 const CourseDataContext = createContext<CourseDataContextType | undefined>(undefined);

@@ -21,10 +21,7 @@ def process_document_background(
     file_path: str, 
     filename: str, 
     doc_id: int, 
-    db: Session,
-    course_id: Optional[str] = None,
-    module_id: Optional[str] = None,
-    exercise_id: Optional[str] = None
+    db: Session
 ):
     try:
         # Generate embeddings and extract/save topics
@@ -32,10 +29,7 @@ def process_document_background(
             file_path, 
             filename, 
             doc_id=doc_id,
-            db=db,
-            course_id=course_id, 
-            module_id=module_id, 
-            exercise_id=exercise_id
+            db=db
         )
         if success:
             db_doc = db.query(Document).filter(Document.id == doc_id).first()
@@ -53,11 +47,6 @@ def process_document_background(
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    course_id: Optional[str] = Form(None),
-    module_id: Optional[str] = Form(None),
-    module_name: Optional[str] = Form(None),
-    exercise_id: Optional[str] = Form(None),
-    exercise_name: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -69,11 +58,6 @@ async def upload_document(
     db_document = Document(
         filename=file.filename,
         doc_path=file_path,
-        course_id=course_id,
-        module_id=module_id,
-        module_name=module_name,
-        exercise_id=exercise_id,
-        exercise_name=exercise_name,
         processing_status="processing"
     )
     db.add(db_document)
@@ -86,34 +70,14 @@ async def upload_document(
         file_path, 
         file.filename,
         db_document.id,
-        db,
-        course_id=course_id,
-        module_id=module_id,
-        exercise_id=exercise_id
+        db
     )
     
     return db_document
 
 @router.get("/documents", response_model=List[DocumentResponse])
-def get_documents(
-    course_id: Optional[str] = None,
-    module_id: Optional[str] = None,
-    exercise_id: Optional[str] = None, 
-    db: Session = Depends(get_db)
-):
-
-    query = db.query(Document)
-
-    if course_id is not None:
-        query = query.filter(Document.course_id == course_id)
-
-    if module_id is not None:
-        query = query.filter(Document.module_id == module_id)
-
-    if exercise_id is not None:
-        query = query.filter(Document.exercise_id == exercise_id)
-
-    return query.all()
+def get_documents(db: Session = Depends(get_db)):
+    return db.query(Document).all()
 
 @router.delete("/documents/{doc_id}")
 def delete_document(doc_id: int, db: Session = Depends(get_db)):
@@ -124,9 +88,7 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
     # Remove from vector db
     delete_related_files(
         db_doc.filename, 
-        db_doc.course_id, 
-        db_doc.module_id, 
-        db_doc.exercise_id
+        db_doc.id
     )
     
     # Remove from disk if exists
@@ -141,19 +103,28 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Document deleted successfully"}
 
+@router.get("/documents/{doc_id}/blob")
+def fetch_document_blob(doc_id: int, db: Session = Depends(get_db)):
+    db_doc = db.query(Document).filter(Document.id == doc_id).first()
+    if not db_doc or not db_doc.doc_path or not os.path.exists(db_doc.doc_path):
+        raise HTTPException(status_code=404, detail="Document content not found")
+    
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=db_doc.doc_path, 
+        filename=db_doc.filename,
+        media_type='application/octet-stream'
+    )
+
 @router.get("/search")
 def search_docs(
     query: str, 
-    course_id: str,
-    module_id: str,
-    exercise_id: Optional[str] = None,
+    document_id: int,
     db: Session = Depends(get_db)
 ):
     results = fetch_related_files(
         query, 
-        course_id, 
-        module_id, 
-        exercise_id=exercise_id,
+        document_id=document_id,
         db=db
     )
     return [{"content": doc.page_content, "metadata": doc.metadata} for doc in results]

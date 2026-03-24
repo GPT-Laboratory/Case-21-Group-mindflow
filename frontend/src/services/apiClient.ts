@@ -131,48 +131,20 @@ export interface DocumentData {
     id: number;
     filename: string;
     doc_path: string | null;
-    course_id: string | null;
-    module_id: string | null;
-    module_name: string | null;
-    exercise_id: string | null;
-    exercise_name: string | null;
     processing_status: 'processing' | 'processed' | 'failed';
     created_dt: string;
 }
 
 export const ragApi = {
-    getDocuments: async (params?: {
-        exercise_id?: string;
-        course_id?: string;
-        module_id?: string;
-    }): Promise<DocumentData[]> => {
-        const url = new URL('/api/rag/documents', window.location.origin);
-        if (params?.exercise_id) url.searchParams.set('exercise_id', params.exercise_id);
-        if (params?.course_id) url.searchParams.set('course_id', params.course_id);
-        if (params?.module_id) url.searchParams.set('module_id', params.module_id);
-
-        const response = await fetch(url.toString());
+    getDocuments: async (): Promise<DocumentData[]> => {
+        const response = await fetch('/api/rag/documents');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
     },
 
-    uploadDocument: async (
-        file: File,
-        params?: {
-            course_id?: string;
-            module_id?: string;
-            module_name?: string;
-            exercise_id?: string;
-            exercise_name?: string;
-        }
-    ): Promise<DocumentData> => {
+    uploadDocument: async (file: File): Promise<DocumentData> => {
         const formData = new FormData();
         formData.append('file', file);
-        if (params?.exercise_id) formData.append('exercise_id', params.exercise_id);
-        if (params?.exercise_name) formData.append('exercise_name', params.exercise_name);
-        if (params?.course_id) formData.append('course_id', params.course_id);
-        if (params?.module_id) formData.append('module_id', params.module_id);
-        if (params?.module_name) formData.append('module_name', params.module_name);
 
         const response = await fetch('/api/rag/upload', { method: 'POST', body: formData });
         if (!response.ok) {
@@ -186,6 +158,12 @@ export const ragApi = {
         const response = await fetch(`/api/rag/documents/${docId}`, { method: 'DELETE' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
     },
+
+    getDocumentBlob: async (docId: number): Promise<Blob> => {
+        const response = await fetch(`/api/rag/documents/${docId}/blob`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.blob();
+    },
 };
 
 // ─── Evaluation ───────────────────────────────────────────────────────────────
@@ -193,9 +171,7 @@ export const ragApi = {
 export const evalApi = {
     evaluate: async (payload: {
         flow_data: any;
-        course_id: string;
-        module_id: string;
-        exercise_id?: string;
+        document_id: number;
     }): Promise<any> => {
         const response = await fetch('/api/eval/evaluate', {
             method: 'POST',
@@ -220,9 +196,6 @@ export interface FlowConfig {
     access_key_required: boolean;
     access_key: string | null;
     owner_id: string | null;
-    course_id: string | null;
-    module_id: string | null;
-    exercise_id: string | null;
     lti_exercise_url: string | null;
     collaborators: { user_id: string; added_by: string | null; created_at: string | null }[];
 }
@@ -233,9 +206,6 @@ export interface FlowConfigUpdate {
     is_published?: boolean;
     access_key_required?: boolean;
     access_key?: string;
-    course_id?: string;
-    module_id?: string;
-    exercise_id?: string;
 }
 
 export const flowConfigApi = {
@@ -345,7 +315,7 @@ export const ltiApi = {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
     },
 
-    getSession: async (): Promise<{ authenticated: boolean; user_id?: string; user_name?: string; user_email?: string; roles?: string; exercise_id?: string; has_outcome_service?: boolean }> => {
+    getSession: async (): Promise<{ authenticated: boolean; user_id?: string; user_name?: string; user_email?: string; roles?: string; document_id?: string; has_outcome_service?: boolean }> => {
         const response = await fetch('/api/lti/session');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
