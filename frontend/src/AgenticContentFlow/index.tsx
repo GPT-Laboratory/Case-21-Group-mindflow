@@ -24,7 +24,7 @@ import { ensureNodeTypesRegistered } from "./Nodes/registerBasicNodeTypes";
 import { ProcessProvider } from "./Process/ProcessContext";
 import { InputFocusProvider } from "./Panel/contexts/InputFocusContext";
 import { GeneratorProvider } from "./Generator/context/GeneratorContext";
-import NodeConfigPanel from "./Panel/NodePanel";
+import { FlowDocumentsPanel } from "./Panel/FlowDocumentsPanel";
 import { FlowsPanel } from "./FlowsPanel";
 import { useFlowsStore } from "./stores/useFlowsStore";
 import { FlowsService } from "./services/FlowsService";
@@ -198,8 +198,7 @@ export function AgenticContentFlowContent() {
                 {/* <GenerationControl type="flow" /> */}
               </div>
 
-              {/* Node Configuration Panel - Side by side */}
-              <NodeConfigPanel />
+              <FlowDocumentsPanel />
             </div>
           </ShortcutsProvider>
         </LayoutProvider>

@@ -11,6 +11,10 @@ interface PanelToggleDragHandleProps {
   hasChanges: boolean;
   onToggle: () => void;
   onResizeStart: (e: React.MouseEvent) => void;
+  /** When the panel is collapsed, show this instead of the open-direction chevron. */
+  collapsedIcon?: React.ReactNode;
+  /** Tooltip / aria label when collapsed (defaults to “Click to open panel”). */
+  collapsedTitle?: string;
 }
 
 export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
@@ -19,6 +23,8 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
   hasChanges,
   onToggle,
   onResizeStart,
+  collapsedIcon,
+  collapsedTitle,
 }) => {
   const handleRef = useRef<HTMLButtonElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -134,9 +140,18 @@ export const PanelToggleDragHandle: React.FC<PanelToggleDragHandleProps> = ({
         onMouseDown={handleMouseDown}
         className=" border-none select-none"
         style={getButtonStyles()}
-        title={isExpanded ? 'Drag to resize or click to close' : 'Click to open panel'}
+        title={
+          isExpanded
+            ? 'Drag to resize or click to close'
+            : (collapsedTitle ?? 'Click to open panel')
+        }
+        aria-label={
+          isExpanded
+            ? 'Close or resize panel'
+            : (collapsedTitle ?? 'Open panel')
+        }
       >
-        {getToggleIcon()}
+        {isExpanded ? getToggleIcon() : (collapsedIcon ?? getToggleIcon())}
         {isExpanded && getGripIcon()}
       </Button>
 

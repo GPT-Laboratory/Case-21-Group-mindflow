@@ -13,7 +13,6 @@ import { useLayoutContext } from "@jalez/react-flow-automated-layout";
 import { useEdgeTypeRegistry } from "../Edge/registry/edgeTypeRegistry";
 import { ensureEdgeTypesRegistered } from "../Edges/registerBasicEdgeTypes";
 import { ensureNodeTypesRegistered } from "../Nodes/registerBasicNodeTypes";
-import NodeConfigPanel from "../Panel/NodePanel";
 import { useNotifications } from "../Notifications";
 import UnifiedControlsPanel from "../Controls/registry/UnifiedControlsPanel";
 import { getNodeType } from "../Node/store/NodeTypeStoreInitializer";
