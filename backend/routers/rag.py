@@ -17,6 +17,27 @@ router = APIRouter()
 
 UPLOAD_DIR = "docfiles"
 
+# Supported file extensions for document upload and RAG processing
+# PDF files are parsed with PyPDFLoader; all others use TextLoader
+ALLOWED_EXTENSIONS = {
+    ".pdf",   # Parsed page-by-page via PyPDFLoader
+    ".txt",   # Plain text
+    ".md",    # Markdown
+    ".csv",   # Comma-separated values (treated as plain text)
+    ".log",   # Log files
+    ".json",  # JSON (treated as plain text)
+    ".xml",   # XML (treated as plain text)
+    ".html",  # HTML (treated as plain text, tags included)
+    ".py",    # Python source
+    ".js",    # JavaScript source
+    ".ts",    # TypeScript source
+    ".rst",   # reStructuredText
+}
+
+def _get_file_extension(filename: str) -> str:
+    """Return the lowercased file extension including the dot."""
+    return os.path.splitext(filename)[1].lower()
+
 def process_document_background(
     file_path: str, 
     filename: str, 
@@ -49,6 +70,19 @@ async def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
+    # Validate file type
+    ext = _get_file_extension(file.filename)
+    if ext not in ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(ALLOWED_EXTENSIONS))
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported file type '{ext}'. "
+                f"Allowed types: {allowed}. "
+                "PDF files are parsed page-by-page; all other supported types are processed as plain text."
+            )
+        )
+
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     
@@ -109,12 +143,30 @@ def fetch_document_blob(doc_id: int, db: Session = Depends(get_db)):
     if not db_doc or not db_doc.doc_path or not os.path.exists(db_doc.doc_path):
         raise HTTPException(status_code=404, detail="Document content not found")
     
+    import mimetypes
     from fastapi.responses import FileResponse
+    
+    # Guess correct MIME type so browser can render inline (e.g. PDF in iframe)
+    mime_type, _ = mimetypes.guess_type(db_doc.filename)
+    if not mime_type:
+        mime_type = 'application/octet-stream'
+    
     return FileResponse(
         path=db_doc.doc_path, 
         filename=db_doc.filename,
-        media_type='application/octet-stream'
+        media_type=mime_type,
+        headers={"Content-Disposition": f"inline; filename=\"{db_doc.filename}\""}
     )
+
+@router.get("/documents/{doc_id}/topics")
+def get_document_topics(doc_id: int, db: Session = Depends(get_db)):
+    from models.topic import Topic
+    db_doc = db.query(Document).filter(Document.id == doc_id).first()
+    if not db_doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    topics = db.query(Topic).filter(Topic.document_id == doc_id).all()
+    return [{"id": t.id, "topic_name": t.topic_name, "details": t.details} for t in topics]
 
 @router.get("/search")
 def search_docs(
