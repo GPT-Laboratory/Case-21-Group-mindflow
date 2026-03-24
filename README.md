@@ -11,6 +11,7 @@ A full-stack platform for building and AI-evaluating educational concept flow gr
 - [Project Structure](#project-structure)
 - [API Reference](#api-reference)
 - [Scoring Logic](#scoring-logic)
+- [Fine-Tuning & Models](#fine-tuning--models)
 - [Environment Variables](#environment-variables)
 - [Getting Started](#getting-started)
 - [Contributing](#contributing)
@@ -37,7 +38,9 @@ A full-stack platform for building and AI-evaluating educational concept flow gr
 | Backend | Python 3.10, FastAPI, SQLAlchemy, Pydantic |
 | Database | PostgreSQL 16 + pgvector |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` (local, HuggingFace) |
-| LLM | [Ollama](https://ollama.com/) — `llama3.2` by default (local) |
+| LLM | [Ollama](https://ollama.com/) — `llama3.2` or fine-tuned `kiran2.0` |
+| Fine-Tuning | Unsloth, Google Colab (A100/L4 GPUs) |
+| Model Format | `safetensors` |
 | Containerization | Docker, Docker Compose |
 
 ---
@@ -224,6 +227,26 @@ is_valid = final_points >= VALID_THRESHOLD
 ```
 
 `is_valid` is always computed server-side. The LLM is not asked to determine pass or fail.
+
+---
+
+## Fine-Tuning & Models
+
+AgenticContentFlow leverages a specialized fine-tuned model, **kiran2.0**, optimized specifically for educational concept mapping and structural validation.
+
+### Fine-Tuning Process
+- **Data Generation**: 20,000 samples of artificial mindmap evaluation data were generated to cover diverse pedagogical scenarios.
+- **Training**: 5,000 high-quality samples were used for the core fine-tuning phase using the **Unsloth** library on Google Colab.
+- **Format**: The resulting model is stored and served in the **`safetensors`** format for maximum performance and security.
+- **Evaluation**: Performance was validated using a separate set of 100 data points, comparing the base `llama3.2` against the specialized `kiran2.0`.
+
+### Model Downloads (Google Drive)
+
+You can download the fine-tuned model weights from the following locations:
+
+| Model Name | Base Model | URL |
+|---|---|---|
+| **kiran2.0** | Phi-3-Mini-4k-Instruct | [Download from Google Drive](https://drive.google.com/drive/folders/1TzY8xoFlXwheBZr2ONOqE02X9wB7GwYb?usp=sharing) |
 
 ---
 

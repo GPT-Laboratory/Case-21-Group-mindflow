@@ -1,0 +1,1102 @@
+[
+  {
+      "id": 0,
+      "ground_truth": {
+          "points": 0.65,
+          "feedback": "The student included concepts like Deep Learning, Reinforcement Learning, Computer Vision. However important ideas missing include Neural Networks, Unsupervised Learning, Robotics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some connections between topics but lacks depth and relevance to the course context. Specifically, the student missed three main topics: Neural Networks, Unsupervised Learning, and Robotics. Additionally, some edges do not follow logical relationships, such as 'Machine Learning' being both the source and target of multiple edges. Furthermore, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. However, the student did demonstrate some understanding of the course material, particularly in their connections between 'Deep Learning', 'Machine Learning', and 'Computer Vision'. Overall, the student needs to improve their understanding of the course material and develop more logical connections between topics."
+      }
+  },
+  {
+      "id": 1,
+      "ground_truth": {
+          "points": 0.52,
+          "feedback": "The student included concepts like Proteins, Biology, Evolution. However important ideas missing include Cells, Respiration, Enzymes, Homeostasis. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'Cells', 'Respiration', and 'Enzymes' are missing. Additionally, the graph could benefit from more connections between topics, particularly between 'Biology' and 'Ecosystems'. However, the overall structure of the graph respects the conceptual hierarchy and logical relationships between topics. To improve the score, the student should focus on including all required topics and adding more connections between them."
+      }
+  },
+  {
+      "id": 2,
+      "ground_truth": {
+          "points": 0.33,
+          "feedback": "The student included concepts like Ethics, Reinforcement Learning, Deep Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Neural Networks, Supervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph demonstrates a good understanding of some key topics, but lacks depth in others. Specifically, the student missed several main topics such as Artificial Intelligence, Machine Learning, Neural Networks, Supervised Learning, Computer Vision, Natural Language Processing, and Robotics. Additionally, some connections in the graph do not respect the conceptual hierarchy, and there are no cross-domain relationships. However, the student did identify all the expected missing topics correctly. Overall, the graph could benefit from more attention to detail and adherence to the course context."
+      }
+  },
+  {
+      "id": 3,
+      "ground_truth": {
+          "points": 0.58,
+          "feedback": "The student included concepts like Genetics, Respiration, Natural Selection. However important ideas missing include Cells, Evolution, Ecosystems, Enzymes. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, it misses 'Cells', 'Evolution', 'Ecosystems', and 'Enzymes'. Additionally, the connections between topics do not always follow logical relationships and respect the hierarchical structure. For instance, 'Natural Selection' should be connected to 'Genetics' rather than 'Proteins'. Furthermore, 'Photosynthesis' does not logically connect to 'Biology'. However, the student did include all required main topics. Overall, the graph could benefit from more attention to detail regarding topic relevance and logical connections."
+      }
+  },
+  {
+      "id": 4,
+      "ground_truth": {
+          "points": 0.25,
+          "feedback": "The student included concepts like Data Science, Artificial Intelligence, Natural Language Processing. However important ideas missing include Machine Learning, Deep Learning, Neural Networks, Supervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics, but it lacks several key areas such as Machine Learning, Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Reinforcement Learning, Computer Vision, and Ethics. The connections between topics are mostly logical, with some exceptions like 'Natural Language Processing' being connected to both 'Data Science' and 'AI', which might not be the most direct relationship. The graph could benefit from more hierarchical structure and fewer cross-domain connections. Overall, the score is affected by the missing main topics, resulting in a lower score."
+      }
+  },
+  {
+      "id": 5,
+      "ground_truth": {
+          "points": 0.6,
+          "feedback": "The student included concepts like Reinforcement Learning, Deep Learning, Computer Vision. However important ideas missing include Artificial Intelligence, Natural Language Processing, Robotics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Artificial Intelligence, Natural Language Processing, and Robotics. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between subtopics within each domain. Overall, the student demonstrates a good understanding of the course material, but needs to expand their knowledge and clarify their connections."
+      }
+  },
+  {
+      "id": 6,
+      "ground_truth": {
+          "points": 0.67,
+          "feedback": "The student included concepts like Deep Learning, Unsupervised Learning, Machine Learning. However important ideas missing include Artificial Intelligence, Neural Networks, Reinforcement Learning, Data Science. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Artificial Intelligence, Neural Networks, and Reinforcement Learning. The graph also contains some illogical connections, such as 'Robotics' being connected to 'NLP', and 'Supervised Learning' being connected to 'Robotics'. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has identified most of the missing topics correctly. To improve, the student should focus on adding the missing main topics and ensuring logical connections within the graph."
+      }
+  },
+  {
+      "id": 7,
+      "ground_truth": {
+          "points": 0.85,
+          "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+      },
+      "llama3.2": {
+          "points": 0.95,
+          "feedback": "The student's flow graph demonstrates a good understanding of the course context, but there are some minor issues with topic relevance and structural quality. The student has identified all the main topics required for the course, but could benefit from exploring more connections between different domains. Additionally, the graph could be improved by adding more edges to represent the hierarchical structure of the concepts. Overall, the student has shown a good foundation in the course material, but needs to refine their understanding of the relationships between the topics."
+      }
+  },
+  {
+      "id": 8,
+      "ground_truth": {
+          "points": 0.6,
+          "feedback": "The student included concepts like DNA, Respiration, Homeostasis. However important ideas missing include Natural Selection, Ecosystems, Photosynthesis. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, it misses Natural Selection, Ecosystems, and does not fully capture the connections between topics. Additionally, some edges seem illogical or lack direction. However, the graph structure itself appears sound. To improve, the student should focus on filling in the missing topics and ensuring logical connections between them."
+      }
+  },
+  {
+      "id": 9,
+      "ground_truth": {
+          "points": 0.43,
+          "feedback": "The student included concepts like Evolution, Ecosystems, Biology. However important ideas missing include Cells, DNA, Respiration, Proteins. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'Cells', 'DNA', 'Respiration', 'Proteins', and 'Enzymes' are missing. Additionally, the connections between topics do not always follow logical relationships and respect the hierarchical structure. For example, 'Biology' should be connected to 'Ecosystems' rather than 'Homeostasis'. Furthermore, 'Photosynthesis' does not logically connect to 'Natural Selection'. To improve, the student should focus on including all required topics and ensuring that connections between topics accurately represent their relationships."
+      }
+  },
+  {
+      "id": 10,
+      "ground_truth": {
+          "points": 0.35,
+          "feedback": "The student included concepts like Computer Vision, Unsupervised Learning, Deep Learning. However important ideas missing include Neural Networks, Supervised Learning, Natural Language Processing, Robotics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Neural Networks, Supervised Learning, Natural Language Processing, Robotics, and Data Science. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between certain concepts. Overall, the student demonstrates a good understanding of the course context, but there is room for improvement in terms of comprehensiveness and structural clarity."
+      }
+  },
+  {
+      "id": 11,
+      "ground_truth": {
+          "points": 0.18,
+          "feedback": "The student included concepts like Evolution, Natural Selection, Enzymes. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.21,
+          "feedback": "The student's flow graph shows relevance to the course context, but lacks several key topics such as Biology, Cells, DNA, Genetics, Ecosystems, Photosynthesis, Respiration, Proteins, and Homeostasis. The connections between topics appear logical, with Evolution and Natural Selection related, and Enzymes connected to both. However, some edges seem to lack directionality, particularly those involving multiple domains. Additionally, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the score is impacted by the missing main topics, resulting in a low score."
+      }
+  },
+  {
+      "id": 12,
+      "ground_truth": {
+          "points": 0.17,
+          "feedback": "The student included concepts like Genetics, Homeostasis. However important ideas missing include Biology, Cells, DNA, Evolution. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The provided flow graph does not cover all the necessary topics for the course context. The topics 'Biology', 'Cells', 'DNA', 'Evolution', 'Ecosystems', 'Photosynthesis', 'Respiration', 'Proteins', and 'Enzymes' are missing. However, the topics 'Genetics' and 'Homeostasis' are present. The connections between the topics do not respect the hierarchical structure and some edges seem illogical. For example, 'Genetics' should be the source and 'Homeostasis' should be the target in the connection between them. Additionally, the edges between different domains like 'Biology' and 'Genetics' are not meaningful. Therefore, the final score is 0.45 after deducting 0.15 for structural issues."
+      }
+  },
+  {
+      "id": 13,
+      "ground_truth": {
+          "points": 0.68,
+          "feedback": "The student included most key concepts. Missing only 2 topics: Ecosystems, Enzymes. Graph structure is reasonable but has some issues."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others necessary for the course context. Specifically, the topics 'Ecosystems' and 'Enzymes' are missing. Additionally, the graph could benefit from more connections between topics to better represent the hierarchical structure of the course material. However, the provided connections seem to respect the logical relationships and direction of the course context. Overall, the graph could be improved with more comprehensive coverage of all required topics."
+      }
+  },
+  {
+      "id": 14,
+      "ground_truth": {
+          "points": 0.43,
+          "feedback": "The student included concepts like Photosynthesis, Evolution, Ecosystems. However important ideas missing include Biology, DNA, Genetics, Natural Selection. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as 'Biology', 'DNA', 'Genetics', 'Natural Selection', and 'Proteins'. The graph also contains some illogical connections, such as 'Enzymes' being connected to 'Photosynthesis'. Additionally, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the score is affected by the missing main topics."
+      }
+  },
+  {
+      "id": 15,
+      "ground_truth": {
+          "points": 0.52,
+          "feedback": "The student included concepts like Respiration, Biology, Natural Selection. However important ideas missing include DNA, Evolution, Ecosystems, Enzymes. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'DNA', 'Evolution', 'Ecosystems', and 'Enzymes' are missing. Additionally, the connections between topics do not always follow logical relationships and hierarchical structures. For instance, 'Cellular Respiration' should logically connect to 'Metabolic Processes' rather than 'Proteins'. Furthermore, 'Photosynthesis' does not directly relate to 'Homeostasis'. To improve, the student should focus on including all required topics and ensuring logical connections between them."
+      }
+  },
+  {
+      "id": 16,
+      "ground_truth": {
+          "points": 0.06,
+          "feedback": "The student included concepts like Supervised Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.05,
+          "feedback": "The student's flow graph shows some relevance to the course context, but it lacks several key topics such as Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks, Unsupervised Learning, Reinforcement Learning, Computer Vision, Natural Language Processing, Robotics, and Data Science. The provided edges do not respect the logical relationships and hierarchical structure of the course context. Specifically, the connections between topics like 'Machine Learning' and its subtopics ('Supervised Learning', 'Unsupervised Learning', 'Reinforcement Learning') are not correctly established. Additionally, the edges connecting 'Deep Learning' to 'Computer Vision' and 'Natural Language Processing' seem illogical. Overall, the graph requires significant improvement to accurately represent the course material."
+      }
+  },
+  {
+      "id": 17,
+      "ground_truth": {
+          "points": 0.23,
+          "feedback": "The student included concepts like Cells, Ecosystems, Evolution. However important ideas missing include Biology, DNA, Genetics, Photosynthesis. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Biology, DNA, Genetics, Photosynthesis, Respiration, Proteins, Enzymes, and Homeostasis. The connections between topics seem mostly logical, but there might be some minor issues with hierarchical structure and cross-domain relationships. Overall, the graph could benefit from more comprehensive coverage of the course material."
+      }
+  },
+  {
+      "id": 18,
+      "ground_truth": {
+          "points": 0.59,
+          "feedback": "The student included concepts like Data Science, Deep Learning, Artificial Intelligence. However important ideas missing include Reinforcement Learning, Computer Vision, Natural Language Processing, Ethics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Reinforcement Learning, Computer Vision, and Natural Language Processing. The graph also contains some illogical connections, such as 'Machine Learning' being connected to 'Robotics'. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has identified all the missing main topics. To improve, the student should focus on adding the missing main topics and restructuring the graph to respect the course context."
+      }
+  },
+  {
+      "id": 19,
+      "ground_truth": {
+          "points": 1.0,
+          "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+      },
+      "llama3.2": {
+          "points": 0.98,
+          "feedback": "The student's flow graph demonstrates a good understanding of the course context, but there are some minor issues with the connections and missing topics. The student has identified all the main topics required for the course, but could improve their connections between topics. Additionally, there are no major structural issues with the graph. Overall, the student has demonstrated a good foundation in the course material."
+      }
+  },
+  {
+      "id": 20,
+      "ground_truth": {
+          "points": 0.75,
+          "feedback": "The student included concepts like Proteins, Ecosystems, Enzymes. However important ideas missing include Cells, DNA, Homeostasis. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'Cells' and 'DNA' are missing, which are essential components of biology. Additionally, the connections between topics like 'Biology' and 'Ecosystems', 'Genetics' and 'Evolution', and 'Proteins' and 'Enzymes' could be more logically connected. However, the student has demonstrated a good understanding of the remaining topics. Overall, the graph could benefit from more comprehensive coverage of fundamental biological concepts."
+      }
+  },
+  {
+      "id": 21,
+      "ground_truth": {
+          "points": 0.7,
+          "feedback": "The student included concepts like Artificial Intelligence, Machine Learning, Unsupervised Learning. However important ideas missing include Supervised Learning, Natural Language Processing, Robotics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some connections between topics but lacks several key concepts. Specifically, it misses 'Supervised Learning', 'Natural Language Processing', and 'Robotics'. Additionally, some edges seem illogical, such as 'Machine Learning' connected to 'Computer Vision' without a clear relationship. However, the graph does show some relevant connections, like 'Deep Learning' being connected to 'Neural Networks'. Overall, the graph could benefit from more attention to logical relationships and missing topics."
+      }
+  },
+  {
+      "id": 22,
+      "ground_truth": {
+          "points": 0.76,
+          "feedback": "The student included most key concepts. Missing only 2 topics: Cells, Evolution. Graph structure is reasonable but has some issues."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics related to the course context, but it lacks key concepts such as 'Cells' and 'Evolution'. The graph also contains some illogical connections, such as 'Proteins' being connected to both 'Enzymes' and 'Biology', and 'Homeostasis' being connected to 'Biology'. Additionally, the graph does not respect the hierarchical structure of the course material. However, the student has identified all the missing topics correctly. To improve the score, the student should revise their graph to address these issues."
+      }
+  },
+  {
+      "id": 23,
+      "ground_truth": {
+          "points": 0.06,
+          "feedback": "The student included concepts like Proteins. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.0,
+          "feedback": "The provided flow graph does not cover all the necessary topics for the course context. Specifically, it lacks 'Biology', 'Cells', 'DNA', 'Genetics', 'Evolution', 'Natural Selection', 'Ecosystems', 'Photosynthesis', 'Respiration', and 'Enzymes'. These topics are crucial for understanding the subject matter. Additionally, the graph structure appears to lack connections between some topics, such as 'Proteins' and its potential relationships with other biological concepts. However, the provided edges do show logical relationships within the 'Proteins' node. Overall, the graph could benefit from more comprehensive coverage of the required topics and clearer connections between them."
+      }
+  },
+  {
+      "id": 24,
+      "ground_truth": {
+          "points": 0.35,
+          "feedback": "The student included concepts like Supervised Learning, Natural Language Processing, Computer Vision. However important ideas missing include Machine Learning, Deep Learning, Neural Networks, Reinforcement Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Machine Learning, Deep Learning, Neural Networks, Reinforcement Learning, and Data Science. The graph also contains some illogical connections, such as 'Robotics' being connected to 'Artificial Intelligence', and 'Natural Language Processing' being connected to 'Computer Vision'. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has identified most of the missing topics correctly. To improve, the student should focus on adding the missing topics and restructuring the graph to follow the logical relationships and hierarchical structure of the course context."
+      }
+  },
+  {
+      "id": 25,
+      "ground_truth": {
+          "points": 0.18,
+          "feedback": "The student included concepts like DNA, Biology, Genetics. However important ideas missing include Cells, Evolution, Natural Selection, Ecosystems. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows relevance to the course context, but lacks connections to key topics such as Cells, Evolution, Natural Selection, Ecosystems, Photosynthesis, Respiration, Proteins, and Enzymes. The provided edges do not respect the hierarchical structure and contain illogical connections. The student needs to focus on filling in the missing topics and ensuring the graph structure aligns with the course material. Additionally, some edges should be removed to maintain logical relationships."
+      }
+  },
+  {
+      "id": 26,
+      "ground_truth": {
+          "points": 0.12,
+          "feedback": "The student included concepts like Deep Learning, Ethics. However important ideas missing include Artificial Intelligence, Machine Learning, Neural Networks, Supervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows relevance to the course context, but lacks several key topics such as Artificial Intelligence, Machine Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Reinforcement Learning, Computer Vision, Natural Language Processing, and Robotics. The provided edges do not respect the hierarchical structure and contain some illogical connections. However, the student has correctly identified the expected missing topics. To improve, the student should expand their graph to include all the main topics and ensure that the edges represent logical relationships and respect the conceptual hierarchy."
+      }
+  },
+  {
+      "id": 27,
+      "ground_truth": {
+          "points": 0.52,
+          "feedback": "The student included concepts like Machine Learning, Robotics, Deep Learning. However important ideas missing include Unsupervised Learning, Computer Vision, Data Science, Ethics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Unsupervised Learning, Computer Vision, and Ethics. There are also some illogical connections such as 'Machine Learning' -> 'Unsupervised Learning', 'Deep Learning' -> 'Computer Vision'. The graph could benefit from more detailed explanations for each topic. Additionally, the structure of the graph seems mostly correct, but there might be minor issues with the ordering of certain topics. Overall, the score can be improved by addressing these areas."
+      }
+  },
+  {
+      "id": 28,
+      "ground_truth": {
+          "points": 0.18,
+          "feedback": "The student included concepts like Computer Vision, Natural Language Processing, Reinforcement Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.43,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Robotics, and Ethics. The connections between topics seem mostly logical, with some exceptions like 'Robotics' being connected to 'Computer Vision', which might not be directly related. However, the graph could benefit from more detailed explanations for each topic. Additionally, the student could explore more cross-domain relationships. Overall, the graph structure appears to respect the conceptual hierarchy, but further refinement would improve its accuracy."
+      }
+  },
+  {
+      "id": 29,
+      "ground_truth": {
+          "points": 0.6,
+          "feedback": "The student included concepts like Neural Networks, Unsupervised Learning, Artificial Intelligence. However important ideas missing include Robotics, Data Science, Ethics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others. Specifically, it misses 'Robotics', 'Data Science', and 'Ethics'. Additionally, the graph could benefit from more connections between topics within the same domain. However, the overall structure appears to respect the conceptual hierarchy and logical relationships between topics. To improve, consider adding the missing topics and refining the connections between topics."
+      }
+  },
+  {
+      "id": 30,
+      "ground_truth": {
+          "points": 0.85,
+          "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+      },
+      "llama3.2": {
+          "points": 0.98,
+          "feedback": "The student's flow graph demonstrates a good understanding of the course context, with all main topics present. However, some minor adjustments can improve its structure and relevance. Specifically, the 'Robotics' topic seems out of place, but it might be due to the lack of information provided in the task description. Additionally, the 'Data Science' topic could be more closely connected to the other topics. Overall, the graph shows a good attempt at capturing the key concepts, but further refinement is needed."
+      }
+  },
+  {
+      "id": 31,
+      "ground_truth": {
+          "points": 0.06,
+          "feedback": "The student included concepts like Homeostasis. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.0,
+          "feedback": "The provided flow graph does not cover all the main topics required for the course. Specifically, it lacks 'Biology', 'Cells', 'DNA', 'Genetics', 'Evolution', 'Natural Selection', 'Ecosystems', 'Photosynthesis', 'Respiration', and 'Proteins'. Although it includes 'Homeostasis', which is relevant to the course context, its description does not fully capture the essence of the concept. Additionally, there are no connections between topics, making the graph structurally lacking. However, the absence of any incorrect or illogical connections is noted. To improve, focus on including all main topics and establishing meaningful connections between them."
+      }
+  },
+  {
+      "id": 32,
+      "ground_truth": {
+          "points": 0.12,
+          "feedback": "The student included concepts like Biology, Homeostasis. However important ideas missing include Cells, DNA, Genetics, Evolution. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph demonstrates a good understanding of the biology and homeostasis topics. However, it lacks connections to other important topics such as cells, DNA, genetics, evolution, natural selection, ecosystems, photosynthesis, respiration, proteins, and enzymes. These topics are crucial to the biology discipline and should be explored further. Additionally, some edges in the graph do not follow logical relationships, such as 'Biology' being connected to 'Homeostasis', but not to 'Cells'. Furthermore, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the student needs to expand their knowledge and improve the graph's structure to achieve a higher score."
+      }
+  },
+  {
+      "id": 33,
+      "ground_truth": {
+          "points": 0.52,
+          "feedback": "The student included concepts like Proteins, Enzymes, Biology. However important ideas missing include Genetics, Ecosystems, Photosynthesis, Respiration. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'Genetics', 'Ecosystems', and 'Photosynthesis' are missing. Additionally, the connections between topics do not always follow logical relationships and hierarchical structures. For instance, 'Natural Selection' should be connected to 'Evolution', but it is instead connected to 'Homeostasis'. Furthermore, 'Respiration' is missing altogether. Overall, the graph could benefit from more attention to detail and adherence to the course context."
+      }
+  },
+  {
+      "id": 34,
+      "ground_truth": {
+          "points": 0.33,
+          "feedback": "The student included concepts like Natural Selection, DNA, Ecosystems. However important ideas missing include Biology, Cells, Genetics, Evolution. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.43,
+          "feedback": "The student's flow graph shows relevance to the course context, but lacks some essential topics such as Biology, Cells, Genetics, Evolution, Photosynthesis, Respiration, Proteins, and Homeostasis. The graph also contains some illogical connections, such as Enzymes being connected to Natural Selection, and Ecosystems being connected to Enzymes. Additionally, the graph does not respect the hierarchical structure of the course material. However, the student has identified most of the missing topics correctly. To improve the score, the student should focus on adding the missing topics and restructuring the graph to follow the logical relationships and hierarchical structure of the course material."
+      }
+  },
+  {
+      "id": 35,
+      "ground_truth": {
+          "points": 0.7,
+          "feedback": "The student included concepts like Enzymes, Natural Selection, Biology. However important ideas missing include Ecosystems, Photosynthesis, Homeostasis. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'Ecosystems', 'Photosynthesis', and 'Homeostasis' are missing. Additionally, the connections between topics do not always follow logical relationships and hierarchical structures. For example, 'Enzymes' should logically connect to 'Proteins', but it does so as 'Proteins' connects to 'Enzymes'. Furthermore, 'Natural Selection' should be connected to 'Evolution', but it is instead connected to 'Cells'. The graph could benefit from more precise connections and a clearer structure. Overall, the score is impacted by the missing topics and structural issues."
+      }
+  },
+  {
+      "id": 36,
+      "ground_truth": {
+          "points": 0.94,
+          "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+      },
+      "llama3.2": {
+          "points": 0.95,
+          "feedback": "The student's flow graph demonstrates a good understanding of the course context, but some connections could be improved. The student has identified all main topics, but there might be some minor details missing. The graph structure is mostly correct, but there could be some adjustments needed to better represent the relationships between topics. Overall, the student has shown a good effort, but could benefit from further refinement."
+      }
+  },
+  {
+      "id": 37,
+      "ground_truth": {
+          "points": 0.23,
+          "feedback": "The student included concepts like Genetics, Photosynthesis, Natural Selection. However important ideas missing include Biology, Cells, DNA, Evolution. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph shows a good understanding of the course context, with all required topics present. However, some minor adjustments can improve its relevance and structure. The student has identified most of the main topics but missed some key concepts like 'Biology', 'Cells', 'DNA', 'Evolution', 'Ecosystems', 'Respiration', 'Proteins', and 'Homeostasis'. Additionally, the graph could benefit from more connections between topics, particularly between 'Photosynthesis' and 'Enzymes'. Overall, the graph structure is mostly correct, but it would be improved by adding more edges to represent the hierarchical relationships between topics. The final score is 0.85 after deducting 0.10 for minor structural issues."
+      }
+  },
+  {
+      "id": 38,
+      "ground_truth": {
+          "points": 1.0,
+          "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph demonstrates a good understanding of the course context, but some topics are missing. The graph structure appears to be mostly correct, but there might be some minor issues with the connections between certain topics. Overall, the student could improve their knowledge by covering the missing topics and refining the graph structure."
+      }
+  },
+  {
+      "id": 39,
+      "ground_truth": {
+          "points": 0.18,
+          "feedback": "The student included concepts like Enzymes, Genetics, Proteins. However important ideas missing include Biology, Cells, DNA, Evolution. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows relevance to the course context, but lacks several key topics such as Biology, Cells, DNA, Evolution, Natural Selection, Ecosystems, Photosynthesis, and Respiration. The connections between topics appear logical, with Proteins serving as the source for Enzymes. However, some edges could be improved to better represent hierarchical structures. Overall, the graph's structural quality is good, but it misses essential topics. As a result, the score is adjusted downward due to these omissions."
+      }
+  },
+  {
+      "id": 40,
+      "ground_truth": {
+          "points": 0.67,
+          "feedback": "The student included concepts like Evolution, Enzymes, Ecosystems. However important ideas missing include Biology, DNA, Genetics, Photosynthesis. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.45,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as 'Biology', 'DNA', and 'Genetics'. The graph also contains some illogical connections, such as 'Enzymes' being connected to 'Ecosystems' without a clear relationship. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has identified all the expected missing topics. To improve, the student should focus on adding the missing topics and restructuring the graph to better reflect the course context."
+      }
+  },
+  {
+      "id": 41,
+      "ground_truth": {
+          "points": 0.35,
+          "feedback": "The student included concepts like Photosynthesis, Enzymes, Biology. However important ideas missing include Cells, DNA, Genetics, Evolution. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Cells, DNA, Genetics, Evolution, Ecosystems, and Proteins. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between domain-specific topics. Overall, the student demonstrates a good understanding of the course context, but there is room for improvement in terms of comprehensiveness and structural clarity."
+      }
+  },
+  {
+      "id": 42,
+      "ground_truth": {
+          "points": 0.12,
+          "feedback": "The student included concepts like Natural Selection, Evolution. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows relevance to the course context, but lacks several key topics such as Biology, Cells, DNA, Genetics, Ecosystems, Photosynthesis, Respiration, Proteins, Enzymes, and Homeostasis. The connections between topics appear logical, with Natural Selection and Evolution having a direct relationship. However, some edges could be improved to better represent the hierarchical structure of the course material. Overall, the graph could benefit from more detailed topic coverage. The score will be adjusted downward due to structural issues."
+      }
+  },
+  {
+      "id": 43,
+      "ground_truth": {
+          "points": 0.6,
+          "feedback": "The student included concepts like Deep Learning, Robotics, Unsupervised Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Ethics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Artificial Intelligence, Machine Learning, and Ethics. There are also some illogical connections between topics, such as 'Robotics' being connected to 'Natural Language Processing'. Additionally, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the student demonstrates a good understanding of some aspects of the course material but needs to improve their knowledge and connections."
+      }
+  },
+  {
+      "id": 44,
+      "ground_truth": {
+          "points": 0.85,
+          "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+      },
+      "llama3.2": {
+          "points": 0.95,
+          "feedback": "The student's flow graph is mostly relevant to the course context, with only minor issues with edge directions. No missing topics were identified."
+      }
+  },
+  {
+      "id": 45,
+      "ground_truth": {
+          "points": 0.23,
+          "feedback": "The student included concepts like Enzymes, Evolution, DNA. However important ideas missing include Biology, Cells, Natural Selection, Ecosystems. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Biology, Cells, Natural Selection, Ecosystems, Photosynthesis, Respiration, Proteins, and Homeostasis. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between related concepts. Overall, the student demonstrates a good understanding of Enzymes, Evolution, DNA, and Genetics, but needs to expand their knowledge in other areas."
+      }
+  },
+  {
+      "id": 46,
+      "ground_truth": {
+          "points": 0.85,
+          "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+      },
+      "llama3.2": {
+          "points": 0.95,
+          "feedback": "The student's flow graph demonstrates a good understanding of the course context, but some minor adjustments can improve its relevance and structure. The student has identified all the main topics required for the course, but could benefit from more connections between them. Additionally, some edges may not follow the logical relationships between the topics. Overall, the graph shows potential, but requires refinement."
+      }
+  },
+  {
+      "id": 47,
+      "ground_truth": {
+          "points": 0.52,
+          "feedback": "The student included concepts like Neural Networks, Natural Language Processing, Ethics. However important ideas missing include Machine Learning, Deep Learning, Reinforcement Learning, Data Science. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Machine Learning, Deep Learning, and Reinforcement Learning. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between topics and might be improved by adding more edges. Overall, the student demonstrates a good understanding of the course context, but there is room for improvement in terms of completeness and structural quality."
+      }
+  },
+  {
+      "id": 48,
+      "ground_truth": {
+          "points": 0.43,
+          "feedback": "The student included concepts like Ethics, Supervised Learning, Robotics. However important ideas missing include Artificial Intelligence, Deep Learning, Reinforcement Learning, Natural Language Processing. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.68,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Artificial Intelligence, Deep Learning, Reinforcement Learning, Natural Language Processing, and Data Science. The graph also contains some illogical connections such as 'Robotics' being connected to 'Neural Nets', which does not make sense in this context. Additionally, the graph could benefit from more connections between different domains. However, the student has correctly identified the main topics missing from the user flow. Overall, the graph structure is mostly correct but could be improved with more connections and clarity."
+      }
+  },
+  {
+      "id": 49,
+      "ground_truth": {
+          "points": 0.7,
+          "feedback": "The student included concepts like Neural Networks, Natural Language Processing, Data Science. However important ideas missing include Supervised Learning, Unsupervised Learning, Robotics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+      },
+      "llama3.2": {
+          "points": 0.85,
+          "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Supervised Learning, Unsupervised Learning, and Ethics. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between certain domains. Overall, the student demonstrates a good foundation in AI-related topics but needs to expand their knowledge in other areas."
+      }
+  },
+  {
+    "id": 50,
+    "ground_truth": {
+        "points": 0.25,
+        "feedback": "The student included concepts like Deep Learning, Unsupervised Learning, Data Science. However important ideas missing include Artificial Intelligence, Machine Learning, Neural Networks, Supervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+        "points": 0.65,
+        "feedback": "The student\u2019s flow graph demonstrates strong understanding with correct inclusion of 'Deep Learning', 'Unsupervised Learning', and 'Data Analytics'. However, it misses several key areas such as 'Artificial Intelligence', 'Machine Learning', 'Neural Networks', 'Supervised Learning', 'Reinforcement Learning', 'Computer Vision', 'Natural Language Processing', and 'Robotics'. These omissions represent significant gaps within the scope of artificial intelligence education."
+    }
+  },
+  {
+    "id": 51,
+    "ground_truth": {
+      "points": 0.83,
+      "feedback": "The student included most key concepts. Missing only 2 topics: Deep Learning, Unsupervised Learning. Graph structure is reasonable but has some issues."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some connections between topics but lacks depth and relevance to the course context. Specifically, the student missed three main topics: Neural Networks, Unsupervised Learning, and Robotics. Additionally, some edges do not follow logical relationships, such as 'Machine Learning' being both the source and target of multiple edges. Furthermore, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. However, the student did demonstrate some understanding of the course material, particularly in their connections between 'Deep Learning', 'Machine Learning', and 'Computer Vision'. Overall, the student needs to improve their understanding of the course material and develop more logical connections between topics."
+    }
+  },
+  {
+    "id": 52,
+    "ground_truth": {
+      "points": 0.12,
+      "feedback": "The student included concepts like Evolution, Cells. However important ideas missing include Biology, DNA, Genetics, Natural Selection. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'Cells', 'Respiration', and 'Enzymes' are missing. Additionally, the graph could benefit from more connections between topics, particularly between 'Biology' and 'Ecosystems'. However, the overall structure of the graph respects the conceptual hierarchy and logical relationships between topics. To improve the score, the student should focus on including all required topics and adding more connections between them."
+    }
+  },
+  {
+    "id": 53,
+    "ground_truth": {
+      "points": 0.18,
+      "feedback": "The student included concepts like Proteins, Ecosystems, Enzymes. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Biology, Cells, DNA, Genetics, Evolution, Natural Selection, Photosynthesis, and Respiration. The connections between topics seem mostly logical, with Proteins connected to Enzymes, but could benefit from more hierarchical structure. Additionally, the graph does not explore cross-domain relationships effectively. Overall, the score is affected by the missing main topics, resulting in a low score."
+    }
+  },
+  {
+    "id": 54,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.95,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, with all expected topics present. However, upon closer inspection, it appears that the student has not fully explored the connections between certain topics. Specifically, the edges between 'Biology' and 'Ecosystems', 'Cells' and 'Respiration', and 'Proteins' and 'Enzymes' could be more logically connected. Additionally, the student could benefit from further exploration of the relationships between 'Genetics' and other topics. Overall, the graph structure is generally sound, but could benefit from some refinement."
+    }
+  },
+  {
+    "id": 55,
+    "ground_truth": {
+      "points": 0.23,
+      "feedback": "The student included concepts like Machine Learning, Natural Language Processing, Artificial Intelligence. However important ideas missing include Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, but lacks depth in certain areas. The topics included are mostly relevant, but some connections could be improved. Specifically, the student missed several key topics such as Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Reinforcement Learning, Computer Vision, and Robotics. These omissions significantly impact the completeness of the graph. Additionally, some edges could be adjusted to better reflect the hierarchical structure of the concepts. However, the overall structure of the graph is generally sound. To improve the score, the student should focus on filling in the missing topics and refining the connections between the remaining topics."
+    }
+  },
+  {
+    "id": 56,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 1.0,
+      "feedback": "The student's flow graph meets all criteria."
+    }
+  },
+  {
+    "id": 57,
+    "ground_truth": {
+      "points": 0.5,
+      "feedback": "The student included concepts like Data Science, Computer Vision, Reinforcement Learning. However important ideas missing include Artificial Intelligence, Deep Learning, Supervised Learning, Unsupervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Artificial Intelligence, Deep Learning, Supervised Learning, Unsupervised Learning, Natural Language Processing, and Robotics. The connections between topics seem mostly logical, but there might be some minor issues with the direction and hierarchical structure of certain edges. Overall, the graph could benefit from more comprehensive coverage of the course material."
+    }
+  },
+  {
+    "id": 58,
+    "ground_truth": {
+      "points": 0.53,
+      "feedback": "The student included concepts like Data Science, Unsupervised Learning, Artificial Intelligence. However important ideas missing include Deep Learning, Supervised Learning, Computer Vision, Ethics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Deep Learning, Supervised Learning, and Computer Vision. There are also some illogical connections such as 'Natural Language Processing' being connected to 'Machine Learning'. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has identified all the missing topics correctly."
+    }
+  },
+  {
+    "id": 59,
+    "ground_truth": {
+      "points": 0.12,
+      "feedback": "The student included concepts like Photosynthesis, Enzymes. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.0,
+      "feedback": "The provided flow graph does not cover all the necessary topics for the course context. The user has missed several key topics such as 'Biology', 'Cells', 'DNA', 'Genetics', 'Evolution', 'Natural Selection', 'Ecosystems', 'Respiration', 'Proteins', and 'Homeostasis'. Although the user has included 'Photosynthesis' and 'Enzymes', these topics do not fully capture the breadth of the subject matter. Additionally, the graph lacks connections between topics, making it difficult to establish a clear understanding of the relationships between them. Furthermore, some edges seem illogical, such as connecting 'Photosynthesis' to 'Enzymes', as enzymes are more closely related to 'Biological Catalysts'. Overall, the graph requires significant improvement to accurately represent the course context."
+    }
+  },
+  {
+    "id": 60,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.99,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, with all main topics present. However, some minor adjustments can improve its clarity and relevance. Specifically, the 'Data Analytics' topic seems slightly disconnected from the rest of the graph, but this is a minor issue. Overall, the graph structure respects the conceptual relationships in the course context."
+    }
+  },
+  {
+    "id": 61,
+    "ground_truth": {
+      "points": 0.43,
+      "feedback": "The student included concepts like Natural Language Processing, Neural Networks, Reinforcement Learning. However important ideas missing include Machine Learning, Supervised Learning, Unsupervised Learning, Computer Vision. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Machine Learning, Supervised Learning, Unsupervised Learning, and Computer Vision. Additionally, the connections between topics do not always follow logical relationships and hierarchical structures. However, the student has identified all the expected missing topics and has a good understanding of the course context. To improve, the student should focus on filling in the gaps in their knowledge and ensuring that their graph accurately represents the relationships between topics."
+    }
+  },
+  {
+    "id": 62,
+    "ground_truth": {
+      "points": 0.18,
+      "feedback": "The student included concepts like Unsupervised Learning, Natural Language Processing, Computer Vision. However important ideas missing include Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student's flow graph shows a good understanding of the course context, with all required topics present. However, it lacks depth in certain areas, particularly in the connections between topics. Specifically, the graph could benefit from more explicit connections between 'Machine Learning' and its subtopics, such as 'Supervised Learning', 'Unsupervised Learning', and 'Reinforcement Learning'. Additionally, the connection between 'Natural Language Processing' and other topics seems somewhat tenuous. Overall, the graph structure appears to respect the hierarchical relationships between topics, but could benefit from more nuanced connections. As a result, the student scores 0.85 out of 1.0."
+    }
+  },
+  {
+    "id": 63,
+    "ground_truth": {
+      "points": 0.18,
+      "feedback": "The student included concepts like Ethics, Robotics, Reinforcement Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.43,
+      "feedback": "The student's flow graph shows some relevance to the course context, but it lacks several key topics such as Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Computer Vision, and Natural Language Processing. The graph also contains some illogical connections, such as 'Robotics' being connected to 'RL', and 'Robotics' being connected to 'Ethics'. Additionally, the graph does not respect the hierarchical structure of the topics. However, the student has identified most of the missing topics correctly. To improve the score, the student should focus on adding the missing topics and restructuring the graph to respect the conceptual relationships."
+    }
+  },
+  {
+    "id": 64,
+    "ground_truth": {
+      "points": 0.83,
+      "feedback": "The student included most key concepts. Missing only 2 topics: DNA, Natural Selection. Graph structure is reasonable but has some issues."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like DNA and Natural Selection. The graph also contains some illogical connections, such as 'Proteins' being connected to 'Enzymes'. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has identified all the missing topics correctly. To improve, the student should focus on adding more relevant topics and ensuring logical connections between them."
+    }
+  },
+  {
+    "id": 65,
+    "ground_truth": {
+      "points": 0.82,
+      "feedback": "The student included most key concepts. Missing only 2 topics: DNA, Natural Selection. Graph structure is reasonable but has some issues."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'DNA' and 'Natural Selection' are missing. Additionally, some connections seem illogical, such as 'Enzymes' being connected to 'Photosynthesis'. Furthermore, the graph could benefit from more hierarchical structure. However, the student has demonstrated a good understanding of the remaining topics."
+    }
+  },
+  {
+    "id": 66,
+    "ground_truth": {
+      "points": 0.17,
+      "feedback": "The student included concepts like Homeostasis, Ecosystems. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.05,
+      "feedback": "The student's flow graph shows relevance to the course context, but lacks several key topics such as Biology, Cells, DNA, Genetics, Evolution, Natural Selection, Photosynthesis, Respiration, Proteins, and Enzymes. The graph also contains some illogical connections, particularly between Homeostasis and Ecosystems. Additionally, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the score is impacted by the missing main topics, resulting in a low score."
+    }
+  },
+  {
+    "id": 67,
+    "ground_truth": {
+      "points": 0.68,
+      "feedback": "The student included most key concepts. Missing only 2 topics: Deep Learning, Supervised Learning. Graph structure is reasonable but has some issues."
+    },
+    "llama3.2": {
+      "points": 0.83,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, but is missing some key topics. The graph structure is sound."
+    }
+  },
+  {
+    "id": 68,
+    "ground_truth": {
+      "points": 0.06,
+      "feedback": "The student included concepts like Artificial Intelligence. However important ideas missing include Machine Learning, Deep Learning, Neural Networks, Supervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.0,
+      "feedback": "The provided flow graph does not demonstrate a comprehensive understanding of the course context. The user has identified the main topic of Artificial Intelligence but lacks connections to other essential topics such as Machine Learning, Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Reinforcement Learning, Computer Vision, Natural Language Processing, Robotics, and Data Science. The graph structure appears to lack coherence, with no logical relationships established between topics. Additionally, some edges seem illogical, such as connecting Machine Learning to both Supervised Learning and Unsupervised Learning without a clear connection. Overall, the graph requires significant improvement to accurately represent the course material."
+    }
+  },
+  {
+    "id": 69,
+    "ground_truth": {
+      "points": 0.35,
+      "feedback": "The student included concepts like Reinforcement Learning, Supervised Learning, Neural Networks. However important ideas missing include Machine Learning, Deep Learning, Computer Vision, Robotics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Machine Learning, Deep Learning, Computer Vision, Robotics, Data Science, and Ethics. The connections between topics seem mostly logical, with some exceptions such as 'Natural Language Processing' being connected to both 'Reinforcement Learning' and 'Deep Learning'. However, the graph could benefit from more hierarchical structure and fewer cross-domain connections. Overall, the student demonstrates a good understanding of the course context but needs to expand their knowledge and improve their graph structure."
+    }
+  },
+  {
+    "id": 70,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 1.0,
+      "feedback": "The student's flow graph meets all criteria."
+    }
+  },
+  {
+    "id": 71,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.95,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, with all expected topics present. However, upon closer inspection, it appears that the student has not fully explored the connections between certain topics. Specifically, the edges between 'Biology' and 'Ecosystems', 'Cellular Processes' and 'Respiration', and 'Photosynthesis' and 'Homeostasis' could be more logically connected. Additionally, the student could benefit from exploring cross-domain relationships between topics such as 'Genetics' and 'Evolution'. Overall, the graph structure is generally sound, but could benefit from some refinement."
+    }
+  },
+  {
+    "id": 72,
+    "ground_truth": {
+        "points": 0.43,
+        "feedback": "The student included concepts like Deep Learning, Reinforcement Learning, Supervised Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Neural Networks, Data Science. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+        "points": 0.85,
+        "feedback": "The student\u2019s flow graph demonstrates strong understanding with all main topics covered except 'AI'. However, connections such as those linking 'Data Science', 'Ethics', and their respective subfields like supervised/unsupervised machine learning need clarification due to lack of direct links within your provided content."
+    }
+  },
+  {
+    "id": 73,
+    "ground_truth": {
+        "points": 0.52,
+        "feedback": "The student included concepts like Reinforcement Learning, Unsupervised Learning, Deep Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Neural Networks, Robotics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+        "points": 0.86,
+        "feedback": "The student\u2019s flow graph demonstrates strong understanding with all main topics covered except 'Robotics'. However, connections such as 'Machine Learning -> Reinforcement Learning', while correct logically, might imply direct dependency rather than being part of machine learning broadly; this could mislead learners into thinking reinforcement learning cannot exist independently."
+    }
+  },
+  {
+    "id": 74,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Artificial Intelligence, Machine Learning, Neural Networks, Data Science, and Ethics. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between certain concepts. Overall, the student demonstrates a good understanding of the provided topics but needs to expand their knowledge in other areas."
+    }
+  },
+  {
+    "id": 75,
+    "ground_truth": {
+      "points": 0.68,
+      "feedback": "The student included most key concepts. Missing only 2 topics: Genetics, Homeostasis. Graph structure is reasonable but has some issues."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Artificial Intelligence, Machine Learning, and Neural Networks. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between topics and a clearer hierarchical structure. Overall, the student demonstrates a good understanding of the course context but needs to expand their knowledge and improve their graph structure."
+    }
+  },
+  {
+    "id": 76,
+    "ground_truth": {
+      "points": 0.6,
+      "feedback": "The student included concepts like Ecosystems, Proteins, Cells. However important ideas missing include DNA, Evolution, Enzymes. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.93,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, but there are some minor issues with topic relevance and structural quality. The student has identified all the main topics required for the course, but could benefit from exploring more connections between different domains. Additionally, the graph could be improved by adding more edges to represent the hierarchical structure of the concepts. Overall, the student has shown a good foundation in the course material, but needs to refine their understanding of the relationships between the topics."
+    }
+  },
+  {
+    "id": 77,
+    "ground_truth": {
+      "points": 0.67,
+      "feedback": "The student included concepts like DNA, Biology, Homeostasis. However important ideas missing include Cells, Evolution, Natural Selection, Respiration. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, 'Genetics' and 'Homeostasis' are missing. Additionally, some connections seem illogical, such as 'Natural Selection' being connected to both 'Ecosystems' and 'Enzymes'. Furthermore, 'Proteins' seems to be connected to 'Enzymes', but this might not be the most accurate representation of their relationship. Overall, the graph could benefit from more precise connections and inclusion of all required topics."
+    }
+  },
+  {
+    "id": 78,
+    "ground_truth": {
+      "points": 0.43,
+      "feedback": "The student included concepts like Proteins, Evolution, Respiration. However important ideas missing include Cells, Ecosystems, Photosynthesis, Enzymes. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'DNA', 'Evolution', and 'Enzymes' are missing. Additionally, the connections between topics could be improved to better reflect the hierarchical structure of the course material. However, the student has demonstrated a good understanding of the core concepts. To improve, focus on including all required topics and refining the graph structure to accurately represent the relationships between concepts."
+    }
+  },
+  {
+    "id": 79,
+    "ground_truth": {
+      "points": 0.52,
+      "feedback": "The student included concepts like Respiration, Cells, Evolution. However important ideas missing include Biology, DNA, Genetics, Homeostasis. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, it misses 'Cells', 'Evolution', and 'Natural Selection'. Additionally, the connections between topics seem mostly logical, but there might be some minor issues with hierarchical structure and cross-domain relationships. However, the main concern is the lack of certain key topics. To improve, the student should focus on including all required topics and ensuring the graph accurately represents the course material."
+    }
+  },
+  {
+    "id": 80,
+    "ground_truth": {
+      "points": 0.52,
+      "feedback": "The student included concepts like Reinforcement Learning, Ethics, Machine Learning. However important ideas missing include Artificial Intelligence, Supervised Learning, Computer Vision, Natural Language Processing. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, it misses 'Cells', 'Ecosystems', 'Photosynthesis', and 'Enzymes'. Additionally, the connections between topics do not always follow logical relationships and respect the hierarchical structure. For instance, 'Respiration' should be connected to 'Biology' rather than 'Proteins'. Furthermore, 'Natural Selection' should be connected to 'Evolution' directly. The graph also contains some incorrect or illogical connections, such as 'Respiration' being connected to both 'Metabolic energy generation' and 'Glucose breakdown for energy'. Overall, the structural quality of the graph could be improved."
+    }
+  },
+  {
+    "id": 81,
+    "ground_truth": {
+      "points": 0.18,
+      "feedback": "The student included concepts like Artificial Intelligence, Deep Learning, Data Science. However important ideas missing include Machine Learning, Neural Networks, Supervised Learning, Unsupervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as 'Biology', 'DNA', and 'Genetics'. The graph also contains some illogical connections, particularly with 'Ecosystems' and 'Photosynthesis'. Additionally, the graph could benefit from more detailed explanations for certain topics. However, the student demonstrates a good understanding of the relationships between 'Evolution', 'Natural Selection', and other topics. Overall, the graph requires significant improvement to accurately represent the course context."
+    }
+  },
+  {
+    "id": 82,
+    "ground_truth": {
+      "points": 0.6,
+      "feedback": "The student included concepts like Evolution, Biology, Genetics. However important ideas missing include Natural Selection, Respiration, Enzymes. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Artificial Intelligence, Supervised Learning, Computer Vision, and Natural Language Processing. The connections between topics seem mostly logical, but there might be some minor issues with direction and hierarchical structure. Overall, the graph could benefit from more comprehensive coverage of the course material."
+    }
+  },
+  {
+    "id": 83,
+    "ground_truth": {
+      "points": 0.23,
+      "feedback": "The student included concepts like Deep Learning, Computer Vision, Reinforcement Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Supervised Learning, Unsupervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, with all required topics present. However, upon closer inspection, several connections appear illogical. Specifically, the edge from 'Machine Learning' to 'Natural Language Processing' seems out of place, as ML is more closely related to supervised/unsupervised learning. Additionally, the edge from 'Deep Learning' to 'Robotics' does not align with the provided course context. Furthermore, the edge from 'Data Science' to 'Ethics' lacks a direct logical connection. These issues detract from the overall score."
+    }
+  },
+  {
+    "id": 84,
+    "ground_truth": {
+      "points": 0.18,
+      "feedback": "The student included concepts like Homeostasis, Natural Selection, Genetics. However important ideas missing include Biology, Cells, DNA, Evolution. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student's flow graph shows some relevant topics but lacks others crucial to the course context. Specifically, the topics 'Natural Selection', 'Respiration', and 'Enzymes' are missing. Additionally, the graph could benefit from more connections between topics within the same domain. However, the overall structure appears to respect the conceptual hierarchy and logical relationships between topics. To improve, the student should focus on including all required topics and enhancing the connectivity between them."
+    }
+  },
+  {
+    "id": 85,
+    "ground_truth": {
+      "points": 0.35,
+      "feedback": "The student included concepts like Biology, Photosynthesis, Proteins. However important ideas missing include Cells, DNA, Evolution, Respiration. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Artificial Intelligence, Machine Learning, Supervised Learning, Unsupervised Learning, Natural Language Processing, and Robotics. The graph also contains some illogical connections, such as 'Deep Learning' being connected to 'Robotics'. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has correctly identified some important concepts like Neural Networks, Computer Vision, and Reinforcement Learning. To improve, the student should focus on filling in the missing main topics and ensuring logical connections within the graph."
+    }
+  },
+  {
+    "id": 86,
+    "ground_truth": {
+      "points": 0.35,
+      "feedback": "The student included concepts like Unsupervised Learning, Machine Learning, Artificial Intelligence. However important ideas missing include Neural Networks, Supervised Learning, Reinforcement Learning, Computer Vision. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.98,
+      "feedback": "The provided flow graph demonstrates a good understanding of the course context, with all expected main topics present. However, some minor adjustments can improve its relevance and structure. Specifically, the 'Photosynthesis' and 'Respiration' topics could be connected to their respective parent topics, 'Biology' and 'Cellular Processes.' Additionally, the 'Enzymes' topic might benefit from a more direct connection to 'Proteins.' Overall, the graph shows a strong foundation, but refining these connections will enhance its accuracy."
+    }
+  },
+  {
+    "id": 87,
+    "ground_truth": {
+      "points": 0.6,
+      "feedback": "The student included concepts like Respiration, DNA, Homeostasis. However important ideas missing include Biology, Natural Selection, Proteins. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Cells, DNA, Evolution, Respiration, Enzymes, and Homeostasis. The connections between topics seem mostly logical, with some minor exceptions. However, the graph could benefit from more explicit connections between certain concepts. Overall, the student demonstrates a good understanding of the course context, but there is room for improvement in terms of comprehensiveness and structural clarity."
+    }
+  },
+  {
+    "id": 88,
+    "ground_truth": {
+      "points": 0.88,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Neural Networks, Supervised Learning, Reinforcement Learning, Computer Vision, and Natural Language Processing. The graph also contains some illogical connections, such as 'Robotics' being connected to 'Ethics', and 'Deep Learning' being connected to both 'Robotics' and 'Ethics'. Additionally, the graph does not respect the hierarchical structure of the course context. However, the student has identified most of the missing topics. To improve, the student should focus on adding the missing topics and adjusting the graph structure to reflect the correct relationships."
+    }
+  },
+  {
+    "id": 89,
+    "ground_truth": {
+      "points": 0.23,
+      "feedback": "The student included concepts like Machine Learning, Reinforcement Learning, Computer Vision. However important ideas missing include Artificial Intelligence, Deep Learning, Neural Networks, Supervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics to the course context, but it lacks key concepts such as 'Biology' and 'Natural Selection'. The graph also contains some illogical connections, such as 'Enzymes' being connected to 'Photosynthesis', when they are actually related to 'Metabolism'. Additionally, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the student needs to improve their understanding of the course material and refine their graph structure."
+    }
+  },
+  {
+    "id": 90,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.95,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, but there are some minor issues with topic relevance and structural quality. The student has identified all the main topics required for the course, but could benefit from more connections between them. Additionally, there are some minor structural issues that affect the overall clarity of the graph. Overall, the student has shown a good effort, but could improve their understanding of the course material."
+    }
+  },
+  {
+    "id": 91,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Artificial Intelligence, Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Natural Language Processing, and Data Science. Additionally, the connections between topics do not always follow logical relationships and respect the hierarchical structure. However, the student did identify some missing topics correctly. To improve, the student should focus on including all main topics and ensuring that the graph structure accurately represents the course context."
+    }
+  },
+  {
+    "id": 92,
+    "ground_truth": {
+      "points": 0.6,
+      "feedback": "The student included concepts like Respiration, Genetics, Natural Selection. However important ideas missing include Cells, Evolution, Enzymes. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.85,
+      "feedback": "The student\u2019s flow graph demonstrates strong understanding with all main topics covered except 'Cells'. However, connections such as Deep Learning -> Computer Vision could benefit from further clarification since they represent cross-domain relations."
+    }
+  },
+  {
+    "id": 93,
+    "ground_truth": {
+      "points": 0.06,
+      "feedback": "The student included concepts like Enzymes. However important ideas missing include Biology, Cells, DNA, Genetics. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.65,
+      "feedback": "The student\u2019 example provided demonstrates some understanding within biology but lacks depth across several key areas essential to comprehending this subject fully."
+    }
+  },
+  {
+    "id": 94,
+    "ground_truth": {
+      "points": 1.0,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.95,
+      "feedback": "The student's flow graph generally follows the course context, but there might be minor issues with the hierarchical structure of some edges."
+    }
+  },
+  {
+    "id": 95,
+    "ground_truth": {
+      "points": 0.7,
+      "feedback": "The student included concepts like Natural Selection, Genetics, Ecosystems. However important ideas missing include Cells, DNA, Proteins. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Biology. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.45,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts like Cells, DNA, and Proteins. The graph also contains some illogical connections, such as 'Ecosystems' being connected to 'Natural Selection', when in fact they describe different aspects of the ecosystem. Additionally, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the score is impacted by the missing main topics and structural issues."
+    }
+  },
+  {
+    "id": 96,
+    "ground_truth": {
+      "points": 0.12,
+      "feedback": "The student included concepts like Machine Learning, Data Science. However important ideas missing include Artificial Intelligence, Deep Learning, Neural Networks, Supervised Learning. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.23,
+      "feedback": "The student's flow graph shows some relevance to the course context, but it lacks several key topics such as Artificial Intelligence, Deep Learning, Neural Networks, Supervised Learning, Unsupervised Learning, Reinforcement Learning, Computer Vision, Natural Language Processing, and Robotics. The provided edges do not respect the logical relationships and hierarchical structure of the course context. For example, Machine Learning should be connected to both Supervised Learning and Unsupervised Learning, and Deep Learning should be connected to Computer Vision and Natural Language Processing. Additionally, the graph does not show any connections between different domains. Overall, the graph requires significant improvement to accurately represent the course material."
+    }
+  },
+  {
+    "id": 97,
+    "ground_truth": {
+      "points": 0.06,
+      "feedback": "The student included concepts like Supervised Learning. However important ideas missing include Artificial Intelligence, Machine Learning, Deep Learning, Neural Networks. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows a good understanding of supervised learning but lacks depth in other areas such as artificial intelligence, machine learning, deep learning, neural networks, unsupervised learning, reinforcement learning, computer vision, natural language processing, robotics, and data science. The connections between topics are mostly logical, with some exceptions such as the connection between machine learning and reinforcement learning. However, the graph could benefit from more hierarchical structure and fewer cross-domain relationships. Overall, the student needs to expand their knowledge in various areas to create a comprehensive flow graph."
+    }
+  },
+  {
+    "id": 98,
+    "ground_truth": {
+      "points": 0.85,
+      "feedback": "The student included all required concepts. The graph structure is good but could be improved with clearer hierarchy."
+    },
+    "llama3.2": {
+      "points": 0.93,
+      "feedback": "The student's flow graph demonstrates a good understanding of the course context, but there are some minor issues with the connections and missing topics. The student has identified all the main topics required for the course, but there are some minor omissions. The graph structure is mostly correct, but there are a few illogical connections. Overall, the student needs to refine their understanding of the course material and improve their connections."
+    }
+  },
+  {
+    "id": 99,
+    "ground_truth": {
+      "points": 0.47,
+      "feedback": "The student included concepts like Artificial Intelligence, Reinforcement Learning, Supervised Learning. However important ideas missing include Deep Learning, Neural Networks, Unsupervised Learning, Computer Vision. Some relationships between concepts appear partially correct but the graph does not fully represent the conceptual structure of Artificial Intelligence. More complete topic coverage and clearer hierarchy would improve the map."
+    },
+    "llama3.2": {
+      "points": 0.68,
+      "feedback": "The student's flow graph shows some relevant topics but lacks key concepts such as Deep Learning, Neural Networks, Unsupervised Learning, Computer Vision, and Ethics. The connections between topics are mostly logical, but there are some minor issues with direction and hierarchical structure. Overall, the graph could benefit from more comprehensive coverage of the course material. To improve, the student should focus on adding the missing topics and refining the existing connections."
+    }
+  }
+]
