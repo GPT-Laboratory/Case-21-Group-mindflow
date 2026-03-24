@@ -17,6 +17,14 @@ from services.auth_service import (
 router = APIRouter()
 
 def map_db_flow_to_response(db_flow: Flow) -> FlowResponse:
+    # Merge legacy single document_id column into metadata.document_ids for clients
+    metadata = dict(db_flow.metadata_json or {})
+    ids = metadata.get("document_ids")
+    if db_flow.document_id is not None and (
+        not isinstance(ids, list) or len(ids) == 0
+    ):
+        metadata = {**metadata, "document_ids": [db_flow.document_id]}
+
     return FlowResponse(
         id=db_flow.id,
         name=db_flow.name,
@@ -26,7 +34,7 @@ def map_db_flow_to_response(db_flow: Flow) -> FlowResponse:
         type=db_flow.flow_type,
         nodes=db_flow.nodes,
         edges=db_flow.edges,
-        metadata=db_flow.metadata_json,
+        metadata=metadata,
         lastModified=db_flow.last_modified,
         createdAt=db_flow.created_at,
         owner_id=db_flow.owner_id,
@@ -85,6 +93,15 @@ def create_flow(
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(require_instructor),
 ):
+    meta = flow.metadata or {}
+    doc_ids = meta.get("document_ids") if isinstance(meta, dict) else None
+    legacy_doc = None
+    if isinstance(doc_ids, list) and len(doc_ids) > 0:
+        try:
+            legacy_doc = int(doc_ids[0])
+        except (TypeError, ValueError):
+            legacy_doc = None
+
     db_flow = Flow(
         id=str(uuid.uuid4()),
         name=flow.name,
@@ -96,6 +113,7 @@ def create_flow(
         edges=flow.edges,
         metadata_json=flow.metadata,
         owner_id=user.user_id,
+        document_id=legacy_doc,
     )
     db.add(db_flow)
     db.commit()
@@ -147,6 +165,17 @@ def update_flow(
     db_flow.edges = flow.edges
     db_flow.metadata_json = flow.metadata
     db_flow.last_modified = datetime.datetime.utcnow()
+
+    # Keep legacy document_id column in sync with metadata.document_ids[0]
+    meta = flow.metadata or {}
+    doc_ids = meta.get("document_ids") if isinstance(meta, dict) else None
+    if isinstance(doc_ids, list) and len(doc_ids) > 0:
+        try:
+            db_flow.document_id = int(doc_ids[0])
+        except (TypeError, ValueError):
+            pass
+    elif isinstance(meta, dict) and meta.get("document_ids") == []:
+        db_flow.document_id = None
 
     db.commit()
     db.refresh(db_flow)
