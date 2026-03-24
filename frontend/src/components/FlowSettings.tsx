@@ -23,6 +23,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { flowConfigApi, ragApi, type FlowConfig, type DocumentData } from '@/services/apiClient';
+import { FlowsService } from '@/AgenticContentFlow/services/FlowsService';
+import { appendDocumentIdToMetadata } from '@/AgenticContentFlow/Panel/utils/flowDocumentMetadata';
 
 type SettingsDraft = {
     name: string;
@@ -199,6 +201,13 @@ export default function FlowSettings() {
             setUploadError(null);
             const doc = await ragApi.uploadDocument(file);
             setDocuments((prev) => [...prev, doc]);
+            try {
+                const fresh = await FlowsService.getFlow(flowId);
+                const payload = appendDocumentIdToMetadata(fresh, doc.id);
+                await FlowsService.updateFlow(flowId, payload);
+            } catch (linkErr) {
+                console.warn('Could not link document to flow metadata:', linkErr);
+            }
         } catch (err) {
             setUploadError(err instanceof Error ? err.message : 'Upload failed');
         } finally {
@@ -371,15 +380,18 @@ export default function FlowSettings() {
                                     <div className="flex items-center gap-2 border rounded-md px-3 py-2 hover:bg-accent transition-colors">
                                         <Upload className="h-4 w-4" />
                                         <span className="text-sm">
-                                            {isUploading ? 'Uploading...' : 'Upload document (PDF, TXT)'}
+                                            {isUploading ? 'Uploading...' : 'Upload document'}
                                         </span>
                                         {isUploading && <Loader2 className="h-4 w-4 animate-spin" />}
                                     </div>
                                 </Label>
+                                <p className="text-xs text-muted-foreground mt-1.5">
+                                    Supported formats: PDF (parsed page-by-page), TXT, MD, CSV, LOG, JSON, XML, HTML, PY, JS, TS, RST (processed as plain text).
+                                </p>
                                 <input
                                     id="rag-upload"
                                     type="file"
-                                    accept=".pdf,.txt,.md"
+                                    accept=".pdf,.txt,.md,.csv,.log,.json,.xml,.html,.py,.js,.ts,.rst"
                                     className="hidden"
                                     onChange={handleFileUpload}
                                     disabled={isUploading}
