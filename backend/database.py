@@ -43,3 +43,13 @@ Base.metadata.create_all(bind=engine)
 with engine.begin() as conn:
     conn.execute(text("ALTER TABLE lti_credentials ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
     conn.execute(text("CREATE INDEX IF NOT EXISTS idx_lti_credentials_user_id ON lti_credentials(user_id)"))
+    conn.execute(
+        text(
+            "ALTER TABLE evaluation_results ADD COLUMN IF NOT EXISTS document_id INTEGER"
+        )
+    )
+    conn.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS ix_evaluation_results_document_id ON evaluation_results(document_id)"
+        )
+    )

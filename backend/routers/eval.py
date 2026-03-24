@@ -12,15 +12,21 @@ def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):
     print(f"--- Starting AI Evaluation for document: {request.document_id} ---")
     print(f"Input Flow JSON: {request.flow_data}")
     
-    # Create the pending record
     eval_record = EvaluationResult(
         flow_data=request.flow_data,
         document_id=request.document_id,
-        status="pending"
+        status="pending",
     )
     db.add(eval_record)
-    db.commit()
-    db.refresh(eval_record)
+    try:
+        db.commit()
+        db.refresh(eval_record)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not save evaluation record: {str(e)[:500]}",
+        ) from e
     
     try:
         result = validate_flow_with_rag(
@@ -51,11 +57,11 @@ def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):
         
     except Exception as e:
         print(f"Error during AI evaluation: {e}")
-        # Mark as failed if necessary
         eval_record.status = "failed"
         eval_record.feedback = str(e)
         db.commit()
-        raise HTTPException(status_code=500, detail="Internal Server Error: Failed to process the flow evaluation.")
+        msg = (eval_record.feedback or "Failed to process the flow evaluation.")[:800]
+        raise HTTPException(status_code=500, detail=msg)
     
     print(f"AI Response Result: {result}")
     print("--- End AI Evaluation ---")
