@@ -12,6 +12,7 @@ interface FlowsListProps {
   error: string | null;
   selectedFlowId: string | null;
   onLoadFlow: (flowId: string) => void;
+  onRenameFlow: (flow: Flow) => void;
   onDeleteFlow: (flowId: string) => void;
 }
 
@@ -21,6 +22,7 @@ export const FlowsList: React.FC<FlowsListProps> = ({
   error,
   selectedFlowId,
   onLoadFlow,
+  onRenameFlow,
   onDeleteFlow,
 }) => {
   if (loading) {
@@ -47,6 +49,7 @@ export const FlowsList: React.FC<FlowsListProps> = ({
           flow={flow}
           isSelected={selectedFlowId === flow.id}
           onSelect={onLoadFlow}
+          onRename={onRenameFlow}
           onDelete={onDeleteFlow}
         />
       ))}

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Settings } from 'lucide-react';
+import { MoreHorizontal, Pencil, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,12 +16,14 @@ import { Flow } from '../../stores/useFlowsStore';
 interface FlowActionsProps {
   flow: Flow;
   isSelected: boolean;
+  onRename: (flow: Flow) => void;
   onDelete: (flowId: string) => void;
 }
 
 export const FlowActions: React.FC<FlowActionsProps> = ({
   flow,
   isSelected,
+  onRename,
   onDelete,
 }) => {
   const navigate = useNavigate();
@@ -50,7 +52,10 @@ export const FlowActions: React.FC<FlowActionsProps> = ({
           <Settings className="w-3 h-3 mr-2" />
           Settings
         </DropdownMenuItem>
-        <DropdownMenuItem>Rename</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onRename(flow)}>
+          <Pencil className="w-3 h-3 mr-2" />
+          Rename
+        </DropdownMenuItem>
         <DropdownMenuItem>Duplicate</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

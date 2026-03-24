@@ -71,6 +71,12 @@ export interface FlowsStore {
   fetchFlows: () => Promise<void>;
   createFlow: (payload: FlowPayload) => Promise<Flow | null>;
   saveFlow: (id: string, payload: FlowPayload) => Promise<Flow | null>;
+  /** Persists a new display name; pass live nodes/edges when renaming the flow currently open in the editor. */
+  renameFlow: (
+    id: string,
+    name: string,
+    options?: { nodes?: Node[]; edges?: Edge[] }
+  ) => Promise<Flow | null>;
   deleteFlow: (id: string) => Promise<boolean>;
   
   // Utility methods
@@ -184,6 +190,19 @@ export const useFlowsStore = create<FlowsStore>()(
         } finally {
           set({ loading: false });
         }
+      },
+
+      renameFlow: async (id, name, options) => {
+        const flow = get().flows[id];
+        const trimmed = name.trim();
+        if (!flow || !trimmed) return null;
+        const payload = FlowsService.toPayload({
+          ...flow,
+          name: trimmed,
+          nodes: options?.nodes ?? flow.nodes,
+          edges: options?.edges ?? flow.edges,
+        });
+        return get().saveFlow(id, payload);
       },
       
       deleteFlow: async (id: string): Promise<boolean> => {

@@ -1,16 +1,33 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Brain, Loader2, Trash2, Globe } from 'lucide-react';
+import { Plus, ArrowRight, Brain, Loader2, Trash2, Globe, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useFlowsStore, Flow } from '../AgenticContentFlow/stores/useFlowsStore';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { RenameFlowDialog } from '../AgenticContentFlow/FlowsPanel/components/RenameFlowDialog';
+import { useNotifications } from '../AgenticContentFlow/Notifications/hooks/useNotifications';
 
 const Homepage: React.FC = () => {
   const navigate = useNavigate();
-  const { loading, fetchFlows, getAllFlows, deleteFlow } = useFlowsStore();
+  const { loading, fetchFlows, getAllFlows, deleteFlow, renameFlow } = useFlowsStore();
   const { authenticated, isInstructor, userId } = useAuthStore();
+  const { showSuccessToast, showErrorToast } = useNotifications();
+  const [flowToRename, setFlowToRename] = useState<Flow | null>(null);
+
+  const handleRenamePersist = useCallback(
+    async (flowId: string, name: string) => {
+      const updated = await renameFlow(flowId, name);
+      if (updated) {
+        showSuccessToast('Flow renamed', `Saved as "${name}"`);
+        return true;
+      }
+      showErrorToast('Rename failed', 'Could not save the new name');
+      return false;
+    },
+    [renameFlow, showSuccessToast, showErrorToast]
+  );
 
   useEffect(() => {
     fetchFlows().catch(console.warn);
@@ -44,19 +61,34 @@ const Homepage: React.FC = () => {
             )}
           </div>
           {canDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 -mt-1 -mr-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm(`Delete "${flow.name}"?`)) {
-                  deleteFlow(flow.id);
-                }
-              }}
-            >
-              <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-            </Button>
+            <div className="flex items-center shrink-0 -mt-1 -mr-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                title="Rename flow"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFlowToRename(flow);
+                }}
+              >
+                <Pencil className="w-4 h-4 text-muted-foreground" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                title="Delete flow"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Delete "${flow.name}"?`)) {
+                    deleteFlow(flow.id);
+                  }
+                }}
+              >
+                <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+              </Button>
+            </div>
           )}
         </div>
         {flow.description && (
@@ -164,6 +196,15 @@ const Homepage: React.FC = () => {
             )}
           </>
         )}
+
+        <RenameFlowDialog
+          open={Boolean(flowToRename)}
+          onOpenChange={(open) => {
+            if (!open) setFlowToRename(null);
+          }}
+          flow={flowToRename}
+          onRename={handleRenamePersist}
+        />
       </div>
     </div>
   );

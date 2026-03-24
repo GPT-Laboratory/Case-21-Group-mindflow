@@ -9,6 +9,7 @@ interface FlowItemProps {
   flow: Flow;
   isSelected: boolean;
   onSelect: (flowId: string) => void;
+  onRename: (flow: Flow) => void;
   onDelete: (flowId: string) => void;
 }
 
@@ -16,6 +17,7 @@ export const FlowItem: React.FC<FlowItemProps> = ({
   flow,
   isSelected,
   onSelect,
+  onRename,
   onDelete,
 }) => {
   return (
@@ -38,6 +40,7 @@ export const FlowItem: React.FC<FlowItemProps> = ({
       <FlowActions 
         flow={flow}
         isSelected={isSelected}
+        onRename={onRename}
         onDelete={onDelete}
       />
     </div>

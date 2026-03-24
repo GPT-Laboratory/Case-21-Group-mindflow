@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useEdgeContext } from '../Edge/store/useEdgeContext';
 import { useNodeContext } from '../Node/context/useNodeContext';
+import type { Flow } from '../stores/useFlowsStore';
 import { PanelToggleDragHandle } from '../Panel/components/PanelHandle';
 import { useResizePanel } from '../Panel/hooks/useResizePanel';
 import { useFlowsStore } from '../stores/useFlowsStore';
@@ -8,6 +9,7 @@ import { useNotifications } from '../Notifications/hooks/useNotifications';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { FlowsPanelHeader, FlowsList } from './components';
 import { CreateFlowDialog } from './components/CreateFlowDialog';
+import { RenameFlowDialog } from './components/RenameFlowDialog';
 
 const DEFAULT_SIZES = {
   top: { width: 0, height: 350 },
@@ -17,8 +19,8 @@ const DEFAULT_SIZES = {
 };
 
 export const FlowsPanel: React.FC = () => {
-  const { setEdges } = useEdgeContext();
-  const { setNodes } = useNodeContext();
+  const { setEdges, edges } = useEdgeContext();
+  const { setNodes, nodes } = useNodeContext();
   const { showErrorToast, showSuccessToast } = useNotifications();
   const [isExpanded, setIsExpanded] = useState(false);
   const [position] = useState<'left'>('left');
@@ -35,6 +37,7 @@ export const FlowsPanel: React.FC = () => {
   } = useFlowsStore();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [flowToRename, setFlowToRename] = useState<Flow | null>(null);
 
   const { size, isResizing, handleResizeStart } = useResizePanel({
     position,
@@ -95,6 +98,22 @@ export const FlowsPanel: React.FC = () => {
     }
   }, [setNodes, setEdges, setSelectedFlow, showSuccessToast]);
 
+  const handleRenameFlowPersist = useCallback(
+    async (flowId: string, name: string) => {
+      const { renameFlow } = useFlowsStore.getState();
+      const opts =
+        selectedFlowId === flowId ? { nodes, edges } : undefined;
+      const updated = await renameFlow(flowId, name, opts);
+      if (updated) {
+        showSuccessToast('Flow renamed', `Saved as "${name}"`);
+        return true;
+      }
+      showErrorToast('Rename failed', 'Could not save the new name');
+      return false;
+    },
+    [selectedFlowId, nodes, edges, showSuccessToast, showErrorToast]
+  );
+
   const handleDeleteFlow = async (flowId: string) => {
     if (flowId === 'create-new') return;
 
@@ -154,6 +173,7 @@ export const FlowsPanel: React.FC = () => {
                 error={error}
                 selectedFlowId={selectedFlowId}
                 onLoadFlow={loadFlow}
+                onRenameFlow={setFlowToRename}
                 onDeleteFlow={handleDeleteFlow}
               />
             </div>
@@ -165,6 +185,15 @@ export const FlowsPanel: React.FC = () => {
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onCreate={handleCreateFlow}
+      />
+
+      <RenameFlowDialog
+        open={Boolean(flowToRename)}
+        onOpenChange={(open) => {
+          if (!open) setFlowToRename(null);
+        }}
+        flow={flowToRename}
+        onRename={handleRenameFlowPersist}
       />
     </div>
   );
