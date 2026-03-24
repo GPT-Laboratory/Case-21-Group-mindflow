@@ -22,6 +22,8 @@ function mapToFlow(raw: any): Flow {
     nodes: raw.nodes ?? [],
     edges: raw.edges ?? [],
     metadata: raw.metadata,
+    owner_id: raw.owner_id ?? null,
+    is_published: raw.is_published ?? false,
   };
 }
 
