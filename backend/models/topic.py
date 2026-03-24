@@ -10,8 +10,5 @@ class Topic(Base):
     topic_name = Column(String, index=True, nullable=False)
     details = Column(Text, nullable=True)
     
-    course_id = Column(String, index=True, nullable=True)
-    module_id = Column(String, index=True, nullable=True)
-    exercise_id = Column(String, index=True, nullable=True)
 
     document = relationship("Document", backref="topics")

@@ -23,9 +23,7 @@ class Flow(Base):
     is_published = Column(Boolean, default=False)
     access_key_required = Column(Boolean, default=False)
     access_key = Column(String, nullable=True)
-    course_id = Column(String, nullable=True, index=True)
-    module_id = Column(String, nullable=True, index=True)
-    exercise_id = Column(String, nullable=True, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=True, index=True)
 
 
 class FlowCollaborator(Base):

@@ -30,9 +30,6 @@ type SettingsDraft = {
     is_published: boolean;
     access_key_required: boolean;
     access_key: string;
-    course_id: string;
-    module_id: string;
-    exercise_id: string;
 };
 
 function createAccessKey(): string {
@@ -46,9 +43,6 @@ function createDraft(config: FlowConfig): SettingsDraft {
         is_published: config.is_published,
         access_key_required: config.access_key_required,
         access_key: config.access_key || '',
-        course_id: config.course_id || '',
-        module_id: config.module_id || '',
-        exercise_id: config.exercise_id || '',
     };
 }
 
@@ -92,13 +86,8 @@ export default function FlowSettings() {
                 setDraft(d);
                 setInitialDraft(d);
 
-                // Load documents for this flow's exercise
-                const exerciseId = data.exercise_id || data.flow_id;
-                const docs = await ragApi.getDocuments({
-                    exercise_id: exerciseId,
-                    course_id: data.course_id || undefined,
-                    module_id: data.module_id || undefined,
-                });
+                // Load ALL documents (no longer scoped to exercise)
+                const docs = await ragApi.getDocuments();
                 setDocuments(docs);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to load config');
@@ -137,9 +126,6 @@ export default function FlowSettings() {
                 is_published: draft.is_published,
                 access_key_required: draft.access_key_required,
                 access_key: draft.access_key_required ? draft.access_key.trim() : undefined,
-                course_id: draft.course_id.trim() || undefined,
-                module_id: draft.module_id.trim() || undefined,
-                exercise_id: draft.exercise_id.trim() || undefined,
             });
 
             setConfig(updated);
@@ -211,12 +197,7 @@ export default function FlowSettings() {
         try {
             setIsUploading(true);
             setUploadError(null);
-            const exerciseId = draft?.exercise_id || config?.exercise_id || flowId;
-            const doc = await ragApi.uploadDocument(file, {
-                exercise_id: exerciseId,
-                course_id: draft?.course_id || config?.course_id || undefined,
-                module_id: draft?.module_id || config?.module_id || undefined,
-            });
+            const doc = await ragApi.uploadDocument(file);
             setDocuments((prev) => [...prev, doc]);
         } catch (err) {
             setUploadError(err instanceof Error ? err.message : 'Upload failed');
@@ -348,51 +329,6 @@ export default function FlowSettings() {
                         </CardContent>
                     </Card>
 
-                    {/* Course / Module / Exercise IDs */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Course Context</CardTitle>
-                            <CardDescription>Link this flow to a course, module, and exercise for RAG content scoping and LTI integration.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="space-y-1">
-                                <Label htmlFor="course-id">Course ID</Label>
-                                <Input
-                                    id="course-id"
-                                    value={draft.course_id}
-                                    onChange={(e) => {
-                                        setDraft((c) => (c ? { ...c, course_id: e.target.value } : c));
-                                        setSaveSuccess(null);
-                                    }}
-                                    placeholder="e.g. cs-101"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label htmlFor="module-id">Module ID</Label>
-                                <Input
-                                    id="module-id"
-                                    value={draft.module_id}
-                                    onChange={(e) => {
-                                        setDraft((c) => (c ? { ...c, module_id: e.target.value } : c));
-                                        setSaveSuccess(null);
-                                    }}
-                                    placeholder="e.g. module-3"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label htmlFor="exercise-id">Exercise ID</Label>
-                                <Input
-                                    id="exercise-id"
-                                    value={draft.exercise_id}
-                                    onChange={(e) => {
-                                        setDraft((c) => (c ? { ...c, exercise_id: e.target.value } : c));
-                                        setSaveSuccess(null);
-                                    }}
-                                    placeholder="Auto-generated from flow ID if empty"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
 
                     {/* LTI Exercise URL */}
                     <Card>

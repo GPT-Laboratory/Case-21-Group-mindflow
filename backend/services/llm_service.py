@@ -120,7 +120,7 @@ def _extract_flow_topics_with_details(flow_data: dict) -> list[dict]:
     return extracted
 
 
-def validate_flow_with_rag(flow_data: dict, course_id: str, module_id: str, exercise_id: Optional[str] = None, db: Session = None):
+def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None):
     """
     RAG lookup for context then validate flow using LLM.
     Extracts topics+details from both user flow and DB, then passes rich context to LLM.
@@ -133,9 +133,7 @@ def validate_flow_with_rag(flow_data: dict, course_id: str, module_id: str, exer
     # 2. Fetch topics+details from DB
     db_topic_dicts = []
     if db:
-        query = db.query(Topic).filter(Topic.course_id == course_id, Topic.module_id == module_id)
-        if exercise_id:
-            query = query.filter(Topic.exercise_id == exercise_id)
+        query = db.query(Topic).filter(Topic.document_id == document_id)
         db_rows = query.all()
         seen = set()
         for t in db_rows:
@@ -177,7 +175,7 @@ def validate_flow_with_rag(flow_data: dict, course_id: str, module_id: str, exer
     if matching_topic_names:
         from .rag_service import fetch_related_files
         query_str = " ".join(matching_topic_names)
-        rag_results = fetch_related_files(query_str, course_id, module_id, exercise_id=exercise_id)
+        rag_results = fetch_related_files(query_str, document_id=document_id)
         context_texts = [res.page_content for res in rag_results]
 
     context_str = "\n".join(context_texts) if context_texts else "No specific document context found."
@@ -189,7 +187,6 @@ def validate_flow_with_rag(flow_data: dict, course_id: str, module_id: str, exer
         missing_dicts,
         flow_topic_dicts,
         context_str,
-        exercise_id or "Default",
         total_db=total_db,
         missing_main_count=missing_main_count,
         missing_detail_count=missing_detail_count,

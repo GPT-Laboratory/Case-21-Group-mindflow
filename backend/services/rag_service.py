@@ -44,7 +44,7 @@ import numpy as np
 
 
 
-def save_topics_to_db(topics: list[dict], doc_id: int, db: Session, course_id: str = None, module_id: str = None, exercise_id: str = None):
+def save_topics_to_db(topics: list[dict], doc_id: int, db: Session):
     """Saves the extracted topics and their details to the database."""
     if not db:
         return
@@ -56,10 +56,7 @@ def save_topics_to_db(topics: list[dict], doc_id: int, db: Session, course_id: s
         topic = Topic(
             document_id=doc_id,
             topic_name=topic_name,
-            details=details,
-            course_id=course_id,
-            module_id=module_id,
-            exercise_id=exercise_id
+            details=details
         )
         db.add(topic)
     try:
@@ -68,7 +65,7 @@ def save_topics_to_db(topics: list[dict], doc_id: int, db: Session, course_id: s
         logger.error(f"Error saving topics to DB: {e}")
         db.rollback()
 
-def process_file_and_embed(file_path: str, filename: str, doc_id: int = None, db: Session = None, course_id: str = None, module_id: str = None, exercise_id: str = None):
+def process_file_and_embed(file_path: str, filename: str, doc_id: int, db: Session):
     """
     Extracts text, splits it, embeds into PGVector, extracts and saves topics.
     """
@@ -87,9 +84,7 @@ def process_file_and_embed(file_path: str, filename: str, doc_id: int = None, db
     # Add metadata
     for split in splits:
         split.metadata['filename'] = filename
-        split.metadata['course_id'] = course_id
-        split.metadata['module_id'] = module_id
-        split.metadata['exercise_id'] = exercise_id
+        split.metadata['document_id'] = doc_id
         
         # Extract topics for this chunk
         chunk_topics = extract_topics_from_text(split.page_content)
@@ -110,49 +105,32 @@ def process_file_and_embed(file_path: str, filename: str, doc_id: int = None, db
     
     # Save topics to DB if provided
     if db and doc_id:
-        save_topics_to_db(unique_topics, doc_id, db, course_id, module_id, exercise_id)
+        save_topics_to_db(unique_topics, doc_id, db)
 
-    collection_name = f"{course_id}_{module_id}_{exercise_id}_embeddings" if exercise_id else f"{course_id}_{module_id}_default_embeddings"
+    collection_name = f"doc_{doc_id}_embeddings"
     vectorstore = get_vector_with_embedding(collection_name)
     vectorstore.add_documents(documents=splits)
     
     return True
 
-def fetch_related_files(user_question, course_id, module_id, exercise_id=None, top_k=5, db: Session = None):
+def fetch_related_files(user_question, document_id: int, top_k=5, db: Session = None):
     """
-    Retrieve top-k relevant documents from PGVector based on user query.
+    Retrieve top-k relevant documents from PGVector based on user query and document_id.
     """
     if not user_question:
         raise ValueError("User question cannot be empty")
 
     docs = []
     try:
-        collections = []
-        if exercise_id:
-            collections.append(f"{course_id}_{module_id}_{exercise_id}_embeddings")
-        else:
-            # Query the database for all unique exercises associated with this course and module
-            if db:
-                exercises = db.query(DB_Document.exercise_id).filter(
-                    DB_Document.course_id == course_id,
-                    DB_Document.module_id == module_id
-                ).distinct().all()
-                for (ex_id,) in exercises:
-                    if ex_id:
-                        collections.append(f"{course_id}_{module_id}_{ex_id}_embeddings")
-            
-            # Add default collection
-            collections.append(f"{course_id}_{module_id}_default_embeddings")
+        collection_name = f"doc_{document_id}_embeddings"
 
-        # Retrieve from each collection
-        for collection_name in collections:
-            try:
-                vectordb = get_vector_with_embedding(collection_name)
-                # similarity_search returns LC_Document objects
-                results = vectordb.similarity_search(user_question, k=top_k)
-                docs.extend(results)
-            except Exception as e:
-                logger.error(f"Failed fetching from collection {collection_name}: {e}", exc_info=True)
+        try:
+            vectordb = get_vector_with_embedding(collection_name)
+            # similarity_search returns LC_Document objects
+            results = vectordb.similarity_search(user_question, k=top_k)
+            docs.extend(results)
+        except Exception as e:
+            logger.error(f"Failed fetching from collection {collection_name}: {e}", exc_info=True)
 
         return docs
 
@@ -160,9 +138,9 @@ def fetch_related_files(user_question, course_id, module_id, exercise_id=None, t
         logger.error(f"Error fetching related files: {e}", exc_info=True)
         raise
 
-def delete_related_files(filename: str, course_id: str, module_id: str, exercise_id: str = None):
+def delete_related_files(filename: str, document_id: int):
     """
-    Delete all stored embeddings for a given course/module/document/exercise using raw SQL.
+    Delete all stored embeddings for a given document using raw SQL.
     """
     try:
         # LangChain usually wants postgresql+psycopg2 but the base URL is often just postgresql
@@ -173,17 +151,9 @@ def delete_related_files(filename: str, course_id: str, module_id: str, exercise
                 query = """
                 DELETE FROM langchain_pg_embedding
                 WHERE cmetadata->>'filename' = %s
-                  AND cmetadata->>'course_id' = %s
-                  AND cmetadata->>'module_id' = %s
+                  AND cmetadata->>'document_id' = %s
                 """
-                params = [filename, course_id, module_id]
-                
-                if exercise_id:
-                    query += " AND cmetadata->>'exercise_id' = %s"
-                    params.append(exercise_id)
-                else:
-                    query += " AND cmetadata->>'exercise_id' IS NULL"
-
+                params = [filename, str(document_id)]
                 cursor.execute(query, params)
                 conn.commit()
         return True

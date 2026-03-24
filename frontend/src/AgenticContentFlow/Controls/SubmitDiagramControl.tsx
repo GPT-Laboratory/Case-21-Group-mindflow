@@ -17,15 +17,11 @@ import { Button } from '@/components/ui/button';
 
 const SubmitDiagramControl: React.FC = () => {
     const {
-        courseId,
-        selectedModuleId,
-        selectedExerciseId
+        selectedDocumentId
     } = useCourseData();
 
     // Debugging logs to verify the values
-    console.log('SubmitDiagramControl - courseId:', courseId);
-    console.log('SubmitDiagramControl - selectedModuleId:', selectedModuleId);
-    console.log('SubmitDiagramControl - selectedExerciseId:', selectedExerciseId);
+    console.log('SubmitDiagramControl - selectedDocumentId:', selectedDocumentId);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
@@ -37,13 +33,8 @@ const SubmitDiagramControl: React.FC = () => {
     const { edges } = useEdgeContext();
 
     const handleSubmit = async () => {
-        if (!selectedModuleId) {
-            toast.error('Please select a module');
-            return;
-        }
-
-        if (!selectedExerciseId) {
-            toast.error('Please select an exercise');
+        if (!selectedDocumentId) {
+            toast.error('Please select a document context first');
             return;
         }
 
@@ -52,9 +43,7 @@ const SubmitDiagramControl: React.FC = () => {
             const flowData = { nodes, edges };
             const result = await evalApi.evaluate({
                 flow_data: flowData,
-                course_id: courseId.toString(),
-                module_id: selectedModuleId?.toString() || '',
-                exercise_id: selectedExerciseId?.toString() || undefined,
+                document_id: selectedDocumentId,
             });
 
             toast.success('Diagram submitted successfully!');
@@ -102,7 +91,7 @@ const SubmitDiagramControl: React.FC = () => {
                     <div className="flex items-end self-end pb-0.5 gap-2">
                         <button
                             onClick={handleSubmit}
-                            disabled={isSubmitting || !selectedExerciseId}
+                            disabled={isSubmitting || !selectedDocumentId}
                             className="h-8 px-4 bg-primary text-primary-foreground rounded text-xs font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
                         >
                             {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}

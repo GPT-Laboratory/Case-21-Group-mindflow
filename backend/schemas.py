@@ -14,11 +14,7 @@ class DocumentResponse(BaseModel):
     id: int
     filename: str
     doc_path: Optional[str]
-    course_id: Optional[str] = None
-    module_id: Optional[str] = None
-    module_name: Optional[str] = None
-    exercise_id: Optional[str] = None
-    exercise_name: Optional[str] = None
+    processing_status: str
     processing_status: str
     created_by: str
     created_dt: datetime
@@ -28,9 +24,7 @@ class DocumentResponse(BaseModel):
 
 class ValidateRequest(BaseModel):
     flow_data: dict
-    course_id: str
-    module_id: str
-    exercise_id: Optional[str] = None
+    document_id: int
 
 # Ported Flow schemas
 class FlowBase(BaseModel):
