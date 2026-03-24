@@ -49,7 +49,6 @@ pip-wheel-metadata/
 # Environment variables
 # =========================
 .env
-.env.*
 *.env
 *.local
 
