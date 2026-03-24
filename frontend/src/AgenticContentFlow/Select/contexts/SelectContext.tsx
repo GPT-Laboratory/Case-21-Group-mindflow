@@ -99,7 +99,7 @@ export const SelectProvider = ({ children }: { children: ReactNode }) => {
 
   const clearSelection = useCallback(() => {
     for (const node of selectedNodes) {
-     reactFlowInstance.updateNode(node.id, {
+      reactFlowInstance.updateNode(node.id, {
         selected: false,
       });
     }
@@ -110,7 +110,7 @@ export const SelectProvider = ({ children }: { children: ReactNode }) => {
     }
     setSelectedNodes([]);
     setSelectedEdges([]);
-  }, [ setSelectedNodes, setSelectedEdges]);
+  }, [selectedNodes, selectedEdges, reactFlowInstance]);
 
   const hasSelection = selectedNodes.length > 0 || selectedEdges.length > 0;
 
