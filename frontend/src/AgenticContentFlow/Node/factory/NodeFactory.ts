@@ -28,13 +28,13 @@ export class UnifiedNodeFactory {
       return null;
     }
 
-    // Merge default data with provided data
+    // Merge default data with provided data — do not persist defaultLabel as label; placeholder handles it
     const nodeData: UnifiedNodeInstanceData = {
-      label: data?.label || config.defaultLabel,
       details: data?.details || config.description,
       nodeLevel: data?.nodeLevel || 'basic',
       expanded: data?.expanded ?? false,
-      ...data
+      ...data,
+      label: data?.label ?? "",
     };
 
     // Determine dimensions based on node type and state
@@ -77,13 +77,13 @@ export class UnifiedNodeFactory {
     position: { x: number; y: number },
     data?: Partial<UnifiedNodeInstanceData>
   ): Node | null {
-    // Merge default data with provided data
+    // Merge default data with provided data — do not persist defaultLabel as label; placeholder handles it
     const nodeData: UnifiedNodeInstanceData = {
-      label: data?.label || config.defaultLabel,
       details: data?.details || config.description,
       nodeLevel: data?.nodeLevel || 'basic',
       expanded: data?.expanded ?? false,
-      ...data
+      ...data,
+      label: data?.label ?? "",
     };
 
     // Determine dimensions based on node type and state

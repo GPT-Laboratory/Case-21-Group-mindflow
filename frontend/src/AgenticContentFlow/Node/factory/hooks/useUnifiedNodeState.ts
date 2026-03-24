@@ -125,12 +125,12 @@ export const useUnifiedNodeState = ({
     }),
   ];
 
-  // Get node label
+  // Empty until the user types — header uses config.defaultLabel as placeholder (see NodeRenderer)
   const nodeLabel =
-    nodeData?.instanceData?.label ||
-    nodeData?.label ||
-    nodeData?.functionName ||
-    config.defaultLabel;
+    nodeData?.instanceData?.label ??
+    nodeData?.label ??
+    nodeData?.functionName ??
+    "";
 
   // Check if node has variants
   const hasVariants = UnifiedStyleManager.hasVariants(config);

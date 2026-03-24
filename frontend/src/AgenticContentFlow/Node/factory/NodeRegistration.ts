@@ -102,8 +102,7 @@ export class UnifiedNodeRegistration {
         id,
         type: nodeType, // Use the actual node type name, not 'unifiedNode'
         data: {
-          // Merge default data with any overrides
-          label: params.label || config.defaultLabel,
+          // Merge default data with any overrides — do not persist defaultLabel; header placeholder shows it
           details: params.details ?? '',
           nodeLevel: params.nodeLevel || 'basic',
           expanded: params.expanded ?? false,
@@ -113,7 +112,8 @@ export class UnifiedNodeRegistration {
           // Persist initial visual color so node body and handles match immediately.
           nodeColor,
           // Pass any custom data
-          ...customData
+          ...customData,
+          label: params.label ?? "",
         },
         style: {
           width: config.defaultDimensions.width,

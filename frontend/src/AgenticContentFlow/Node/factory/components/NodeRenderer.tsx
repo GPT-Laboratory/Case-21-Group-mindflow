@@ -159,7 +159,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
           icon={mainIcon}
           label={nodeLabel}
           editableLabel
-          labelPlaceholder="Topic"
+          labelPlaceholder={config.defaultLabel}
           isProcessing={isProcessing}
           isCompleted={isCompleted}
           hasError={hasError}
