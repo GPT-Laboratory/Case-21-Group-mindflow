@@ -135,6 +135,12 @@ export interface DocumentData {
     created_dt: string;
 }
 
+export interface TopicData {
+    id: number;
+    topic_name: string;
+    details: string | null;
+}
+
 export const ragApi = {
     getDocuments: async (): Promise<DocumentData[]> => {
         const response = await fetch('/api/rag/documents');
@@ -164,6 +170,12 @@ export const ragApi = {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.blob();
     },
+
+    getDocumentTopics: async (docId: number): Promise<TopicData[]> => {
+        const response = await fetch(`/api/rag/documents/${docId}/topics`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
 };
 
 // ─── Evaluation ───────────────────────────────────────────────────────────────
@@ -180,7 +192,19 @@ export const evalApi = {
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            throw new Error((err as any).detail || `HTTP ${response.status}`);
+            const detail = (err as { detail?: unknown }).detail;
+            let message: string;
+            if (typeof detail === 'string') {
+                message = detail;
+            } else if (Array.isArray(detail)) {
+                message = detail
+                    .map((item: { msg?: string }) => item?.msg)
+                    .filter(Boolean)
+                    .join('; ');
+            } else {
+                message = '';
+            }
+            throw new Error(message || `Evaluation failed (HTTP ${response.status})`);
         }
         return response.json();
     },
