@@ -120,11 +120,9 @@ const Homepage: React.FC = () => {
                   <Card className="border-dashed">
                     <CardContent className="flex flex-col items-center justify-center py-12">
                       <Brain className="w-12 h-12 text-muted-foreground/40 mb-4" />
-                      <p className="text-muted-foreground mb-4">No flows yet. Create your first one to get started.</p>
-                      <Button variant="outline" onClick={() => navigate('/flows/new')} className="gap-2">
-                        <Plus className="w-4 h-4" />
-                        Create Flow
-                      </Button>
+                      <p className="text-muted-foreground text-center max-w-sm">
+                        No flows yet. Use <span className="font-medium text-foreground">Create New Flow</span> above to add your first mindmap.
+                      </p>
                     </CardContent>
                   </Card>
                 ) : (

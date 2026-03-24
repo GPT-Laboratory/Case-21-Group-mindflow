@@ -29,6 +29,7 @@ import { FlowsPanel } from "./FlowsPanel";
 import { useFlowsStore } from "./stores/useFlowsStore";
 import { FlowsService } from "./services/FlowsService";
 import { useAutoSave } from "./hooks/useAutoSave";
+import { useCreateDraftFlowOnNewRoute } from "./hooks/useCreateDraftFlowOnNewRoute";
 
 import "@xyflow/react/dist/style.css"; // Ensure to import the styles for React Flow
 import ReactStateHistory from "./History/ReactStateHistory";
@@ -65,6 +66,8 @@ export function AgenticContentFlowContent() {
 
   // Load flow from URL param — always verify with API (auth-gated)
   const flowLoadedRef = useRef<string | null>(null);
+
+  useCreateDraftFlowOnNewRoute(flowId, navigate);
 
   useEffect(() => {
     // Clear canvas when creating a new flow

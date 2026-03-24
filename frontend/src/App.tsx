@@ -20,7 +20,6 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomeLanding />} />
                 <Route path="/flows" element={<Homepage />} />
-                <Route path="/flows/new" element={<AgenticContentFlow />} />
                 <Route path="/flows/:flowId" element={<AgenticContentFlow />} />
                 <Route path="/flows/:flowId/settings" element={<FlowSettings />} />
                 <Route path="/lti" element={<LTISettings />} />

@@ -27,8 +27,8 @@ export const useSaveFlow = () => {
       return false;
     }
 
-    if (nodes.length === 0 && edges.length === 0) {
-      showErrorToast('Save Error', 'Cannot save empty flow');
+    if (nodes.length === 0 && edges.length === 0 && !selectedFlowId) {
+      showErrorToast('Save Error', 'Add at least one node before saving, or open the editor from Create New Flow to start a saved draft.');
       return false;
     }
 

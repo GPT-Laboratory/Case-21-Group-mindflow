@@ -24,9 +24,6 @@ export const useAutoSave = () => {
     const flow = flows[selectedFlowId];
     if (!flow) return;
 
-    // Skip if nothing meaningful to save
-    if (nodes.length === 0 && edges.length === 0) return;
-
     // Create a fingerprint to avoid saving identical states
     const fingerprint = JSON.stringify({
       nodes: nodes.map(n => ({ id: n.id, position: n.position, data: n.data, parentId: n.parentId })),
