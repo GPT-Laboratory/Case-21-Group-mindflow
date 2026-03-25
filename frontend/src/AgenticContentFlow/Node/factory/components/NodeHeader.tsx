@@ -8,6 +8,7 @@ import {
   ReactNode,
 } from "react";
 import { useNodeId, useReactFlow } from "@xyflow/react";
+import { useNodeContext } from "../../context/useNodeContext";
 import { cn } from "@/lib/utils";
 import { MoreVertical, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -320,13 +321,16 @@ NodeHeaderMenuAction.displayName = "NodeHeaderMenuAction";
 
 export const NodeHeaderDeleteAction = () => {
   const id = useNodeId();
-  const { setNodes } = useReactFlow();
+  const { getNode } = useReactFlow();
+  const { removeNodes } = useNodeContext();
 
   const handleClick = useCallback(
     () => {
-      setNodes((prevNodes) => prevNodes.filter((node) => node.id !== id));
+      if (!id) return;
+      const node = getNode(id);
+      if (node) removeNodes([node]);
     },
-    [id, setNodes]
+    [id, getNode, removeNodes]
   );
 
   return (

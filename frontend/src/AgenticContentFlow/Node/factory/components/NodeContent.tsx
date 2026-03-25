@@ -7,13 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 interface NodeContentProps {
   node: any;
   expanded?: boolean;
+  hidden?: boolean;
 }
 
 /**
  * Component that renders always-on editable node content
  */
-export const NodeContent: React.FC<NodeContentProps> = ({ node, expanded }) => {
+export const NodeContent: React.FC<NodeContentProps> = ({ node, expanded, hidden }) => {
   void expanded;
+  if (hidden) return null;
   const id = useNodeId();
   const { setNodes } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();

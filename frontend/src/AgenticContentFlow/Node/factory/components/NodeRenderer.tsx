@@ -181,6 +181,7 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
         <NodeContent
           node={nodeInFlow}
           expanded={expanded}
+          hidden={config.group === 'cell'}
         />
 
       </BaseNodeContainer>
