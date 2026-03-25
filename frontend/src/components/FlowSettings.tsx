@@ -22,7 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { flowConfigApi, ragApi, type FlowConfig, type DocumentData } from '@/services/apiClient';
+import { flowConfigApi, ragApi, evalApi, type FlowConfig, type DocumentData } from '@/services/apiClient';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FlowsService } from '@/AgenticContentFlow/services/FlowsService';
 import { appendDocumentIdToMetadata } from '@/AgenticContentFlow/Panel/utils/flowDocumentMetadata';
 
@@ -32,6 +33,7 @@ type SettingsDraft = {
     is_published: boolean;
     access_key_required: boolean;
     access_key: string;
+    ollama_model: string;
 };
 
 function createAccessKey(): string {
@@ -45,6 +47,7 @@ function createDraft(config: FlowConfig): SettingsDraft {
         is_published: config.is_published,
         access_key_required: config.access_key_required,
         access_key: config.access_key || '',
+        ollama_model: config.ollama_model || '',
     };
 }
 
@@ -69,6 +72,9 @@ export default function FlowSettings() {
     const [collaborators, setCollaborators] = useState<FlowConfig['collaborators']>([]);
     const [collaboratorError, setCollaboratorError] = useState<string | null>(null);
 
+    // Ollama models state
+    const [availableModels, setAvailableModels] = useState<string[]>([]);
+
     // Document/RAG state
     const [documents, setDocuments] = useState<DocumentData[]>([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -89,8 +95,12 @@ export default function FlowSettings() {
                 setInitialDraft(d);
 
                 // Load ALL documents (no longer scoped to exercise)
-                const docs = await ragApi.getDocuments();
+                const [docs, models] = await Promise.all([
+                    ragApi.getDocuments(),
+                    evalApi.getModels().catch(() => [] as string[]),
+                ]);
                 setDocuments(docs);
+                setAvailableModels(models);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to load config');
             } finally {
@@ -128,6 +138,7 @@ export default function FlowSettings() {
                 is_published: draft.is_published,
                 access_key_required: draft.access_key_required,
                 access_key: draft.access_key_required ? draft.access_key.trim() : undefined,
+                ollama_model: draft.ollama_model || undefined,
             });
 
             setConfig(updated);
@@ -359,6 +370,42 @@ export default function FlowSettings() {
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground">Save settings first to generate the LTI URL.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Evaluation Model */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">Evaluation Model</CardTitle>
+                            <CardDescription>
+                                Choose which Ollama model is used when students submit this flow for evaluation.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {availableModels.length > 0 ? (
+                                <Select
+                                    value={draft.ollama_model || undefined}
+                                    onValueChange={(value) => {
+                                        setDraft((c) => (c ? { ...c, ollama_model: value } : c));
+                                        setSaveSuccess(null);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Default (from server config)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {availableModels.map((model) => (
+                                            <SelectItem key={model} value={model}>
+                                                {model}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Could not load models from Ollama. The server default will be used.
+                                </p>
                             )}
                         </CardContent>
                     </Card>

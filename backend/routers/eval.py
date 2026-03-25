@@ -1,11 +1,28 @@
+import os
+import requests as http_requests
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas import ValidateRequest
-from services.llm_service import validate_flow_with_rag
+from services.llm_service import validate_flow_with_rag, VALIDATION_MODEL
 from database import get_db
 from models.evaluation import EvaluationResult
 
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
 router = APIRouter()
+
+
+@router.get("/models")
+def list_ollama_models():
+    """List available Ollama models."""
+    try:
+        resp = http_requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        return [m["name"] for m in data.get("models", [])]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not reach Ollama: {e}")
 
 @router.post("/evaluate")
 def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):
@@ -30,9 +47,10 @@ def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):
     
     try:
         result = validate_flow_with_rag(
-            request.flow_data, 
-            request.document_id, 
-            db
+            request.flow_data,
+            request.document_id,
+            db,
+            model=request.model,
         )
         
         # Update the record with processed status and results
@@ -72,5 +90,6 @@ def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):
         "is_valid": eval_record.is_valid,
         "feedback": eval_record.feedback,
         "points": eval_record.points,
-        "status": eval_record.status
+        "status": eval_record.status,
+        "model": request.model or VALIDATION_MODEL,
     }

@@ -24,6 +24,7 @@ function mapToFlow(raw: any): Flow {
     metadata: raw.metadata,
     owner_id: raw.owner_id ?? null,
     is_published: raw.is_published ?? false,
+    ollama_model: raw.ollama_model ?? null,
   };
 }
 

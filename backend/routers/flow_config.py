@@ -34,9 +34,7 @@ class FlowConfigResponse(BaseModel):
     access_key_required: bool
     access_key: Optional[str] = None
     owner_id: Optional[str] = None
-    course_id: Optional[str] = None
-    module_id: Optional[str] = None
-    exercise_id: Optional[str] = None
+    ollama_model: Optional[str] = None
     lti_exercise_url: Optional[str] = None
     collaborators: List[dict] = []
 
@@ -47,9 +45,7 @@ class FlowConfigUpdate(BaseModel):
     is_published: Optional[bool] = None
     access_key_required: Optional[bool] = None
     access_key: Optional[str] = None
-    course_id: Optional[str] = None
-    module_id: Optional[str] = None
-    exercise_id: Optional[str] = None
+    ollama_model: Optional[str] = None
 
 
 class CollaboratorAdd(BaseModel):
@@ -81,10 +77,8 @@ def _get_collaborators(flow_id: str, db: Session) -> list[dict]:
     ]
 
 
-def _build_lti_url(flow: Flow) -> Optional[str]:
+def _build_lti_url(flow: Flow) -> str:
     """Build the LTI exercise launch URL for this flow."""
-    if flow.exercise_id:
-        return f"/api/lti/exercise/{flow.exercise_id}"
     return f"/api/lti/exercise/{flow.id}"
 
 
@@ -128,9 +122,7 @@ def get_flow_config(
         access_key_required=flow.access_key_required or False,
         access_key=flow.access_key,
         owner_id=flow.owner_id,
-        course_id=flow.course_id,
-        module_id=flow.module_id,
-        exercise_id=flow.exercise_id,
+        ollama_model=flow.ollama_model,
         lti_exercise_url=_build_lti_url(flow),
         collaborators=collaborators,
     )
@@ -159,12 +151,8 @@ def update_flow_config(
             flow.access_key = None
     if updates.access_key is not None:
         flow.access_key = updates.access_key
-    if updates.course_id is not None:
-        flow.course_id = updates.course_id
-    if updates.module_id is not None:
-        flow.module_id = updates.module_id
-    if updates.exercise_id is not None:
-        flow.exercise_id = updates.exercise_id
+    if updates.ollama_model is not None:
+        flow.ollama_model = updates.ollama_model
 
     db.commit()
     db.refresh(flow)
@@ -178,9 +166,7 @@ def update_flow_config(
         access_key_required=flow.access_key_required or False,
         access_key=flow.access_key,
         owner_id=flow.owner_id,
-        course_id=flow.course_id,
-        module_id=flow.module_id,
-        exercise_id=flow.exercise_id,
+        ollama_model=flow.ollama_model,
         lti_exercise_url=_build_lti_url(flow),
         collaborators=collaborators,
     )

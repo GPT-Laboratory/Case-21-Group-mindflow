@@ -25,6 +25,7 @@ class DocumentResponse(BaseModel):
 class ValidateRequest(BaseModel):
     flow_data: dict
     document_id: int
+    model: Optional[str] = None
 
 # Ported Flow schemas
 class FlowBase(BaseModel):
@@ -46,6 +47,7 @@ class FlowResponse(FlowBase):
     createdAt: datetime
     owner_id: Optional[str] = None
     is_published: bool = False
+    ollama_model: Optional[str] = None
 
     class Config:
         from_attributes = True

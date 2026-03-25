@@ -23,6 +23,7 @@ class Flow(Base):
     is_published = Column(Boolean, default=False)
     access_key_required = Column(Boolean, default=False)
     access_key = Column(String, nullable=True)
+    ollama_model = Column(String, nullable=True)
     document_id = Column(Integer, ForeignKey("documents.id"), nullable=True, index=True)
 
 

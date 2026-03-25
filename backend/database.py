@@ -53,3 +53,6 @@ with engine.begin() as conn:
             "CREATE INDEX IF NOT EXISTS ix_evaluation_results_document_id ON evaluation_results(document_id)"
         )
     )
+    conn.execute(
+        text("ALTER TABLE flows ADD COLUMN IF NOT EXISTS ollama_model VARCHAR")
+    )

@@ -21,6 +21,7 @@ export interface Flow {
   metadata?: Record<string, any>;
   owner_id?: string | null;
   is_published?: boolean;
+  ollama_model?: string | null;
 }
 
 /**

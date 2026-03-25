@@ -50,6 +50,7 @@ export interface FlowData {
     metadata?: Record<string, any>;
     owner_id?: string | null;
     is_published?: boolean;
+    ollama_model?: string | null;
 }
 
 export interface FlowPayload {
@@ -181,9 +182,16 @@ export const ragApi = {
 // ─── Evaluation ───────────────────────────────────────────────────────────────
 
 export const evalApi = {
+    getModels: async (): Promise<string[]> => {
+        const response = await fetch('/api/eval/models');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+    },
+
     evaluate: async (payload: {
         flow_data: any;
         document_id: number;
+        model?: string;
     }): Promise<any> => {
         const response = await fetch('/api/eval/evaluate', {
             method: 'POST',
@@ -220,6 +228,7 @@ export interface FlowConfig {
     access_key_required: boolean;
     access_key: string | null;
     owner_id: string | null;
+    ollama_model: string | null;
     lti_exercise_url: string | null;
     collaborators: { user_id: string; added_by: string | null; created_at: string | null }[];
 }
@@ -230,6 +239,7 @@ export interface FlowConfigUpdate {
     is_published?: boolean;
     access_key_required?: boolean;
     access_key?: string;
+    ollama_model?: string;
 }
 
 export const flowConfigApi = {

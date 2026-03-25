@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Send, Loader2, History } from 'lucide-react';
 import { useNodeContext } from '../Node/context/useNodeContext';
 import { useEdgeContext } from '../Edge/store/useEdgeContext';
 import { useCourseData } from '@/hooks/CourseDataContext';
@@ -14,20 +14,70 @@ import {
     DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useFlowsStore } from '../stores/useFlowsStore';
+
+type EvaluationResult = { is_valid: boolean; feedback: string; points?: number; model?: string };
+type StoredEvaluationResult = {
+    evaluationResult: EvaluationResult;
+    gradePassbackStatus: string | null;
+};
 
 const SubmitDiagramControl: React.FC = () => {
     const {
         selectedDocumentId
     } = useCourseData();
+    const selectedFlowId = useFlowsStore((state) => state.selectedFlowId);
+    const selectedFlow = useFlowsStore((state) =>
+        state.selectedFlowId ? state.flows[state.selectedFlowId] : null
+    );
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
     const [showResultModal, setShowResultModal] = useState(false);
-    const [evaluationResult, setEvaluationResult] = useState<{ is_valid: boolean; feedback: string; points?: number } | null>(null);
+    const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
     const [gradePassbackStatus, setGradePassbackStatus] = useState<string | null>(null);
 
     const { nodes } = useNodeContext();
     const { edges } = useEdgeContext();
+    const storageKey = useMemo(
+        () => (selectedFlowId ? `latest-evaluation-result:${selectedFlowId}` : null),
+        [selectedFlowId]
+    );
+
+    useEffect(() => {
+        if (!storageKey) {
+            setEvaluationResult(null);
+            setGradePassbackStatus(null);
+            return;
+        }
+
+        const rawValue = window.localStorage.getItem(storageKey);
+        if (!rawValue) {
+            setEvaluationResult(null);
+            setGradePassbackStatus(null);
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(rawValue) as StoredEvaluationResult;
+            setEvaluationResult(parsed.evaluationResult ?? null);
+            setGradePassbackStatus(parsed.gradePassbackStatus ?? null);
+        } catch {
+            window.localStorage.removeItem(storageKey);
+            setEvaluationResult(null);
+            setGradePassbackStatus(null);
+        }
+    }, [storageKey]);
+
+    const persistLatestResult = (nextEvaluationResult: EvaluationResult, nextGradePassbackStatus: string | null) => {
+        if (!storageKey) return;
+
+        const payload: StoredEvaluationResult = {
+            evaluationResult: nextEvaluationResult,
+            gradePassbackStatus: nextGradePassbackStatus,
+        };
+        window.localStorage.setItem(storageKey, JSON.stringify(payload));
+    };
 
     const handleSubmit = async () => {
         if (!selectedDocumentId) {
@@ -41,11 +91,13 @@ const SubmitDiagramControl: React.FC = () => {
             const result = await evalApi.evaluate({
                 flow_data: flowData,
                 document_id: selectedDocumentId,
+                model: selectedFlow?.ollama_model || undefined,
             });
 
             toast.success('Diagram submitted successfully!');
             setEvaluationResult(result);
             setGradePassbackStatus(null);
+            persistLatestResult(result, null);
 
             const numericPoints = typeof result.points === 'number' ? result.points : null;
             if (numericPoints !== null) {
@@ -56,16 +108,19 @@ const SubmitDiagramControl: React.FC = () => {
                         if (passback.success) {
                             const msg = passback.message || 'Grade submitted to LMS.';
                             setGradePassbackStatus(msg);
+                            persistLatestResult(result, msg);
                             toast.success(msg);
                         } else {
                             const msg = passback.error || 'Grade passback failed.';
                             setGradePassbackStatus(msg);
+                            persistLatestResult(result, msg);
                             toast.error(msg);
                         }
                     }
                 } catch (passbackError) {
                     const msg = passbackError instanceof Error ? passbackError.message : 'Grade passback failed.';
                     setGradePassbackStatus(msg);
+                    persistLatestResult(result, msg);
                     toast.error(msg);
                 }
             }
@@ -85,6 +140,15 @@ const SubmitDiagramControl: React.FC = () => {
 
     return (
         <div className="flex items-center gap-2">
+            <Button
+                variant="outline"
+                onClick={() => setShowResultModal(true)}
+                disabled={!evaluationResult}
+                className="h-9 px-3"
+            >
+                <History className="w-4 h-4" />
+                Latest Result
+            </Button>
             {showPrompt ? (
                 <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-2 duration-200 bg-background border border-border p-2 rounded-lg shadow-lg">
 
@@ -137,6 +201,12 @@ const SubmitDiagramControl: React.FC = () => {
                                     <div className="flex items-center gap-2">
                                         <span className="font-semibold text-sm">Score:</span>
                                         <span className="font-medium">{evaluationResult.points} / 100</span>
+                                    </div>
+                                )}
+                                {evaluationResult.model && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm">Model:</span>
+                                        <span className="font-mono text-sm text-muted-foreground">{evaluationResult.model}</span>
                                     </div>
                                 )}
                                 <div className="space-y-2">

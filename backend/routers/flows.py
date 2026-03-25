@@ -39,6 +39,7 @@ def map_db_flow_to_response(db_flow: Flow) -> FlowResponse:
         createdAt=db_flow.created_at,
         owner_id=db_flow.owner_id,
         is_published=db_flow.is_published or False,
+        ollama_model=db_flow.ollama_model,
     )
 
 
