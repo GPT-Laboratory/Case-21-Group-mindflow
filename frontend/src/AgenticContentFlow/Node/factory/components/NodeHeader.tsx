@@ -1,7 +1,9 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   HTMLAttributes,
   ReactNode,
 } from "react";
@@ -11,6 +13,7 @@ import { MoreVertical, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ensureNodeWidth, measureLongestLineWidth } from "../utils/nodeSizing";
 
 /* NODE HEADER -------------------------------------------------------------- */
 
@@ -34,9 +37,33 @@ export interface NodeHeaderProps extends HTMLAttributes<HTMLElement> {
 export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
   ({ className, icon, label, labelPlaceholder = "Topic", editableLabel = false, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, generationMessage, isLabelUpdating, ...props }, ref) => {
     const id = useNodeId();
-    const { setNodes } = useReactFlow();
+    const { getNode, setNodes } = useReactFlow();
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
     const safeLabel = useMemo(() => label ?? "", [label]);
+    const defaultWidth = useMemo(
+      () => {
+        const currentNode = id ? getNode(id) : undefined;
+        return Number(currentNode?.data?.config?.defaultDimensions?.width ?? currentNode?.style?.width ?? 200);
+      },
+      [getNode, id]
+    );
+
+    const ensureLabelFits = useCallback(
+      (value: string) => {
+        if (!id || !inputRef.current) return;
+
+        const measuredTextWidth = measureLongestLineWidth(inputRef.current, value, labelPlaceholder);
+        const reservedSpace = 88;
+        ensureNodeWidth({
+          id,
+          setNodes,
+          defaultWidth,
+          requiredWidth: measuredTextWidth + reservedSpace,
+        });
+      },
+      [defaultWidth, id, inputRef, labelPlaceholder, setNodes]
+    );
 
     const handleLabelChange = useCallback(
       (value: string) => {
@@ -62,9 +89,14 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
             };
           })
         );
+        ensureLabelFits(value);
       },
-      [id, setNodes]
+      [ensureLabelFits, id, setNodes]
     );
+
+    useEffect(() => {
+      ensureLabelFits(safeLabel);
+    }, [ensureLabelFits, safeLabel]);
 
     return (
       <header 
@@ -90,6 +122,9 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
           )}>
             {editableLabel ? (
               <Input
+                ref={(element) => {
+                  inputRef.current = element;
+                }}
                 value={safeLabel}
                 placeholder={labelPlaceholder}
                 className={cn(

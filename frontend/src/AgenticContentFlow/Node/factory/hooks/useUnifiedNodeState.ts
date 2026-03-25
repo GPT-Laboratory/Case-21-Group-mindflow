@@ -139,7 +139,10 @@ export const useUnifiedNodeState = ({
 
   // Get current dimensions
   const currentDimensions = {
-    width: nodeInFlow?.width || expandCollapseState.dimensions.current.width,
+    width:
+      (typeof nodeInFlow?.style?.width === 'number' ? nodeInFlow.style.width : undefined) ||
+      nodeInFlow?.width ||
+      expandCollapseState.dimensions.current.width,
     height: nodeInFlow?.height || expandCollapseState.dimensions.current.height
   };
 
