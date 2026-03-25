@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   HTMLAttributes,
   ReactNode,
 } from "react";
@@ -33,19 +34,33 @@ export interface NodeHeaderProps extends HTMLAttributes<HTMLElement> {
   // Generation state props
   generationMessage?: string;
   isLabelUpdating?: boolean;
+  topicTextColor?: string;
 }
 
 export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
-  ({ className, icon, label, labelPlaceholder = "Topic", editableLabel = false, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, generationMessage, isLabelUpdating, ...props }, ref) => {
+  ({ className, icon, label, labelPlaceholder = "Topic", editableLabel = false, isProcessing, isCompleted, hasError, isUpdating, menuItems, iconClassName, labelClassName, generationMessage, isLabelUpdating, topicTextColor, ...props }, ref) => {
     const id = useNodeId();
     const { getNode, setNodes } = useReactFlow();
     const inputRef = useRef<HTMLInputElement | null>(null);
 
-    const safeLabel = useMemo(() => label ?? "", [label]);
+    // Local state for the input value to prevent cursor jumping.
+    // The controlled input is driven by this local state, not by the
+    // node store directly, so setNodes re-renders won't reset the cursor.
+    const [localLabel, setLocalLabel] = useState(label ?? "");
+
+    // Sync incoming prop changes (e.g. from undo, external updates)
+    // but only when the input is NOT focused (to avoid fighting with typing).
+    useEffect(() => {
+      const incoming = label ?? "";
+      if (document.activeElement !== inputRef.current && incoming !== localLabel) {
+        setLocalLabel(incoming);
+      }
+    }, [label]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const defaultWidth = useMemo(
       () => {
         const currentNode = id ? getNode(id) : undefined;
-        return Number(currentNode?.data?.config?.defaultDimensions?.width ?? currentNode?.style?.width ?? 200);
+        return Number((currentNode?.data as any)?.config?.defaultDimensions?.width ?? currentNode?.style?.width ?? 200);
       },
       [getNode, id]
     );
@@ -55,7 +70,7 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
         if (!id || !inputRef.current) return;
 
         const measuredTextWidth = measureLongestLineWidth(inputRef.current, value, labelPlaceholder);
-        const reservedSpace = 88;
+        const reservedSpace = 18;
         ensureNodeWidth({
           id,
           setNodes,
@@ -70,6 +85,10 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
       (value: string) => {
         if (!id) return;
 
+        // Update local state immediately (keeps cursor position)
+        setLocalLabel(value);
+
+        // Propagate to node store
         setNodes((nodes) =>
           nodes.map((node) => {
             if (node.id !== id) {
@@ -96,25 +115,25 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
     );
 
     useEffect(() => {
-      ensureLabelFits(safeLabel);
-    }, [ensureLabelFits, safeLabel]);
+      ensureLabelFits(localLabel);
+    }, [ensureLabelFits, localLabel]);
 
     return (
-      <header 
-        ref={ref} 
+      <header
+        ref={ref}
         className={cn(
           "flex items-center justify-between gap-2 p-1 text-slate-700 dark:text-slate-300",
           "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-md",
           className
         )}
-        {...props} 
+        {...props}
       >
         {icon && (
           <div className={cn("flex items-center justify-center", iconClassName)}>
             {icon}
           </div>
         )}
-        
+
         {(editableLabel || label) && (
           <div className={cn(
             "flex-1 font-semibold relative",
@@ -126,7 +145,7 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
                 ref={(element) => {
                   inputRef.current = element;
                 }}
-                value={safeLabel}
+                value={localLabel}
                 placeholder={labelPlaceholder}
                 className={cn(
                   "nodrag nopan h-8 border-none bg-transparent px-1 py-0 text-base font-semibold shadow-none",
@@ -138,12 +157,12 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
               />
             ) : (
               <div className="text-ellipsis overflow-hidden whitespace-nowrap">
-                {safeLabel}
+                {localLabel}
               </div>
             )}
           </div>
         )}
-        
+
         {/* Status badges */}
         {isUpdating && (
           <Badge variant="outline" className="text-xs px-2 py-1 bg-yellow-50 text-yellow-700">
@@ -167,12 +186,12 @@ export const NodeHeader = forwardRef<HTMLElement, NodeHeaderProps>(
         )}
 
         {menuItems && (
-          <NodeHeaderMenuAction label="Options">
+          <NodeHeaderMenuAction label="Options" color={topicTextColor}>
             {menuItems}
             <NodeHeaderDeleteAction />
           </NodeHeaderMenuAction>
         )}
-        
+
         {props.children}
       </header>
     );
@@ -256,13 +275,14 @@ export type NodeHeaderActionProps = {
   label: string;
   onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   className?: string;
+  style?: React.CSSProperties;
   children?: ReactNode;
 };
 
 export const NodeHeaderAction = forwardRef<
   HTMLButtonElement,
   NodeHeaderActionProps
->(({ className, label, children, ...props }, ref) => {
+>(({ className, label, children, style, ...props }, ref) => {
   return (
     <button
       ref={ref}
@@ -275,6 +295,7 @@ export const NodeHeaderAction = forwardRef<
         "transition-colors",
         className
       )}
+      style={style}
       {...props}
     >
       {children}
@@ -291,18 +312,20 @@ export type NodeHeaderMenuActionProps = Omit<
   "onClick"
 > & {
   trigger?: ReactNode;
+  color?: string;
 };
 
 export const NodeHeaderMenuAction = forwardRef<
   HTMLButtonElement,
   NodeHeaderMenuActionProps
->(({ trigger, children, label = "More options", ...props }, ref) => {
+>(({ trigger, children, label = "More options", color, ...props }, ref) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <NodeHeaderAction
           ref={ref}
           label={label}
+          style={color ? { color } : undefined}
           {...props}
         >
           {trigger ?? <MoreVertical />}

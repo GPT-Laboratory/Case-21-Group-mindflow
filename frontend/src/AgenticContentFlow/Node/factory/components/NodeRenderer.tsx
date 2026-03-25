@@ -111,16 +111,24 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
   const updateNodeInternals = useUpdateNodeInternals();
   const iconResolver = new IconResolver();
 
+  const isTopicNode = config.nodeType === 'topicnode';
+
   // Resolve main icon - only one icon for both header and content
-  const mainIcon = iconResolver.resolveIcon(config.visual.icon, {
-    className: `relative w-6 h-6 ${config.visual.icon.className || ''} ${isProcessing || isUpdating ? 'animate-pulse' : ''}`
-  });
+  const mainIcon = config.visual.icon
+    ? iconResolver.resolveIcon(config.visual.icon, {
+        className: `relative w-6 h-6 ${config.visual.icon.className || ''} ${isProcessing || isUpdating ? 'animate-pulse' : ''}`
+      })
+    : null;
 
 
 
   // Cell-specific props (also used for closed containers)
   const hasCustomNodeColor = Boolean(nodeInFlow?.data?.nodeColor);
   const headerGradientClass = hasCustomNodeColor ? "" : (config.visual.headerGradient || "");
+
+  // Determine text color for topic nodes — use a legible, darker color than the pastel background.
+  // We use custom node color if set, or the selectedColor (which is darker indigo), or default to slate-700.
+  const topicTextColor = isTopicNode ? (nodeInFlow?.data?.nodeColor || config.visual.selectedColor || '#334155') : undefined;
 
   const cellProps = {
     onTransitionEnd: () => updateNodeInternals(id),
@@ -129,17 +137,18 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
     processing: isProcessing,
     processState: 'idle' as const,
     className: cn(
-      "w-full flex flex-col select-none transition-all duration-200 ease-in-out",
-      "rounded-lg shadow-lg",
+      "w-full flex flex-col select-none transition-all duration-200 ease-in-out group",
+      isTopicNode ? "" : "rounded-lg shadow-lg",
       "!min-w-0 !min-h-0",
-      headerGradientClass
+      isTopicNode ? "" : headerGradientClass
     ),
     style: {
       width: currentDimensions.width,
-      minHeight: config.defaultDimensions.height,
-      backgroundColor: styleConfig.backgroundColor, // Depth-based color
+      minHeight: isTopicNode ? undefined : config.defaultDimensions.height,
+      backgroundColor: isTopicNode ? 'transparent' : styleConfig.backgroundColor,
       ...processingStyles,
-      userSelect: 'auto' as const
+      userSelect: 'auto' as const,
+      ...(isTopicNode ? { borderColor: topicTextColor, borderWidth: '2px', borderStyle: 'solid', boxShadow: 'none' } : {}),
     }
   };
 
@@ -151,12 +160,12 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
       <BaseNodeContainer {...cellProps}>
         <ConnectionHandles
           nodeType={config.nodeType}
-          color={UnifiedStyleManager.calculateHandleColor(config, styleConfig)}
+          color={isTopicNode && topicTextColor ? topicTextColor : UnifiedStyleManager.calculateHandleColor(config, styleConfig)}
         />
         <NodeHeader
-          className={cn("dragHandle", headerGradientClass, "border-none")}
-          color={styleConfig.backgroundColor}
-          icon={mainIcon}
+          className={cn("dragHandle", isTopicNode ? "" : headerGradientClass, "border-none")}
+          color={isTopicNode ? 'transparent' : styleConfig.backgroundColor}
+          icon={mainIcon ?? undefined}
           label={nodeLabel}
           editableLabel
           labelPlaceholder={config.defaultLabel}
@@ -167,7 +176,12 @@ export const BaseNodeRenderer: React.FC<BaseNodeRendererProps> = ({
           menuItems={menuItems}
           generationMessage={generationMessage}
           isLabelUpdating={isLabelUpdating}
-          style={{ backgroundColor: styleConfig.backgroundColor }}
+          topicTextColor={topicTextColor}
+          style={{
+            backgroundColor: isTopicNode ? 'transparent' : styleConfig.backgroundColor,
+            ...(topicTextColor ? { color: topicTextColor } : {}),
+          }}
+          labelClassName={topicTextColor ? `!text-[${topicTextColor}]` : undefined}
         >
           {/* Expand/Collapse Button for container nodes */}
           <ExpandCollapseHandler

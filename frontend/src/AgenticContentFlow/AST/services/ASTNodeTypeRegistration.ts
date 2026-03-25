@@ -29,11 +29,6 @@ export class ASTNodeTypeRegistration {
       group: 'cell',
       description: 'A mindmap topic node showing a subject and its details',
       visual: {
-        icon: {
-          type: 'builtin',
-          value: 'MessageSquare',
-          className: 'w-6 h-6'
-        },
         style: {
           borderStyle: 'solid',
           shadowStyle: '0 2px 4px -1px rgba(0, 0, 0, 0.1)'

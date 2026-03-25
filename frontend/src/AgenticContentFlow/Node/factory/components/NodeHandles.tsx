@@ -70,7 +70,7 @@ const ConnectionHandles = ({ nodeType, color }: ConnectionHandlesProps) => {
         // LayoutProvider may not be available — fall back to default
     }
 
-    const isFunctionNode = nodeType.includes('function') || nodeType.includes('cell') || nodeType.includes('process');
+    const isFunctionNode = nodeType.includes('function') || nodeType.includes('cell') || nodeType.includes('process') || nodeType === 'topicnode';
 
     return (
         <>
@@ -91,6 +91,7 @@ const ConnectionHandles = ({ nodeType, color }: ConnectionHandlesProps) => {
                             handleDefinition={remappedDef}
                             originalHandleId={handleDef.position}
                             nodeBackgroundColor={color}
+                            invisible={nodeType === 'topicnode'}
                         />
                     );
                 } else {

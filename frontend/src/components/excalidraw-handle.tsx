@@ -67,8 +67,8 @@ export const ExcalidrawHandle = forwardRef<HTMLDivElement, ExcalidrawHandleProps
       ...excalidrawHandleStyles,
       ...sizeVariants[size],
       ...styleVariants[variant],
-      opacity: 1, // Always visible
-      ...style,
+      opacity: 1, // Default to always visible
+      ...style, // Allow passed styles to override (e.g. opacity: 0 for invisible handles)
     };
 
     // If node color is provided, create a subtle border effect that matches

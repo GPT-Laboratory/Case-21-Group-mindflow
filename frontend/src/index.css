@@ -163,3 +163,23 @@
     opacity: 1;
   }
 }
+
+/* Topic node invisible handles — hide all handle elements via CSS */
+.react-flow__node-topicnode .react-flow__handle {
+  opacity: 0 !important;
+  border-color: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Topic node transparent container — no background, but keep border visible */
+.react-flow__node-topicnode > div {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Show bracket indicators on node hover */
+.react-flow__node:hover .bracket-indicator {
+  opacity: 1 !important;
+  z-index: 50 !important;
+}
