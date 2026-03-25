@@ -1,9 +1,10 @@
 import json
 
-def get_extract_topics_prompt(text: str) -> str:
-    return f"""
-    You are an AI assistant designed to extract key educational topics and their supporting details from text.
-    Extract the most important core concepts (topics) and for each topic, provide a list of relevant details or sub-topics.
+def get_extract_topics_prompt(text: str) -> dict:
+    """Returns structured system and user prompts for topic extraction."""
+    system = "You are an AI assistant designed to extract key educational topics and their supporting details from text."
+    user = f"""
+    Extract the most important core concepts (topics) and for each topic, provide a list of relevant details or sub-topics from the text below.
     
     Format each topic and its details exactly like this:
     Topic: <name of topic 1>
@@ -17,6 +18,7 @@ def get_extract_topics_prompt(text: str) -> str:
     Text:
     {text}
     """
+    return {"system": system.strip(), "user": user.strip()}
 
 def _fmt_topic_list(topics: list) -> str:
     """Format a list of topic dicts (with 'topic' and 'details' keys) for prompt display."""
@@ -42,11 +44,10 @@ def get_validation_prompt(
     total_db,
     missing_main_count,
     missing_detail_count
-):
-
-    return f"""
-You are an AI assistant that evaluates a student's concept flow graph for an educational exercise.
-
+) -> dict:
+    """Returns structured system and user prompts for flow validation."""
+    system = "You are an AI assistant that evaluates a student's concept flow graph for an educational exercise."
+    user = f"""
 IMPORTANT: The backend has already computed which topics are matched and missing.
 You MUST use these counts exactly and MUST NOT invent additional missing topics.
 
@@ -165,7 +166,6 @@ Evaluate the student's flow graph based on the following checks:
 
    IMPORTANT SCORING NOTE:
    - First, calculate the base score from missing topics only
-   - Then, you may adjust the score DOWN by up to 0.15 based on structural quality issues
    - Do NOT adjust the score up - only down if there are issues
    - The final score must still be between 0.0 and 1.0
 
@@ -182,7 +182,6 @@ Return ONLY valid JSON:
   "points": <score between 0.0 and 1.0 rounded to two decimals>
 }}
 
-DO NOT include markdown.
-DO NOT include extra text.
-DO NOT recompute missing topics.
+DO NOT output any other text, code or markdown.
 """
+    return {"system": system.strip(), "user": user.strip()}

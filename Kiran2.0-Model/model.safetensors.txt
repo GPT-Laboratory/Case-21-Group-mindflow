@@ -1,0 +1,1 @@
+ADD the model.safetensors from Google Drive: https://drive.google.com/drive/folders/1TzY8xoFlXwheBZr2ONOqE02X9wB7GwYb?usp=sharing

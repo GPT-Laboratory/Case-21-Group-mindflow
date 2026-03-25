@@ -31,13 +31,38 @@ services:
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
       - VALID_THRESHOLD=0.6
       - FRONTEND_URL=http://localhost:5173
+      - KIRAN_MODEL_PATH=/app/Kiran2.0-Model
+      - KIRAN_INFERENCE_URL=http://kiran-inference:8000
     volumes:
       - ./backend:/app
+      - ./Kiran2.0-Model:/app/Kiran2.0-Model
       - docfiles_volume:/app/docfiles
     depends_on:
       - db
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  kiran-inference:
+    build:
+      context: ./kiran-inference
+      dockerfile: Dockerfile
+    container_name: kiran_inference
+    environment:
+      - KIRAN_MODEL_PATH=/app/Kiran2.0-Model
+    volumes:
+      - ./Kiran2.0-Model:/app/Kiran2.0-Model
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   frontend:
     build:

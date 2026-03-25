@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+transformers
+accelerate
+safetensors
+bitsandbytes>=0.46.1
+pydantic

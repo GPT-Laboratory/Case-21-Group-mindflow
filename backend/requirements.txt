@@ -13,7 +13,10 @@ sqlalchemy
 pydantic
 requests
 sentence-transformers
-torch
 langchain-huggingface
 oauthlib
 PyJWT
+transformers
+accelerate
+safetensors
+bitsandbytes>=0.46.1

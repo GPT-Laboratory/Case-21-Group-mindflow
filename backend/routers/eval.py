@@ -4,7 +4,7 @@ import requests as http_requests
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas import ValidateRequest
-from services.llm_service import validate_flow_with_rag, VALIDATION_MODEL
+from services.llm_service import validate_flow_with_rag, VALIDATION_MODEL, KIRAN_MODEL_NAME
 from database import get_db
 from models.evaluation import EvaluationResult
 
@@ -15,14 +15,21 @@ router = APIRouter()
 
 @router.get("/models")
 def list_ollama_models():
-    """List available Ollama models."""
+    """List available Ollama models, including kiran2.0."""
     try:
         resp = http_requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=10)
         resp.raise_for_status()
         data = resp.json()
-        return [m["name"] for m in data.get("models", [])]
+        models = [m["name"] for m in data.get("models", [])]
+        
+        # Add kiran2.0 if not found in Ollama list
+        if KIRAN_MODEL_NAME not in models:
+            models.append(KIRAN_MODEL_NAME)
+            
+        return models
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not reach Ollama: {e}")
+        # If Ollama is down, we still return kiran2.0 if available
+        return [KIRAN_MODEL_NAME]
 
 @router.post("/evaluate")
 def evaluate_flow(request: ValidateRequest, db: Session = Depends(get_db)):

@@ -6,28 +6,29 @@ import logging
 import numpy as np
 from typing import Optional, Any
 from sqlalchemy.orm import Session
-from models.topic import Topic
 from services.topic_utils import find_matching_missing_topics
 from services.prompts import get_extract_topics_prompt, get_validation_prompt
+import re
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.INFO)
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 VALIDATION_MODEL = os.getenv("VALIDATION_MODEL", "llama3.2")
 VALID_THRESHOLD = float(os.getenv("VALID_THRESHOLD", "0.6"))  # pass/fail threshold
+KIRAN_MODEL_NAME = "kiran2.0"
+KIRAN_INFERENCE_URL = os.getenv("KIRAN_INFERENCE_URL", "http://kiran-inference:8000")
 
-def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: int = 120, model: str | None = None) -> Any:
-    """
-    Call local Ollama chat API with retry logic.
-    Uses /api/chat so the model's chat template is applied correctly.
-    Returns the parsed JSON response or raw text.
-    """
+def _call_ollama(messages: list[dict], model: str, format: str = "json", timeout: int = 120, max_retries: int = 2) -> str | None:
+    """Helper to call Ollama Chat API with system/user messages."""
     payload = {
-        "model": model or VALIDATION_MODEL,
-        "messages": [{"role": "user", "content": prompt}],
+        "model": model,
+        "messages": messages,
         "stream": False,
     }
-    print("Call_llm model: ", payload["model"])
+    if format == "json":
+        payload["format"] = "json"
 
     retry_delay = 5
     for attempt in range(max_retries):
@@ -39,11 +40,9 @@ def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: i
             )
             response.raise_for_status()
             result_json = response.json()
+            # Ollama chat API returns response in message['content']
             response_text = result_json.get("message", {}).get("content", "")
-            print("Call_llm response text: ", response_text)
-
             return response_text
-
         except requests.exceptions.Timeout:
             if attempt < max_retries - 1:
                 logger.warning(f"Ollama timeout on attempt {attempt + 1}, retrying in {retry_delay}s...")
@@ -51,19 +50,65 @@ def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: i
                 retry_delay *= 2
             else:
                 logger.error(f"Ollama API timed out after {max_retries} attempts.")
-                return None
         except Exception as e:
-            logger.error(f"Error calling Ollama API: {e}")
-            return None
+            logger.error(f"Error calling Ollama Chat API: {e}")
+            break
     return None
 
-import re
+def _call_kiran_inference(prompt: str, system_prompt: str, timeout: int = 500) -> str | None:
+    """Helper to call dedicated Kiran Inference Server."""
+    payload = {
+        "prompt": prompt,
+        "system_prompt": system_prompt,
+        "max_new_tokens": 500
+    }
+    
+    try:
+        response = requests.post(
+            f"{KIRAN_INFERENCE_URL}/generate",
+            json=payload,
+            timeout=timeout
+        )
+        response.raise_for_status()
+        result = response.json()
+        return result.get("response", "")
+    except Exception as e:
+        logger.error(f"Error calling Kiran Inference Server: {e}")
+        return None
+
+def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: int = 120, model: str | None = None, system_prompt: str | None = None) -> Any:
+    """
+    Submits a prompt to an LLM via Ollama (Chat API) or dedicated kiran-inference server.
+    """
+    model_to_use = model or VALIDATION_MODEL
+    # Default system prompt if none provided
+    sys_prompt = system_prompt or "You are an AI assistant that evaluates a student's concept flow graph for an educational exercise."
+    
+    # Prepare messages for Chat API
+    messages = [
+        {"role": "system", "content": sys_prompt},
+        {"role": "user", "content": prompt}
+    ]
+    
+    # Logic for Kiran model: Try dedicated inference server
+    if KIRAN_MODEL_NAME in model_to_use.lower():
+        print(f"Kiran model detected. Calling Kiran Inference Server for {model_to_use}...")
+        return _call_kiran_inference(prompt, sys_prompt, timeout=300)
+    else:
+        # Standard logic for other models (non-Kiran) - always use Ollama
+        print(f"Calling Ollama Chat API for {model_to_use}...")
+        return _call_ollama(messages, model_to_use, format, timeout, max_retries)
 
 def extract_topics_from_text(text: str) -> list[dict]:
     """Uses Ollama to extract core concepts and details via regex parsing."""
-    prompt = get_extract_topics_prompt(text)
+    prompt_struct = get_extract_topics_prompt(text)
     # Using format=None to get raw text instead of forcing JSON
-    response_text = call_llm(prompt, format=None, timeout=60)
+    response_text = call_llm(
+        prompt=prompt_struct["user"], 
+        system_prompt=prompt_struct["system"],
+        format=None, 
+        timeout=60
+    )
     
     if not response_text:
         return []
@@ -125,6 +170,7 @@ def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None
     Extracts topics+details from both user flow and DB, then passes rich context to LLM.
     Scoring: missing main topic → larger penalty; missing detail → smaller penalty.
     """
+    from models.topic import Topic
     # 1. Extract topics+details from flow using helper (regex-based detail extraction)
     flow_topic_dicts = _extract_flow_topics_with_details(flow_data)
     flow_topic_names = [t["topic"] for t in flow_topic_dicts]
@@ -179,9 +225,33 @@ def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None
 
     context_str = "\n".join(context_texts) if context_texts else "No specific document context found."
 
-    # 7. Call LLM with rich topic+details context
-    prompt = get_validation_prompt(
-        json.dumps(flow_data, indent=2),
+    # 7. Simplify flow JSON (semantic format: flow_topics and flow_edges)
+    # Create id-to-label map for edge mapping
+    id_to_label = {node.get("id"): node.get("data", {}).get("label", "").strip() for node in flow_data.get("nodes", [])}
+    
+    # flow_topics is basically flow_topic_dicts which already has {topic, details}
+    semantic_edges = []
+    for edge in flow_data.get("edges", []):
+        source_id = edge.get("source")
+        target_id = edge.get("target")
+        source_label = id_to_label.get(source_id)
+        target_label = id_to_label.get(target_id)
+        if source_label and target_label:
+            semantic_edges.append({
+                "source": source_label,
+                "target": target_label
+            })
+            
+    simplified_flow = {
+        "flow_topics": flow_topic_dicts,
+        "flow_edges": semantic_edges
+    }
+    # Convert to plain JSON (no newlines)
+    compact_flow_json = json.dumps(simplified_flow).replace("\n", "").replace(" ", "")
+
+    # 8. Call LLM with rich topic+details context
+    prompt_struct = get_validation_prompt(
+        compact_flow_json,
         matching_dicts,
         missing_dicts,
         flow_topic_dicts,
@@ -191,8 +261,14 @@ def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None
         missing_detail_count=missing_detail_count,
     )
 
-    print(f"Validation prompt length: {len(prompt)} chars (~{len(prompt) // 4} tokens)")
-    response_text = call_llm(prompt, format="json", timeout=120, model=model)
+    print(f"Validation prompt length: {len(prompt_struct['user'])} chars (~{len(prompt_struct['user']) // 4} tokens)")
+    response_text = call_llm(
+        prompt=prompt_struct["user"],
+        system_prompt=prompt_struct["system"],
+        format="json",
+        timeout=120,
+        model=model
+    )
 
     if response_text:
         # Parse JSON from response using regex for robustness
