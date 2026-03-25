@@ -167,6 +167,7 @@ const DocumentManager: React.FC = () => {
     const filteredDocs = documents.filter(doc =>
         doc.filename.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const isSidepanelOpen = Boolean(previewUrl || topicsDoc);
 
     const getStatusIcon = (status: DocumentResponse['processing_status']) => {
         switch (status) {
@@ -256,13 +257,13 @@ const DocumentManager: React.FC = () => {
                                     <p>{searchTerm ? 'No documents match your search' : 'No documents uploaded yet'}</p>
                                 </div>
                             ) : (
-                                <table className="w-full text-left border-collapse">
+                                <table className="w-full table-fixed text-left border-collapse">
                                     <thead className="sticky top-0 bg-secondary/80 backdrop-blur-sm z-10 border-b border-border">
                                         <tr>
-                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document</th>
-                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Uploaded</th>
-                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">Actions</th>
+                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-[45%]">Document</th>
+                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap w-32">Status</th>
+                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap w-36">Uploaded</th>
+                                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right whitespace-nowrap w-20">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
@@ -275,16 +276,23 @@ const DocumentManager: React.FC = () => {
                                                 )}
                                                 onClick={() => setSelectedDocumentId(doc.id)}
                                             >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
+                                                <td className="px-6 py-4 min-w-0">
+                                                    <div className="flex items-center gap-3 min-w-0">
                                                         <div className={cn(
-                                                            "p-2 rounded-md",
+                                                            "p-2 rounded-md shrink-0",
                                                             selectedDocumentId === doc.id ? "bg-primary text-primary-foreground" : "bg-primary/5 text-primary"
                                                         )}>
                                                             <FileText className="w-5 h-5" />
                                                         </div>
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium">{doc.filename}</span>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span
+                                                                className={cn(
+                                                                    "font-medium truncate block",
+                                                                    isSidepanelOpen ? "max-w-[180px]" : "max-w-[420px]"
+                                                                )}
+                                                            >
+                                                                {doc.filename}
+                                                            </span>
                                                             {selectedDocumentId === doc.id && (
                                                                 <span className="text-[10px] text-primary font-bold uppercase tracking-wider">Active Document</span>
                                                             )}
@@ -369,7 +377,7 @@ const DocumentManager: React.FC = () => {
 
                 {/* Preview / Topics Sidepanel */}
                 {(previewUrl || topicsDoc) && (
-                    <div className="w-1/2 flex flex-col border border-border rounded-xl bg-card overflow-hidden animate-in slide-in-from-right-4 shadow-2xl">
+                    <div className="w-1/2 flex flex-col border border-border rounded-xl bg-card overflow-hidden animate-in slide-in-from-right-4">
                         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="p-2 bg-primary/10 text-primary rounded-md shrink-0">
