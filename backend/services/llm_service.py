@@ -16,13 +16,13 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 VALIDATION_MODEL = os.getenv("VALIDATION_MODEL", "llama3.2")
 VALID_THRESHOLD = float(os.getenv("VALID_THRESHOLD", "0.6"))  # pass/fail threshold
 
-def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: int = 120) -> Any:
+def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: int = 120, model: str | None = None) -> Any:
     """
     Generic function to call local Ollama API with retry logic.
     Returns the parsed JSON response or raw text.
     """
     payload = {
-        "model": VALIDATION_MODEL,
+        "model": model or VALIDATION_MODEL,
         "prompt": prompt,
         "stream": False,
     }
@@ -120,7 +120,7 @@ def _extract_flow_topics_with_details(flow_data: dict) -> list[dict]:
     return extracted
 
 
-def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None):
+def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None, *, model: str | None = None):
     """
     RAG lookup for context then validate flow using LLM.
     Extracts topics+details from both user flow and DB, then passes rich context to LLM.
@@ -192,7 +192,7 @@ def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None
         missing_detail_count=missing_detail_count,
     )
 
-    response_text = call_llm(prompt, format="json", timeout=120)
+    response_text = call_llm(prompt, format="json", timeout=120, model=model)
 
     if response_text:
         # Parse JSON from response using regex for robustness
@@ -200,15 +200,31 @@ def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None
         if json_match:
             try:
                 parsed = json.loads(json_match.group(0))
-                
-                # Derive is_valid from threshold
+                raw_points = parsed.get("points")
+                try:
+                    points = float(raw_points)
+                except (TypeError, ValueError):
+                    logger.error(f"LLM response missing valid 'points' field: {parsed}")
+                    return {
+                        "is_valid": False,
+                        "feedback": f"The model returned an unusable response. Try a different model.\n\nRaw output: {response_text[:500]}",
+                        "points": 0.0,
+                    }
+
+                # Normalise points to a float and derive is_valid from threshold
+                parsed["points"] = points
                 parsed.pop("is_valid", None)
-                parsed["is_valid"] = parsed["points"] >= VALID_THRESHOLD
+                parsed["is_valid"] = points >= VALID_THRESHOLD
+                parsed.setdefault("feedback", "")
                 return parsed
-            except Exception as e:
+            except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse LLM JSON response: {e}")
 
-        return response_text
+        return {
+            "is_valid": False,
+            "feedback": f"The model did not return valid JSON. Try a different model.\n\nRaw output: {response_text[:500]}",
+            "points": 0.0,
+        }
 
     return {
         "is_valid": False,
