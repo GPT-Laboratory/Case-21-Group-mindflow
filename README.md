@@ -1,4 +1,4 @@
-# AgenticContentFlow
+# Case 21 - Group - Mindflow
 
 A full-stack platform for building and AI-evaluating educational concept flow graphs (mindmaps). Students construct a flow graph of topics in the browser; uploaded course documents are embedded and used as grounding context when a local LLM evaluates the submission, scoring topic coverage and connection correctness.
 
