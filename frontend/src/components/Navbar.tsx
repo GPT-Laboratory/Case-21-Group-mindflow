@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Home, Brain, Workflow, User, LogIn, KeyRound, LogOut } from 'lucide-react';
+import { FileText, Brain, Workflow, User, LogIn, KeyRound, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/useAuthStore';
 import {
@@ -32,12 +32,6 @@ const Navbar: React.FC = () => {
     }, [fetchSession]);
 
     const navItems = [
-        {
-            label: 'Home',
-            path: '/',
-            icon: <Home className="w-4 h-4" />,
-            instructorOnly: false,
-        },
         {
             label: 'Documents',
             path: '/documents',

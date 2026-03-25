@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, Brain, Loader2, Trash2, Globe, Pencil } from 'lucide-react';
+import { Plus, ArrowRight, Brain, Loader2, Trash2, Globe, Pencil, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -134,6 +134,15 @@ const Homepage: React.FC = () => {
             >
               <Plus className="w-5 h-5" />
               Create New Flow
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate('/documents')}
+              className="gap-2"
+            >
+              <FileText className="w-5 h-5" />
+              New Document
             </Button>
           </div>
         )}
