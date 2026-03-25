@@ -18,15 +18,16 @@ VALID_THRESHOLD = float(os.getenv("VALID_THRESHOLD", "0.6"))  # pass/fail thresh
 
 def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: int = 120, model: str | None = None) -> Any:
     """
-    Generic function to call local Ollama API with retry logic.
+    Call local Ollama chat API with retry logic.
+    Uses /api/chat so the model's chat template is applied correctly.
     Returns the parsed JSON response or raw text.
     """
     payload = {
         "model": model or VALIDATION_MODEL,
-        "prompt": prompt,
+        "messages": [{"role": "user", "content": prompt}],
         "stream": False,
     }
-    print("Call_llm payload: ", payload)
+    print("Call_llm model: ", payload["model"])
     if format == "json":
         payload["format"] = "json"
 
@@ -34,15 +35,15 @@ def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: i
     for attempt in range(max_retries):
         try:
             response = requests.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
+                f"{OLLAMA_BASE_URL}/api/chat",
                 json=payload,
                 timeout=timeout
             )
             response.raise_for_status()
             result_json = response.json()
-            response_text = result_json.get("response", "")
+            response_text = result_json.get("message", {}).get("content", "")
             print("Call_llm response text: ", response_text)
-            
+
             return response_text
 
         except requests.exceptions.Timeout:
