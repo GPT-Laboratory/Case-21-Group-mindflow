@@ -28,8 +28,6 @@ def call_llm(prompt: str, format: str = "json", max_retries: int = 2, timeout: i
         "stream": False,
     }
     print("Call_llm model: ", payload["model"])
-    if format == "json":
-        payload["format"] = "json"
 
     retry_delay = 5
     for attempt in range(max_retries):
@@ -193,6 +191,7 @@ def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None
         missing_detail_count=missing_detail_count,
     )
 
+    print(f"Validation prompt length: {len(prompt)} chars (~{len(prompt) // 4} tokens)")
     response_text = call_llm(prompt, format="json", timeout=120, model=model)
 
     if response_text:
