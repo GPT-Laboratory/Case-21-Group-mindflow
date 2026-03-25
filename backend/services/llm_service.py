@@ -200,18 +200,7 @@ def validate_flow_with_rag(flow_data: dict, document_id: int, db: Session = None
         if json_match:
             try:
                 parsed = json.loads(json_match.group(0))
-                # Enforce weighted scoring override if LLM ignores hints
-                if total_db > 0:
-                    # Missing main topic penalty: 0.35 per missing main topic (up to 0.70)
-                    # Missing detail penalty: 0.06 per missing detail (up to 0.30)
-                    main_penalty = min(0.70, missing_main_count * (0.70 / max(total_db, 1)))
-                    detail_penalty = min(0.30, missing_detail_count * 0.06)
-                    raw_suggested = max(0.0, 1.0 - main_penalty - detail_penalty)
-                    suggested_points = int(raw_suggested * 100) / 100.0
-                    # Blend: 50% LLM score + 50% rule-based score for balance
-                    llm_points = float(parsed.get("points", suggested_points))
-                    blended = (llm_points + suggested_points) / 2.0
-                    parsed["points"] = int(blended * 100) / 100.0
+                
                 # Derive is_valid from threshold
                 parsed.pop("is_valid", None)
                 parsed["is_valid"] = parsed["points"] >= VALID_THRESHOLD
